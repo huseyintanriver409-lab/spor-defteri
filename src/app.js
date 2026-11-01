@@ -472,8 +472,9 @@ function renderDay(){
   $("#dayTitle").textContent = date === ymd(new Date()) ? "Bugün" : niceDate(date);
   const list = state.entries.filter(e => e.date===date).sort((a,b) => a.ts-b.ts);
   $("#dayList").innerHTML = list.length ? list.map(e => entryHTML(e,true)).join("") : emptyHTML("calendar-days", "Bu gün kayıt yok", "Yukarıdan hareket seçip setlerini gir.");
-  $("#dayCal").classList.toggle("hidden", !list.length);
   const ss = state.sessions.filter(s => s.date===date);
+  // antrenman Google Takvim'e kendiliğinden yazıldıysa elle eklemek kopya oluşturur
+  $("#dayCal").classList.toggle("hidden", !list.length || autoLogged(ss));
   $("#daySess").innerHTML = ss.length ? `${ic("timer")} Antrenman süresi: ${durText(ss.reduce((a,s) => a + s.end - s.start, 0))}` : "";
   bindEntryActions($("#dayList"), () => { renderDay(); updateHint(); });
 }
@@ -550,7 +551,7 @@ function renderProg(){
       <h3>${esc(p.name)}</h3>
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn primary" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
-        <button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button><button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
+        ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
     </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Aşağıdan kendi programını oluştur ya da hazır bir şablon ekle.")}</div>`;
   const find = id => state.programs.find(p => p.id===id);
   $("#pList").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
@@ -626,6 +627,8 @@ function dayText(list){
     (lifts.length ? `\n\nToplam: ${lifts.reduce((n,e)=>n+work(e.sets).length,0)} set · ${fmt(lifts.reduce((n,e)=>n+volume(e.sets),0))} kg hacim` : "") + "\n\nSpor Defteri";
   return { title: "Antrenman: " + groups.join(", "), details };
 }
+// o günün antrenmanı Google Takvim'e kendiliğinden yazıldı mı (ya da yazılacak mı)
+const autoLogged = sessions => state.gcal.log && sessions.length > 0;
 function calDay(date){
   const list = state.entries.filter(e => e.date===date).sort((a,b) => a.ts-b.ts);
   if (!list.length) return;
@@ -662,6 +665,8 @@ function renderPlan(){
   const n = Object.keys(P.days).length;
   $("#planInfo").textContent = (state.programs.length ? (n ? `Haftada ${n} antrenman` : "Henüz gün seçilmedi") : "Önce bir program oluştur")
     + (state.gcal.plan && n ? " · Google Takvim'de kendiliğinden güncellenir" : "");
+  // plan takvime kendiliğinden yazılırken .ics dosyası da eklenirse etkinlikler iki kez görünür
+  $("#planIcs").classList.toggle("hidden", !!state.gcal.plan);
 }
 $("#planDur").onchange = () => { state.plan.dur = Math.max(10, parseInt($("#planDur").value)||60); save(); renderPlan(); };
 $("#planRemind").onchange = () => { state.plan.remind = Math.max(0, parseInt($("#planRemind").value)||0); save(); renderPlan(); };
@@ -1164,7 +1169,7 @@ function renderHistory(){
   const ss = state.sessions.filter(s => s.date === selDay);
   $("#hdSess").innerHTML = ss.length ? `${ic("timer")} Antrenman süresi: ${durText(ss.reduce((a, s) => a + s.end - s.start, 0))}` : "";
   $("#hdList").innerHTML = list.length ? list.map(e => entryHTML(e, true)).join("") : emptyHTML("calendar-days", "Bu gün kayıt yok", "Elle eklemek için + düğmesine dokun.");
-  $("#hdCal").classList.toggle("hidden", !list.length);
+  $("#hdCal").classList.toggle("hidden", !list.length || autoLogged(ss));
   bindEntryActions($("#hdList"), renderHistory);
 }
 $("#hdCal").onclick = () => calDay(selDay);
