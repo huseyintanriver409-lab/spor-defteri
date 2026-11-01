@@ -1,6 +1,10 @@
 # Yayın paketleri (kaynaktan yeniden üretilir)
 *.zip
 
+# Bağımlılıklar ve derleme çıktısı
+node_modules/
+dist/
+
 # İşletim sistemi
 Thumbs.db
 desktop.ini

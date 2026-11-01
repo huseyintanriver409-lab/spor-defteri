@@ -3,9 +3,15 @@
   "configurations": [
     {
       "name": "spor-defteri",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8765"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
       "port": 8765
+    },
+    {
+      "name": "spor-defteri-build",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview"],
+      "port": 8766
     }
   ]
 }
