@@ -1,0 +1,65 @@
+import { DEFAULTS, stampChanges as stampState, takeSnapshot as snapshotOf, withDefaults } from "../core/schema.ts";
+import { calSoon } from "./cloud.js";
+
+export const LIB = {
+  "Göğüs": ["Bench Press (Barbell)","Dumbbell Bench Press","Incline Bench Press","Incline Dumbbell Press","Decline Bench Press","Decline Dumbbell Press","Smith Machine Bench Press","Smith Machine Incline Press","Chest Press Makinesi","Incline Chest Press Makinesi","Dumbbell Fly","Incline Dumbbell Fly","Pec Deck (Butterfly)","Cable Crossover","Low-to-High Cable Fly","High-to-Low Cable Fly","Dips (Göğüs)","Şınav (Push-up)","Incline Şınav","Decline Şınav","Dumbbell Pullover","Landmine Press","Svend Press","Floor Press"],
+  "Sırt": ["Barfiks (Pull-up)","Chin-up","Ağırlıklı Barfiks","Asistanlı Barfiks Makinesi","Lat Pulldown (Geniş)","Lat Pulldown (Dar / V-Bar)","Tek Kol Lat Pulldown","Seated Cable Row","Barbell Row","Pendlay Row","Dumbbell Row (Tek Kol)","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Inverted Row","Straight-Arm Pulldown","Dumbbell Pullover (Sırt)","Deadlift","Rack Pull","Back Extension (Hiperekstansiyon)","Good Morning","Barbell Shrug","Dumbbell Shrug","Superman"],
+  "Omuz": ["Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Front Raise (Dumbbell)","Plate Front Raise","Cable Front Raise","Rear Delt Fly (Dumbbell)","Reverse Pec Deck","Cable Rear Delt Fly","Face Pull","Upright Row","Y-Raise","Handstand Push-up"],
+  "Biceps": ["Barbell Curl","EZ-Bar Curl","Dumbbell Curl","Alternating Dumbbell Curl","Hammer Curl","Cable Hammer Curl (Halat)","Incline Dumbbell Curl","Preacher Curl","Machine Preacher Curl","Concentration Curl","Cable Curl","Bayesian Cable Curl","Spider Curl","Drag Curl","Reverse Curl","Zottman Curl","21'ler"],
+  "Triceps": ["Triceps Pushdown (Halat)","Triceps Pushdown (Bar)","Tek Kol Cable Pushdown","Overhead Cable Extension","Overhead Dumbbell Extension","Skull Crusher (EZ-Bar)","Dumbbell Skull Crusher","Close-Grip Bench Press","Dips (Triceps)","Bench Dips","Triceps Kickback","Cable Kickback (Triceps)","JM Press","Machine Triceps Extension","Diamond Şınav"],
+  "Önkol & Kavrama": ["Wrist Curl","Reverse Wrist Curl","Farmer's Walk","Dead Hang","Plate Pinch","Wrist Roller"],
+  "Bacak (Ön)": ["Back Squat","Front Squat","High-Bar Squat","Low-Bar Squat","Goblet Squat","Hack Squat","Pendulum Squat","Belt Squat","Smith Machine Squat","Leg Press","Tek Bacak Leg Press","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Lateral Lunge","Step-up","Leg Extension","Sissy Squat","Pistol Squat","Box Squat","Zercher Squat","Wall Sit"],
+  "Arka Bacak & Kalça": ["Romanian Deadlift","Dumbbell Romanian Deadlift","Tek Bacak RDL","Stiff-Leg Deadlift","Sumo Deadlift","Trap Bar Deadlift","Lying Leg Curl","Seated Leg Curl","Standing Leg Curl","Nordic Curl","Glute-Ham Raise","Hip Thrust (Barbell)","Hip Thrust Makinesi","Glute Bridge","Tek Bacak Glute Bridge","Cable Kickback (Kalça)","Cable Pull-through","Hip Abduction Makinesi","Hip Adduction Makinesi","Kettlebell Swing","Reverse Hyperextension","Frog Pump"],
+  "Baldır": ["Standing Calf Raise","Seated Calf Raise","Leg Press Calf Raise","Smith Machine Calf Raise","Tek Bacak Calf Raise","Donkey Calf Raise","Tibialis Raise"],
+  "Karın & Core": ["Crunch","Mekik (Sit-up)","Decline Sit-up","Cable Crunch","Machine Crunch","Bicycle Crunch","Reverse Crunch","Hanging Leg Raise","Hanging Knee Raise","Lying Leg Raise","Captain's Chair Leg Raise","Plank","Side Plank","Ab Wheel Rollout","Russian Twist","Pallof Press","Cable Woodchopper","Dragon Flag","Dead Bug","Bird Dog","Mountain Climber","V-Up","Hollow Body Hold","L-Sit","Side Bend (Dumbbell)"],
+  "Tüm Vücut & Olimpik": ["Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Burpee","Turkish Get-up","Kettlebell Goblet Clean","Sled Push","Sled Pull","Battle Rope","Box Jump","Wall Ball","Muscle-up","Man Maker"],
+  "Kardiyo": ["Koşu (Bant)","Koşu (Dış Mekan)","Yürüyüş / Eğimli Yürüyüş","Sabit Bisiklet","Bisiklet (Dış Mekan)","Eliptik","Kürek Makinesi","Merdiven Makinesi","İp Atlama","Yüzme","Assault Bike","HIIT"]
+};
+export const CARDIO = "Kardiyo";
+export const KEY = "sporDefteri.v1";
+export const $ = s => document.querySelector(s);
+export const ic = (n, cls = "") => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+export const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+export const fmt = n => (Math.round(n*10)/10).toLocaleString("tr-TR");
+export const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ---------- Data layer ----------
+   Veri modeli, damgalama ve birleştirme core/schema.ts içinde (bkz. YOL-HARITASI.md "Veri modeli").
+   Damgalama save() içinde merkezi olarak yapılır: her kayıt bir önceki kaydedilen haliyle karşılaştırılır. */
+export let state = DEFAULTS();
+export let snapshot = null;
+export function takeSnapshot(){ snapshot = snapshotOf(state); }
+export function stampChanges(){ snapshot = stampState(state, snapshot); }
+export function load(){
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) state = withDefaults(JSON.parse(raw));
+  } catch(e){ toast("Kayıtlar okunamadı"); }
+  if (!state.deviceId) state.deviceId = "d-" + uid();
+  takeSnapshot();
+}
+export function save(){
+  stampChanges();
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ toast("Kaydedilemedi! Yedek al."); }
+  // plan ya da programlar değiştiyse takvimdeki planı birkaç saniye sonra güncelle (art arda değişiklikler tek seferde)
+  if (state.gcal.plan || state.gcal.planSig) calSoon();
+}
+// Tarayıcının confirm() penceresi bazı uygulama içi görüntüleyicilerde engellenir; bu yüzden kendi onay penceremiz
+// choices: [{ label, value, primary? }]; dışarı tıklamak null döndürür
+export function choose(msg, choices){
+  return new Promise(res => {
+    $("#modalMsg").textContent = msg;
+    $("#modalBtns").innerHTML = `<span class="grow"></span>` + choices.map((c,i) => `<button class="btn${c.primary ? " primary" : ""}" data-i="${i}">${esc(c.label)}</button>`).join("");
+    $("#modal").classList.remove("hidden");
+    const done = v => { $("#modal").classList.add("hidden"); res(v); };
+    $("#modalBtns").querySelectorAll("button").forEach(b => b.onclick = () => done(choices[+b.dataset.i].value));
+    $("#modal").onclick = e => { if (e.target.id === "modal") done(null); };
+  });
+}
+export const ask = (msg, yes = "Evet, sil") => choose(msg, [{ label: "Vazgeç", value: false }, { label: yes, value: true, primary: true }]).then(v => !!v);
+export function toast(msg, icon = "info"){ const t=$("#toast"); t.innerHTML = ic(icon) + "<span>" + esc(msg) + "</span>"; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
+
+// başka modüllerden atanabilmesi için
+export function setState(v){ return state = v; }
+

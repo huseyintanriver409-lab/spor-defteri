@@ -22,7 +22,18 @@ Alternatif olarak Android için Kotlin ve Windows için C# ile ayrı yerel uygul
 
 ```
 spor-defteri.html        HTML iskeleti (Vite girişi)
-src/app.js               Arayüz ve uygulama akışı (ES modülü)
+src/app.js               Açılış: modüllerin setup()'larını sırayla çağırır, veriyi yükler, ilk ekranı açar
+src/app/                 Arayüz, ekran ekran:
+  store.js               state (setState ile değişir), load/save, $, ic, esc, toast, onay penceresi
+  exercises.js           hareket kütüphanesi bilgileri, kas grupları, set biçimleri
+  ui.js                  titreşim, ekran açık tutma, geri al, alttan panel, hareket seçici, sekmeler
+  log.js / programs.js   elle kayıt; programlar, haftalık plan, elle takvim bağlantıları
+  live.js                canlı antrenman ekranı ve süreli setler
+  home.js / history.js   Bugün ekranı; aylık takvim
+  stats.js               hafta, süreklilik, hareket grafiği, rekorlar, kaslar, güç skoru
+  library.js / tools.js  hareketler, vücut ölçüleri; 1RM, plaka, ısınma, dinlenme sayacı
+  backup.js / cloud.js   yedek ve CSV; Google Drive ve Google Takvim
+  settings.js            ayarlar, tema, ilk açılış, erişilebilirlik, PWA kaydı
 src/styles.css           "Atletik" tasarım sistemi, gömülü Inter yazı tipi
 src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (TypeScript)
   schema.ts              Veri modeli, damgalama, mergeStates
@@ -90,7 +101,7 @@ Depo: `huseyintanriver409-lab/spor-defteri` (public). Yayın: https://huseyintan
 - **Testler (Vitest):** `mergeStates` (değişmelilik, mezar taşları, ayarlar, cihaza özel alanlar, v1 yedekleri), damgalama, kademeli yüklenme kararları, toparlanma, ısınma, plaka ve güç puanı için 41 test. Testlerin gerçekten hata yakaladığı, koda bilerek hata konarak denendi.
 
 **Sıradaki adımlar:**
-- `src/app.js`'i ekranlara göre modüllere bölmek (`log/`, `programs/`, `stats/`, `tools/`). Bunun ön koşulu, global `state`'i tek bir `store` modülünden dışa aktarmak.
+- ~~`src/app.js`'i ekranlara göre modüllere bölmek~~: yapıldı (2026-11-01, `src/app/`). Modüller birbirini döngüsel içe aktarır; bu yüzden modül yüklenirken çalışan kod yalnız tanımlardır, düğme bağlamaları her modülün `setup()`'ındadır ve `src/app.js` bunları eski sırayla çağırır. Başka modülün `let` değişkenine doğrudan atanamaz; `setState`, `setTDur` gibi ayarlayıcılar kullanılır.
 - Rekor hesaplarını (`renderRecords` içindeki) `core/`'a çıkarıp test etmek.
 - **IndexedDB**'ye geçiş (localStorage'ın ~5 MB sınırı yerine). Göç, şema sürümüyle (`v: 3`) otomatik yapılır; eski veri silinmeden önce IndexedDB'de doğrulanmalı. Veri kaybı riski taşıdığı için ayrı ve dikkatli bir adım.
 - `app.js`'e kademeli olarak tip kontrolü (`// @ts-check`, sonra `.ts`).
@@ -138,4 +149,5 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 - Cihaza özel geçici durum (açık ekran, taslak) `mergeStates` sonunda yerelden korunur.
 - Kullanıcı metni HTML'e her zaman `esc()` ile basılır.
 - Tarayıcıya ve `state`'e bağlı olmayan yeni hesaplar `src/core/` altına yazılır ve `tests/` altında test edilir.
+- `src/app/` modüllerinde üst seviyede yalnız tanım (function/const/let) olur; DOM'a dokunan ya da başka modülü çağıran kod `setup()` içine yazılır.
 - Göndermeden önce: `npm test`, `npm run typecheck`, `npm run build`; arayüz değiştiyse `tests/smoke.browser.js`.
