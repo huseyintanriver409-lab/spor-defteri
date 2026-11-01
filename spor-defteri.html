@@ -399,7 +399,8 @@ body.focus-open{overflow:hidden}
   pointer-events:none;z-index:30;max-width:calc(100vw - 32px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .toast .ic{width:18px;height:18px;flex:none}
 .toast.show,.snack.show{opacity:1;transform:translate(-50%,0)}
-.snack{pointer-events:auto;padding:6px 6px 6px 16px}
+.snack{padding:6px 6px 6px 16px}
+.snack.show{pointer-events:auto}
 .snack button{border:0;background:none;color:var(--accent);font:inherit;font-weight:800;padding:8px 12px;border-radius:10px;cursor:pointer;min-height:40px}
 body.focus-open .toast,body.focus-open .snack{bottom:calc(160px + env(safe-area-inset-bottom))}
 .modal{position:fixed;inset:0;z-index:40;background:var(--overlay);display:grid;place-items:center;padding:16px;animation:fade .2s}
