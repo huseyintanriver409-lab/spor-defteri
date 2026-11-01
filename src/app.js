@@ -4,7 +4,9 @@ import { work, volume, e1rm, warmupSets, platesFor as platesForCore, liftScore, 
 import { recoveryMap as recoveryMapCore } from "./core/recovery.ts";
 import { syncOnce } from "./core/sync.ts";
 import { driveStore, AuthError } from "./sync/drive.ts";
-import { cachedToken, preload as preloadGoogle, gisReady, requestToken, forgetToken, revoke } from "./sync/google.ts";
+import { cachedToken, preload as preloadGoogle, gisReady, requestToken, dropScope, revoke, DRIVE_SCOPE, CAL_SCOPE } from "./sync/google.ts";
+import { runCalendar, planSignature } from "./core/calendar.ts";
+import { calendarClient } from "./sync/calendar.ts";
 import { GOOGLE_CLIENT_ID } from "./config.ts";
 
 const LIB = {
@@ -48,6 +50,8 @@ function save(){
   stampChanges();
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
   catch(e){ toast("Kaydedilemedi! Yedek al."); }
+  // plan ya da programlar değiştiyse takvimdeki planı birkaç saniye sonra güncelle (art arda değişiklikler tek seferde)
+  if (state.gcal.plan || state.gcal.planSig) calSoon();
 }
 // Tarayıcının confirm() penceresi bazı uygulama içi görüntüleyicilerde engellenir; bu yüzden kendi onay penceremiz
 // choices: [{ label, value, primary? }]; dışarı tıklamak null döndürür
@@ -614,15 +618,29 @@ $("#calGo").onclick = () => {
   $("#calModal").classList.add("hidden");
 };
 $("#dayCal").onclick = () => calDay($("#logDate").value);
-function calDay(date){
-  const list = state.entries.filter(e => e.date===date).sort((a,b) => a.ts-b.ts);
-  if (!list.length) return;
+// Takvim etkinliği başlığı ve açıklaması: hareketler, setler ve toplam hacim
+function dayText(list){
   const groups = [...new Set(list.map(e => groupOf(e.ex)))];
   const lifts = list.filter(e => !isCardio(e.ex));
   const details = list.map(e => `• ${e.ex}: ${e.sets.map(s => setLabel(s, isCardio(e.ex))).join(", ")}`).join("\n") +
     (lifts.length ? `\n\nToplam: ${lifts.reduce((n,e)=>n+work(e.sets).length,0)} set · ${fmt(lifts.reduce((n,e)=>n+volume(e.sets),0))} kg hacim` : "") + "\n\nSpor Defteri";
+  return { title: "Antrenman: " + groups.join(", "), details };
+}
+function calDay(date){
+  const list = state.entries.filter(e => e.date===date).sort((a,b) => a.ts-b.ts);
+  if (!list.length) return;
+  const { title, details } = dayText(list);
   const next = parse(date); next.setDate(next.getDate()+1);
-  gcal("Antrenman: " + groups.join(", "), details, date.replace(/-/g,"") + "/" + ymd(next).replace(/-/g,""));
+  gcal(title, details, date.replace(/-/g,"") + "/" + ymd(next).replace(/-/g,""));
+}
+// Bir antrenman oturumunun takvim metni: oturum süresince girilen kayıtlar (yoksa o günün hepsi)
+function describeSession(s){
+  const day = state.entries.filter(e => e.date === s.date);
+  const inSession = day.filter(e => e.ts >= s.start - 5*60e3 && e.ts <= s.end + 5*60e3);
+  const list = (inSession.length ? inSession : day).sort((a,b) => a.ts-b.ts);
+  const p = s.prog && state.programs.find(x => x.id === s.prog);
+  const t = dayText(list);
+  return { title: p ? "Antrenman: " + p.name : t.title, details: `Süre: ${durText(s.end - s.start)}\n\n` + t.details };
 }
 
 function renderPlan(){
@@ -642,7 +660,8 @@ function renderPlan(){
   });
   $("#planRows").querySelectorAll("[data-pt]").forEach(t => t.onchange = () => { const d = P.days[t.dataset.pt]; if (d) { d.time = t.value || "19:00"; save(); } });
   const n = Object.keys(P.days).length;
-  $("#planInfo").textContent = state.programs.length ? (n ? `Haftada ${n} antrenman` : "Henüz gün seçilmedi") : "Önce bir program oluştur";
+  $("#planInfo").textContent = (state.programs.length ? (n ? `Haftada ${n} antrenman` : "Henüz gün seçilmedi") : "Önce bir program oluştur")
+    + (state.gcal.plan && n ? " · Google Takvim'de kendiliğinden güncellenir" : "");
 }
 $("#planDur").onchange = () => { state.plan.dur = Math.max(10, parseInt($("#planDur").value)||60); save(); renderPlan(); };
 $("#planRemind").onchange = () => { state.plan.remind = Math.max(0, parseInt($("#planRemind").value)||0); save(); renderPlan(); };
@@ -1025,7 +1044,7 @@ async function finishWorkout(){
   closeFocus(); showTab("home");
   setTimeout(() => toast(n ? `Antrenman bitti · ${durText(end - start)} · ${n} set · ${fmt(vol)} kg` : "Antrenman kapatıldı", n ? "biceps-flexed" : "check"), 50);
   // toast'ın ardından, ekranı meşgul etmeden
-  setTimeout(() => runSync(false), 2500);
+  setTimeout(() => { runSync(false); runCal(false); }, 2500);
 }
 function renderLiveBar(){
   const show = !!state.live && $("#focus").classList.contains("hidden");
@@ -1589,6 +1608,9 @@ function beep(){
 function renderBackup(){
   const last = state.lastBackup ? `Son yedek: ${Math.floor((Date.now()-state.lastBackup)/864e5) || "bugün"}${Math.floor((Date.now()-state.lastBackup)/864e5) ? " gün önce" : ""}` : "Henüz yedek alınmadı";
   $("#dataInfo").textContent = `${state.entries.length} kayıt · ${new Set(state.entries.map(e=>e.date)).size} antrenman günü · ${state.programs.length} program · ${state.body.length} ölçü · ${state.custom.length} özel hareket · ${last}`;
+  renderCalStatus();
+  // takvim onay kutusu ilk dokunuşta giriş penceresini açabilsin diye Google betiği şimdiden yüklenir
+  if (syncCanRun()) preloadGoogle().catch(() => {});
 }
 function download(name, text, type){
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
@@ -1664,46 +1686,51 @@ try { sync = { ...sync, ...JSON.parse(localStorage.getItem(SYNC_KEY) || "{}") };
 let syncBusy = false, syncNeedsAuth = false, syncErr = "";
 const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch(e){} };
 const agoText = t => { const m = Math.round((Date.now()-t)/60000); return m < 1 ? "az önce" : m < 60 ? `${m} dk önce` : m < 1440 ? `${Math.floor(m/60)} sa önce` : `${Math.floor(m/1440)} gün önce`; };
+// Drive ve Takvim işleri sırayla çalışır: Drive birleştirmesi state'i değiştirirken takvim aynı anda yazmasın
+let cloudQueue = Promise.resolve();
+const enqueue = job => (cloudQueue = cloudQueue.then(job, job));
 
 // interactive: bir dokunuşla çağrıldı; giriş gerekiyorsa pencere açılabilir.
-// Giriş penceresi engellenmesin diye requestToken ilk await'ten önce çağrılır.
-async function runSync(interactive){
-  if (!sync.on || syncBusy || !syncCanRun()) return;
-  let token = cachedToken(), tokenP = null;
+// Giriş penceresi engellenmesin diye requestToken sıraya girmeden, ilk await'ten önce çağrılır.
+function runSync(interactive){
+  if (!sync.on || syncBusy || !syncCanRun()) return Promise.resolve();
+  let token = cachedToken(DRIVE_SCOPE), tokenP = null;
   if (!token) {
-    if (!interactive || !gisReady()) { syncNeedsAuth = true; renderSyncStatus(); return; }
-    tokenP = requestToken(GOOGLE_CLIENT_ID, false);
+    if (!interactive || !gisReady()) { syncNeedsAuth = true; renderSyncStatus(); return Promise.resolve(); }
+    tokenP = requestToken(GOOGLE_CLIENT_ID, false, [DRIVE_SCOPE]);
   }
   syncBusy = true; syncErr = ""; renderSyncStatus();
-  try {
-    if (tokenP) token = await tokenP;
-    syncNeedsAuth = false;
-    stampChanges();
-    const r = await syncOnce(state, driveStore(token));
-    if (r.localChanged) {
-      // istek sürerken yapılan değişiklikler kaybolmasın: sonucu şimdiki veriyle bir kez daha birleştir
+  return enqueue(async () => {
+    try {
+      if (tokenP) token = await tokenP;
+      syncNeedsAuth = false;
       stampChanges();
-      state = mergeStates(state, r.state).state;
-      for (const k in _mCache) delete _mCache[k];
-      takeSnapshot(); save();
-      refreshDatalist(); refreshAll();
-      const n = r.stats.added + r.stats.updated + r.stats.removed;
-      toast(n ? `Drive'dan ${n} değişiklik alındı` : "Drive ile eşitlendi", "check");
+      const r = await syncOnce(state, driveStore(token));
+      if (r.localChanged) {
+        // istek sürerken yapılan değişiklikler kaybolmasın: sonucu şimdiki veriyle bir kez daha birleştir
+        stampChanges();
+        state = mergeStates(state, r.state).state;
+        for (const k in _mCache) delete _mCache[k];
+        takeSnapshot(); save();
+        refreshDatalist(); refreshAll();
+        const n = r.stats.added + r.stats.updated + r.stats.removed;
+        toast(n ? `Drive'dan ${n} değişiklik alındı` : "Drive ile eşitlendi", "check");
+      }
+      sync.last = Date.now(); saveSync();
+    } catch(e){
+      if (e instanceof AuthError) { dropScope(DRIVE_SCOPE); syncNeedsAuth = true; }
+      else syncErr = (e && e.message) || "Eşitlenemedi";
+    } finally {
+      syncBusy = false; renderSyncStatus(); renderBackupBanner();
     }
-    sync.last = Date.now(); saveSync();
-  } catch(e){
-    if (e instanceof AuthError) { forgetToken(); syncNeedsAuth = true; }
-    else syncErr = (e && e.message) || "Eşitlenemedi";
-  } finally {
-    syncBusy = false; renderSyncStatus(); renderBackupBanner();
-  }
+  });
 }
 
 // Dokunuşla çağrılmalı (giriş penceresi). Google betiği yüklü değilse önce yükler ve tekrar dokunmayı ister.
 function connectDrive(){
   if (!syncCanRun()) return;
   if (!gisReady()) { preloadGoogle().then(() => toast("Google hazır, tekrar dokun", "check"), e => toast(e.message)); return; }
-  const tokenP = requestToken(GOOGLE_CLIENT_ID, true);
+  const tokenP = requestToken(GOOGLE_CLIENT_ID, true, [DRIVE_SCOPE]);
   syncBusy = true; syncErr = ""; renderSyncStatus();
   tokenP.then(() => { sync.on = true; saveSync(); syncBusy = false; return runSync(false); })
     .catch(e => { syncBusy = false; syncErr = e.message; renderSyncStatus(); });
@@ -1735,16 +1762,107 @@ $("#syncOff").onclick = async () => {
   const ok = await choose("Google Drive bağlantısı kesilsin mi?\n\nBu cihazdaki kayıtlar yerinde kalır. Drive'daki kopya silinmez; tekrar bağlandığında yine birleştirilir.",
     [{ label: "Vazgeç", value: false }, { label: "Bağlantıyı kes", value: true, primary: true }]);
   if (!ok) return;
-  revoke(); sync = { on: false, last: 0 }; syncNeedsAuth = false; syncErr = ""; saveSync();
+  // Google'daki izni geri almak Takvim iznini de kaldırır; takvim açıksa yalnız Drive izni bırakılır
+  if (calOn()) dropScope(DRIVE_SCOPE); else revoke();
+  sync = { on: false, last: 0 }; syncNeedsAuth = false; syncErr = ""; saveSync();
   renderSyncStatus(); renderBackupBanner(); toast("Drive bağlantısı kesildi", "check");
 };
 document.addEventListener("visibilitychange", () => {
-  if (!sync.on) return;
   // geri dönünce (2 dk'dan uzun aradan sonra) güncelle; arka plana geçerken son değişiklikleri gönder
-  if (document.visibilityState === "visible") { if (Date.now() - sync.last > 2*60e3) runSync(false); else renderSyncStatus(); }
-  else runSync(false);
+  if (document.visibilityState === "visible") {
+    if (sync.on) { if (Date.now() - sync.last > 2*60e3) runSync(false); else renderSyncStatus(); }
+    runCal(false);
+  }
+  else if (sync.on) runSync(false);
 });
 setInterval(() => { if (sync.on && !syncBusy) renderSyncStatus(); }, 60e3);
+
+/* ---------- Google Takvim ----------
+   Ne yazılacağına core/calendar.ts karar verir; istemci sync/calendar.ts. Ayarlar (state.gcal) Drive ile eşitlenir.
+   Bu cihazda takvim izni yoksa sorun değil: yazılmamış antrenmanlar Drive ile diğer cihaza gider ve oradan yazılır. */
+const calOn = () => state.gcal.log || state.gcal.plan;
+let calBusy = false, calErr = "", calTimer = null;
+const timeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch(e){ return "UTC"; } };
+
+function runCal(interactive){
+  const g = state.gcal;
+  if (!syncCanRun() || calBusy || (!g.log && !g.plan && !g.planSig)) return Promise.resolve();
+  let token = cachedToken(CAL_SCOPE), tokenP = null;
+  if (!token) {
+    if (!interactive || !gisReady()) { renderCalStatus(); return Promise.resolve(); }
+    tokenP = requestToken(GOOGLE_CLIENT_ID, false, [CAL_SCOPE]);
+  }
+  calBusy = true; calErr = ""; renderCalStatus();
+  return enqueue(async () => {
+    let r = null;
+    try {
+      if (tokenP) token = await tokenP;
+      // sıra beklerken Drive birleştirmesi state'i değiştirmiş olabilir: güncel state kullanılır
+      r = await runCalendar(state, calendarClient(token), { describeProgram: progDetails, describeSession, timeZone: timeZone() });
+      sync.calLast = Date.now(); saveSync();
+      if (interactive) toast(r.written || r.planUpdated ? "Takvim güncellendi" : "Takvim zaten güncel", "calendar-days");
+    } catch(e){
+      if (e instanceof AuthError) dropScope(CAL_SCOPE);
+      else calErr = (e && e.message) || "Takvime yazılamadı";
+    } finally {
+      // yarıda kalsa da yazılanların işaretleri kaydedilir
+      save(); calBusy = false; renderCalStatus(); renderPlan();
+    }
+    // takvim kimliği ve "yazıldı" işaretleri diğer cihazlara gitsin
+    if (r && (r.written || r.created || r.planUpdated) && sync.on) runSync(false);
+  });
+}
+
+// Plan değişikliklerini topla: son değişiklikten 4 sn sonra, yalnız takvimdeki plan gerçekten eskidiyse
+function calSoon(){
+  clearTimeout(calTimer);
+  calTimer = setTimeout(() => {
+    const g = state.gcal, target = g.plan ? planSignature(state.plan, state.programs) : "";
+    if (target !== g.planSig) runCal(false);
+  }, 4000);
+}
+
+// Onay kutusu dokunuşu: izin yoksa giriş penceresi bu dokunuşta açılır
+function toggleCal(key, on){
+  if (on && !cachedToken(CAL_SCOPE)) {
+    if (!gisReady()) {
+      $(key === "log" ? "#calLog" : "#calPlan").checked = false;
+      preloadGoogle().then(() => toast("Google hazır, tekrar dokun", "check"), e => toast(e.message));
+      return;
+    }
+    const tokenP = requestToken(GOOGLE_CLIENT_ID, false, [CAL_SCOPE]);
+    state.gcal[key] = true; save(); calBusy = true; calErr = ""; renderCalStatus();
+    tokenP.then(() => { calBusy = false; return runCal(false); })
+      .catch(e => { calBusy = false; state.gcal[key] = false; save(); calErr = e.message; renderCalStatus(); });
+    return;
+  }
+  state.gcal[key] = on; save(); renderCalStatus();
+  // kapatırken takvimdeki planı silmek için izin gerekebilir; dokunuş içinde olduğumuz için pencere açılabilir
+  runCal(true);
+}
+
+function renderCalStatus(){
+  const g = state.gcal, can = syncCanRun(), on = g.log || g.plan, hasToken = !!cachedToken(CAL_SCOPE);
+  $("#calCard").classList.toggle("hidden", !GOOGLE_CLIENT_ID);
+  $("#calLog").checked = g.log; $("#calPlan").checked = g.plan;
+  $("#calLog").disabled = $("#calPlan").disabled = !can || calBusy;
+  let status = "";
+  if (!can) status = "Google Takvim için uygulamayı web adresinden aç.";
+  else if (calBusy) status = "Takvim güncelleniyor…";
+  else if (calErr) status = `Son deneme başarısız: ${calErr}`;
+  else if (!on) status = "Kapalı.";
+  else if (!hasToken) status = "Bu cihazda takvim izni yok. Takvim, izin verdiğin diğer cihazdan güncellenir; bu cihazdan da yazmak için izin ver.";
+  else status = sync.calLast ? `"Spor Defteri" takvimi · son güncelleme ${agoText(sync.calLast)}` : `"Spor Defteri" takvimine yazılıyor.`;
+  $("#calStatus").textContent = status;
+  $("#calStatus").classList.toggle("muted", !calErr);
+  $("#calAuth").classList.toggle("hidden", !can || !on || hasToken || calBusy);
+  $("#calOpen").classList.toggle("hidden", !g.id);
+}
+
+$("#calLog").onchange = e => toggleCal("log", e.target.checked);
+$("#calPlan").onchange = e => toggleCal("plan", e.target.checked);
+$("#calAuth").onclick = () => runCal(true);
+$("#calOpen").onclick = () => openUrl("https://calendar.google.com/calendar/r");
 
 /* ---------- Settings ---------- */
 const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
@@ -1845,8 +1963,9 @@ if (state.live) { state.live.items ||= []; state.live.idx ||= 0; keepAwake(true)
 // v3.1: süreli hareketlerde eskiden "tekrar" alanına yazılan saniyeleri sec alanına taşı
 { let moved = 0; state.entries.forEach(e => { if (isTimed(e.ex)) e.sets.forEach(x => { if (x.sec == null && +x.r > 0) { x.sec = +x.r; x.r = 0; delete x.rir; moved++; } }); }); if (moved) save(); }
 showTab("home"); renderLiveBar();
-renderSyncStatus();
+renderSyncStatus(); renderCalStatus();
 // Google betiği önceden yüklenir ki "bağlan" dokunuşu giriş penceresini doğrudan açabilsin
-if (syncCanRun() && (sync.on || !state.onboarded)) preloadGoogle().catch(() => {});
+if (syncCanRun() && (sync.on || calOn() || !state.onboarded)) preloadGoogle().catch(() => {});
 maybeOnboard();
-runSync(false);
+// önce Drive (başka cihazdan gelen antrenmanlar ve takvim ayarı), sonra takvim
+runSync(false); runCal(false);

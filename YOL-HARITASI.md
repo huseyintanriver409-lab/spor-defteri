@@ -29,8 +29,9 @@ src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (T
   training.ts            Hacim, 1RM, ısınma, plaka, güç puanı, kademeli yüklenme kararı
   recovery.ts            Kas toparlanması
   sync.ts                Bulut eşitleme akışı (depodan bağımsız)
+  calendar.ts            Google Takvim: neyin yazılacağı, etkinlik içerikleri, kimlikler
   dates.ts               Tarih yardımcıları
-src/sync/                Google girişi (google.ts) ve Drive dosyası (drive.ts)
+src/sync/                Google girişi (google.ts), Drive dosyası (drive.ts), Takvim istemcisi (calendar.ts)
 src/config.ts            Google istemci kimliği (.env → VITE_GOOGLE_CLIENT_ID)
 tests/                   Vitest birim testleri + smoke.browser.js (tarayıcıda elle çalıştırılan akış testi)
 public/                  Derlemeye olduğu gibi kopyalananlar: sw.js, manifest, ikonlar, index.html yönlendirmesi
@@ -113,8 +114,16 @@ Depo: `huseyintanriver409-lab/spor-defteri` (public). Yayın: https://huseyintan
 
 Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test modundaki kişisel uygulamalar için normaldir: **Devam**'a bas.
 
-**Sıradaki:**
-- **Takvim:** Antrenman bitince takvime otomatik etkinlik yazılır. Takvimdeki planlı antrenmanlar uygulamada görünür (ek kapsam: `calendar.events`).
+**Google Takvim (2026-11-01):**
+- Kapsam `calendar.app.created`: uygulama kendi "Spor Defteri" takvimini oluşturur ve yalnız ona yazar; kullanıcının diğer takvimlerini ve etkinliklerini göremez.
+- **Biten antrenmanlar:** gerçek başlangıç/bitiş saatiyle, set özeti ve toplam hacimle etkinlik olur. Yazılan oturuma `cal: 1` işareti konur ve Drive ile eşitlenir; takvim izni tek cihazda olsa da bütün cihazların antrenmanları o cihazdan yazılır. Açılınca son 30 gün geriye yazılır (çalıştırma başına en fazla 20).
+- **Haftalık plan:** her gün için haftalık tekrarlayan (RRULE), plandaki hatırlatma süresiyle bildirimli etkinlik. Plan, süre, hatırlatma ya da programlar değişince 4 sn sonra yeniden yazılır; plandan çıkan günler silinir. Bu, PWA'nın kendisinde olmayan telefon bildirimini de sağlar.
+- Etkinlik kimlikleri kayıttan türetilir (base32hex): iki cihaz aynı oturumu yazsa da tek etkinlik olur. Önce güncellenir (PUT), yoksa oluşturulur; takvim Google'da silinmişse yeniden oluşturulur.
+- Ayarlar `state.gcal` (log, plan, takvim kimliği, planSig) Drive ile eşitlenir. Drive ve Takvim işleri tek sırada çalışır.
+- Kurulum: Cloud projesinde **Google Calendar API** etkin olmalı.
+- Testler: `tests/calendar.test.ts` (27 test).
+
+**Sıradaki (isteğe bağlı):** Takvimde elle taşınan/eklenen antrenmanları uygulamada göstermek (takvimden okuma).
 
 ## Faz 5 — Mağazalar (isteğe bağlı)
 

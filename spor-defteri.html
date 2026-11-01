@@ -367,6 +367,19 @@
           <button class="btn quiet" id="syncOff">Bağlantıyı kes</button>
         </div>
       </div>
+      <div class="card hidden" id="calCard">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg></span>Google Takvim</h2>
+        <p class="muted" style="margin-top:-4px">Google Takvim'inde uygulamaya ait bir "Spor Defteri" takvimi oluşturulur ve yalnız ona yazılır. Uygulama diğer takvimlerini ve etkinliklerini göremez.</p>
+        <div style="display:grid;gap:14px;margin:4px 0 6px">
+          <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="calLog"><span>Biten antrenmanları takvime yaz</span></label>
+          <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="calPlan"><span>Haftalık planı hatırlatmalı etkinlik olarak koy</span></label>
+        </div>
+        <p id="calStatus" class="small"></p>
+        <div class="row">
+          <button class="btn primary" id="calAuth"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg>Bu cihazda izin ver</button>
+          <button class="btn quiet" id="calOpen">Google Takvim'i aç</button>
+        </div>
+      </div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg></span>Yedekleme</h2>
         <p class="muted" style="margin-top:-4px">Veriler bu tarayıcıda saklanır. Tarayıcı verisini silersen kayıtlar da silinir; ara sıra yedek al.</p>

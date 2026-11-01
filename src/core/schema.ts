@@ -18,21 +18,25 @@ export type State = {
 };
 
 export const DEFAULT_PLAN = () => ({ days: {}, dur: 60, remind: 30 });
+// Google Takvim: log = biten antrenmanları yaz, plan = haftalık planı tekrarlayan etkinlik olarak koy,
+// id = uygulamanın oluşturduğu "Spor Defteri" takviminin kimliği, planSig = takvimdeki planın imzası.
+// Ayarlarla birlikte eşitlenir; böylece cihazlar aynı takvimi kullanır ve plan bir kez yazılır.
+export const DEFAULT_GCAL = () => ({ log: false, plan: false, id: "", planSig: "" });
 export const DEFAULTS = (): State => ({ v: SCHEMA, deviceId: "", entries: [], custom: [], programs: [], active: null, body: [], profile: { sex: "m", bw: "" }, rest: 90, plan: DEFAULT_PLAN(),
   exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
-  exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true }, favs: [], onboarded: false });
+  exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true }, favs: [], onboarded: false, gcal: DEFAULT_GCAL() });
 
 export const COLLECTIONS: Record<"entries" | "programs" | "sessions" | "body" | "custom", (x: Stamped) => string> = {
   entries: x => x.id, programs: x => x.id, sessions: x => x.id, body: x => x.date, custom: x => x.name,
 };
 type Coll = keyof typeof COLLECTIONS;
 const collNames = Object.keys(COLLECTIONS) as Coll[];
-export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs"];
+export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal"];
 
 // eksik alanları varsayılanlarla tamamlar ve eski şemaları yükseltir (eski kayıtlar ve yedekler için)
 export function withDefaults(s: any): State {
   const d = DEFAULTS();
-  const out: State = { ...d, ...s, profile: { ...d.profile, ...(s.profile || {}) }, plan: { ...d.plan, ...(s.plan || {}) }, prefs: { ...d.prefs, ...(s.prefs || {}) } };
+  const out: State = { ...d, ...s, profile: { ...d.profile, ...(s.profile || {}) }, plan: { ...d.plan, ...(s.plan || {}) }, prefs: { ...d.prefs, ...(s.prefs || {}) }, gcal: { ...d.gcal, ...(s.gcal || {}) } };
   for (const c of collNames) if (!Array.isArray(out[c])) out[c] = [];
   if (!Array.isArray(out.deleted)) out.deleted = [];
   if (!(s.v >= 2)) {
