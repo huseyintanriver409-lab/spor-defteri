@@ -28,7 +28,10 @@ src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (T
   schema.ts              Veri modeli, damgalama, mergeStates
   training.ts            Hacim, 1RM, ısınma, plaka, güç puanı, kademeli yüklenme kararı
   recovery.ts            Kas toparlanması
+  sync.ts                Bulut eşitleme akışı (depodan bağımsız)
   dates.ts               Tarih yardımcıları
+src/sync/                Google girişi (google.ts) ve Drive dosyası (drive.ts)
+src/config.ts            Google istemci kimliği (.env → VITE_GOOGLE_CLIENT_ID)
 tests/                   Vitest birim testleri + smoke.browser.js (tarayıcıda elle çalıştırılan akış testi)
 public/                  Derlemeye olduğu gibi kopyalananlar: sw.js, manifest, ikonlar, index.html yönlendirmesi
 .github/workflows/       main'e gönderimde test → derleme → GitHub Pages yayını
@@ -91,14 +94,27 @@ Depo: `huseyintanriver409-lab/spor-defteri` (public). Yayın: https://huseyintan
 - **IndexedDB**'ye geçiş (localStorage'ın ~5 MB sınırı yerine). Göç, şema sürümüyle (`v: 3`) otomatik yapılır; eski veri silinmeden önce IndexedDB'de doğrulanmalı. Veri kaybı riski taşıdığı için ayrı ve dikkatli bir adım.
 - `app.js`'e kademeli olarak tip kontrolü (`// @ts-check`, sonra `.ts`).
 
-## Faz 4 — Google entegrasyonu
+## Faz 4 — Google entegrasyonu (Drive senkronizasyonu yazıldı; istemci kimliği bekleniyor)
 
-**Gereken:** Google Cloud projesi ve OAuth istemci kimliği (adım adım yapılacak, ücretsiz). Uygulama Faz 2'deki https adresinden çalışmalı.
+**Yapıldı (2026-11-01):**
+- **Giriş:** Google Identity Services, yalnızca tarayıcıda; sunucu yok (`src/sync/google.ts`). Kapsam yalnız `drive.appdata`. Erişim anahtarı ~1 saat geçerli; süresi dolunca başlıkta "eşitlemek için dokun" çıkar.
+- **Drive senkronizasyonu:** Veriler Drive'daki gizli uygulama klasöründe (`appDataFolder`) tek bir `spor-defteri.json` dosyasında (`src/sync/drive.ts`). Akış `src/core/sync.ts`: indir → `mergeStates` → farklıysa yükle. Cihaza özel alanlar (canlı antrenman, taslak, aktif program, cihaz kimliği) gönderilmez.
+- **Ne zaman:** açılışta, antrenman bitince, uygulamaya dönünce / arka plana geçerken, "Şimdi eşitle"de. Ağ isteği sürerken yapılan değişiklikler sonuç yeniden birleştirilerek korunur.
+- **Yeni cihaz:** ilk açılışta "Başka cihazda kullanıyorum: Drive'dan getir" başlangıç programı oluşturmadan bağlanır (aksi halde programlar iki kez oluşurdu).
+- Drive'a bağlı ve son 10 günde eşitlenmişse "yedek al" hatırlatması gösterilmez.
+- Testler: `tests/sync.test.ts` (iki cihaz senaryoları, silme, cihaza özel alanlar, eşzamanlı değişiklik, bozuk dosya, Drive istek biçimi, 401/403). Arayüz akışı tarayıcıda sahte Google ve sahte Drive ile uçtan uca denendi.
 
-- **Giriş:** Google Identity Services, yalnızca tarayıcıda; sunucu gerekmez.
-- **Drive senkronizasyonu:** Veriler Drive'daki gizli uygulama klasöründe (`appDataFolder`) tutulur. Açılışta ve kayıttan sonra `mergeStates` ile birleştirilir. Çevrimdışıyken yerelde çalışır, internet gelince eşitlenir.
-- **Takvim:** Antrenman bitince takvime otomatik etkinlik yazılır. Takvimdeki planlı antrenmanlar uygulamada görünür.
-- Uygulama kişisel kullanımda "test" modunda kalır. Google doğrulamasına gerek yoktur (100 test kullanıcısına kadar).
+**İstemci kimliği kurulumu (bir kez, ücretsiz):**
+1. https://console.cloud.google.com → yeni proje (ör. "Spor Defteri").
+2. **API'ler ve Hizmetler → Kitaplık → Google Drive API → Etkinleştir.**
+3. **OAuth izin ekranı (Google Auth Platform):** Kullanıcı türü **Harici**; uygulama adı "Spor Defteri", destek e-postası. **Kitle → Test kullanıcıları**na kendi Gmail adresini ekle. Uygulama "Test" durumunda kalır, Google doğrulaması gerekmez (100 test kullanıcısına kadar).
+4. **Kimlik bilgileri → Kimlik bilgisi oluştur → OAuth istemci kimliği → Web uygulaması.** **Yetkili JavaScript kaynakları:** `https://huseyintanriver409-lab.github.io` ve geliştirme için `http://localhost:8765`. Yönlendirme URI'si gerekmez.
+5. Çıkan `....apps.googleusercontent.com` kimliğini `.env` dosyasına `VITE_GOOGLE_CLIENT_ID=` olarak yaz (`.env.example`'a bak), commit'le ve gönder. GitHub'daki derleme `.env`'i kendiliğinden okur.
+
+Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test modundaki kişisel uygulamalar için normaldir: **Devam**'a bas.
+
+**Sıradaki:**
+- **Takvim:** Antrenman bitince takvime otomatik etkinlik yazılır. Takvimdeki planlı antrenmanlar uygulamada görünür (ek kapsam: `calendar.events`).
 
 ## Faz 5 — Mağazalar (isteğe bağlı)
 

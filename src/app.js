@@ -2,6 +2,10 @@ import { MONTHS, DAYS, pad, ymd, parse, niceDate, shortDate, mondayOf } from "./
 import { DEFAULTS, withDefaults, mergeStates, takeSnapshot as snapshotOf, stampChanges as stampState } from "./core/schema.ts";
 import { work, volume, e1rm, warmupSets, platesFor as platesForCore, liftScore, repRange, overloadDecision } from "./core/training.ts";
 import { recoveryMap as recoveryMapCore } from "./core/recovery.ts";
+import { syncOnce } from "./core/sync.ts";
+import { driveStore, AuthError } from "./sync/drive.ts";
+import { cachedToken, preload as preloadGoogle, gisReady, requestToken, forgetToken, revoke } from "./sync/google.ts";
+import { GOOGLE_CLIENT_ID } from "./config.ts";
 
 const LIB = {
   "Göğüs": ["Bench Press (Barbell)","Dumbbell Bench Press","Incline Bench Press","Incline Dumbbell Press","Decline Bench Press","Decline Dumbbell Press","Smith Machine Bench Press","Smith Machine Incline Press","Chest Press Makinesi","Incline Chest Press Makinesi","Dumbbell Fly","Incline Dumbbell Fly","Pec Deck (Butterfly)","Cable Crossover","Low-to-High Cable Fly","High-to-Low Cable Fly","Dips (Göğüs)","Şınav (Push-up)","Incline Şınav","Decline Şınav","Dumbbell Pullover","Landmine Press","Svend Press","Floor Press"],
@@ -1020,6 +1024,8 @@ async function finishWorkout(){
   stopTimer(); keepAwake(false); buzz([40, 60, 40]);
   closeFocus(); showTab("home");
   setTimeout(() => toast(n ? `Antrenman bitti · ${durText(end - start)} · ${n} set · ${fmt(vol)} kg` : "Antrenman kapatıldı", n ? "biceps-flexed" : "check"), 50);
+  // toast'ın ardından, ekranı meşgul etmeden
+  setTimeout(() => runSync(false), 2500);
 }
 function renderLiveBar(){
   const show = !!state.live && $("#focus").classList.contains("hidden");
@@ -1613,7 +1619,9 @@ $("#csvBtn").onclick = () => {
 function renderBackupBanner(){
   const first = state.entries.reduce((m,e) => Math.min(m, e.ts||Infinity), Infinity);
   const since = state.lastBackup || first, days = Math.floor((Date.now() - since)/864e5);
-  const show = state.entries.length >= 3 && isFinite(since) && days >= 10 && Date.now() > state.backupSnooze;
+  // Drive'a son 10 günde eşitlendiyse veriler zaten güvende; yedek hatırlatması gösterilmez
+  const synced = sync.on && Date.now() - sync.last < 10*864e5;
+  const show = !synced && state.entries.length >= 3 && isFinite(since) && days >= 10 && Date.now() > state.backupSnooze;
   $("#backupBanner").classList.toggle("hidden", !show);
   if (show) $("#backupMsg").innerHTML = state.lastBackup ? `${ic("save")} Son yedeğin <b>${days} gün</b> önce alındı. Verilerin sadece bu tarayıcıda; yedek almanı öneririm.` : `${ic("save")} Henüz hiç yedek almadın. Verilerin sadece bu tarayıcıda duruyor.`;
 }
@@ -1644,6 +1652,99 @@ $("#importFile").onchange = async ev => {
   } catch(e){ toast("Geçersiz yedek dosyası"); }
   finally { ev.target.value = ""; }
 };
+
+/* ---------- Google Drive senkronizasyonu ----------
+   Birleştirme akışı core/sync.ts, Drive dosyası sync/drive.ts, giriş sync/google.ts içinde.
+   Eşitleme durumu cihaza özeldir; state'e değil ayrı bir anahtara yazılır, böylece kendisi eşitlenmez.
+   Ne zaman eşitlenir: açılışta, antrenman bitince, uygulamaya dönülünce ya da arka plana geçerken, "Şimdi eşitle"de. */
+const SYNC_KEY = "sporDefteri.sync";
+const syncCanRun = () => !!GOOGLE_CLIENT_ID && /^https?:$/.test(location.protocol);
+let sync = { on: false, last: 0 };
+try { sync = { ...sync, ...JSON.parse(localStorage.getItem(SYNC_KEY) || "{}") }; } catch(e){}
+let syncBusy = false, syncNeedsAuth = false, syncErr = "";
+const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch(e){} };
+const agoText = t => { const m = Math.round((Date.now()-t)/60000); return m < 1 ? "az önce" : m < 60 ? `${m} dk önce` : m < 1440 ? `${Math.floor(m/60)} sa önce` : `${Math.floor(m/1440)} gün önce`; };
+
+// interactive: bir dokunuşla çağrıldı; giriş gerekiyorsa pencere açılabilir.
+// Giriş penceresi engellenmesin diye requestToken ilk await'ten önce çağrılır.
+async function runSync(interactive){
+  if (!sync.on || syncBusy || !syncCanRun()) return;
+  let token = cachedToken(), tokenP = null;
+  if (!token) {
+    if (!interactive || !gisReady()) { syncNeedsAuth = true; renderSyncStatus(); return; }
+    tokenP = requestToken(GOOGLE_CLIENT_ID, false);
+  }
+  syncBusy = true; syncErr = ""; renderSyncStatus();
+  try {
+    if (tokenP) token = await tokenP;
+    syncNeedsAuth = false;
+    stampChanges();
+    const r = await syncOnce(state, driveStore(token));
+    if (r.localChanged) {
+      // istek sürerken yapılan değişiklikler kaybolmasın: sonucu şimdiki veriyle bir kez daha birleştir
+      stampChanges();
+      state = mergeStates(state, r.state).state;
+      for (const k in _mCache) delete _mCache[k];
+      takeSnapshot(); save();
+      refreshDatalist(); refreshAll();
+      const n = r.stats.added + r.stats.updated + r.stats.removed;
+      toast(n ? `Drive'dan ${n} değişiklik alındı` : "Drive ile eşitlendi", "check");
+    }
+    sync.last = Date.now(); saveSync();
+  } catch(e){
+    if (e instanceof AuthError) { forgetToken(); syncNeedsAuth = true; }
+    else syncErr = (e && e.message) || "Eşitlenemedi";
+  } finally {
+    syncBusy = false; renderSyncStatus(); renderBackupBanner();
+  }
+}
+
+// Dokunuşla çağrılmalı (giriş penceresi). Google betiği yüklü değilse önce yükler ve tekrar dokunmayı ister.
+function connectDrive(){
+  if (!syncCanRun()) return;
+  if (!gisReady()) { preloadGoogle().then(() => toast("Google hazır, tekrar dokun", "check"), e => toast(e.message)); return; }
+  const tokenP = requestToken(GOOGLE_CLIENT_ID, true);
+  syncBusy = true; syncErr = ""; renderSyncStatus();
+  tokenP.then(() => { sync.on = true; saveSync(); syncBusy = false; return runSync(false); })
+    .catch(e => { syncBusy = false; syncErr = e.message; renderSyncStatus(); });
+}
+
+function renderSyncStatus(){
+  let sub = "Çevrimdışı · veriler bu cihazda";
+  if (sync.on) sub = syncBusy ? "Drive ile eşitleniyor…" : syncNeedsAuth ? "Drive: eşitlemek için dokun" : syncErr ? "Drive: eşitlenemedi, dokun" : sync.last ? `Drive ile eşitlendi · ${agoText(sync.last)}` : "Google Drive'a bağlı";
+  $("#brandSub").textContent = sub;
+  $("#brandSub").classList.toggle("tap", sync.on && !syncBusy && (syncNeedsAuth || !!syncErr));
+  const can = syncCanRun();
+  let status = "";
+  if (!GOOGLE_CLIENT_ID) status = "Kurulum bekleniyor: Google istemci kimliği henüz eklenmedi (YOL-HARITASI.md, Faz 4).";
+  else if (!can) status = "Senkronizasyon için uygulamayı web adresinden aç (dosyadan açınca Google girişi çalışmaz).";
+  else if (!sync.on) status = syncBusy ? "Google'a bağlanılıyor…" : syncErr ? `Bağlanılamadı: ${syncErr}` : "Bağlı değil.";
+  else status = syncBusy ? "Eşitleniyor…" : syncNeedsAuth ? "Google oturumunun süresi doldu. Eşitlemek için \"Şimdi eşitle\"ye dokun." : syncErr ? `Son deneme başarısız: ${syncErr}` : sync.last ? `Son eşitleme: ${agoText(sync.last)}` : "Bağlı, henüz eşitlenmedi.";
+  $("#syncStatus").textContent = status;
+  $("#syncStatus").classList.toggle("muted", !syncErr);
+  $("#syncConnect").classList.toggle("hidden", !can || sync.on);
+  $("#syncNow").classList.toggle("hidden", !can || !sync.on);
+  $("#syncOff").classList.toggle("hidden", !sync.on);
+  $("#syncConnect").disabled = $("#syncNow").disabled = syncBusy;
+}
+
+$("#syncConnect").onclick = connectDrive;
+$("#syncNow").onclick = () => runSync(true);
+$("#brandSub").onclick = () => { if (sync.on && !syncBusy && (syncNeedsAuth || syncErr)) runSync(true); };
+$("#syncOff").onclick = async () => {
+  const ok = await choose("Google Drive bağlantısı kesilsin mi?\n\nBu cihazdaki kayıtlar yerinde kalır. Drive'daki kopya silinmez; tekrar bağlandığında yine birleştirilir.",
+    [{ label: "Vazgeç", value: false }, { label: "Bağlantıyı kes", value: true, primary: true }]);
+  if (!ok) return;
+  revoke(); sync = { on: false, last: 0 }; syncNeedsAuth = false; syncErr = ""; saveSync();
+  renderSyncStatus(); renderBackupBanner(); toast("Drive bağlantısı kesildi", "check");
+};
+document.addEventListener("visibilitychange", () => {
+  if (!sync.on) return;
+  // geri dönünce (2 dk'dan uzun aradan sonra) güncelle; arka plana geçerken son değişiklikleri gönder
+  if (document.visibilityState === "visible") { if (Date.now() - sync.last > 2*60e3) runSync(false); else renderSyncStatus(); }
+  else runSync(false);
+});
+setInterval(() => { if (sync.on && !syncBusy) renderSyncStatus(); }, 60e3);
 
 /* ---------- Settings ---------- */
 const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
@@ -1700,7 +1801,8 @@ function maybeOnboard(){
      <div class="pk-head">Başlangıç programı</div><div class="optgrid" id="obProg">${[["ppl","Push / Pull / Legs"],["ul","Üst / Alt vücut"],["fb","Tüm vücut"],["s5","5x5 güç"],["none","Kendim oluşturacağım"]].map(([k,l]) => `<button class="fchip${k===starter?" on":""}" data-v="${k}">${l}</button>`).join("")}</div>
      <p class="muted small" style="margin-top:16px">Seçtiğin program haftalık planına yerleşir; istediğin zaman değiştirebilirsin.</p>
      <button class="btn primary xl" id="obGo" style="margin-top:6px">Başla${ic("arrow-right")}</button>
-     <button class="ghost" id="obSkip" style="width:100%;justify-content:center;margin-top:6px">Şimdilik atla</button>`,
+     <button class="ghost" id="obSkip" style="width:100%;justify-content:center;margin-top:6px">Şimdilik atla</button>
+     ${syncCanRun() ? `<button class="ghost" id="obDrive" style="width:100%;justify-content:center;margin-top:2px">${ic("cloud")}Başka cihazda kullanıyorum: Drive'dan getir</button>` : ""}`,
     () => { state.onboarded = true; save(); });
   const pick = (id, set) => $(id).querySelectorAll("button").forEach(b => b.onclick = () => { set(b.dataset.v); $(id).querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); buzz(5); });
   pick("#obGoal", v => goal = +v); pick("#obProg", v => starter = v);
@@ -1711,6 +1813,8 @@ function maybeOnboard(){
     state.onboarded = true; save(); closeSheet(); refreshAll(); toast("Hazırsın! Bugün ekranından başla", "biceps-flexed");
   };
   $("#obSkip").onclick = closeSheet;
+  // başlangıç programı oluşturmadan bağlanır; yoksa programlar iki cihazda farklı kimlikle iki kez oluşur
+  if ($("#obDrive")) $("#obDrive").onclick = () => { closeSheet(); connectDrive(); };
 }
 
 /* ---------- Accessibility ----------
@@ -1741,4 +1845,8 @@ if (state.live) { state.live.items ||= []; state.live.idx ||= 0; keepAwake(true)
 // v3.1: süreli hareketlerde eskiden "tekrar" alanına yazılan saniyeleri sec alanına taşı
 { let moved = 0; state.entries.forEach(e => { if (isTimed(e.ex)) e.sets.forEach(x => { if (x.sec == null && +x.r > 0) { x.sec = +x.r; x.r = 0; delete x.rir; moved++; } }); }); if (moved) save(); }
 showTab("home"); renderLiveBar();
+renderSyncStatus();
+// Google betiği önceden yüklenir ki "bağlan" dokunuşu giriş penceresini doğrudan açabilsin
+if (syncCanRun() && (sync.on || !state.onboarded)) preloadGoogle().catch(() => {});
 maybeOnboard();
+runSync(false);
