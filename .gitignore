@@ -1,0 +1,7 @@
+# Yayın paketleri (kaynaktan yeniden üretilir)
+*.zip
+
+# İşletim sistemi
+Thumbs.db
+desktop.ini
+.DS_Store
