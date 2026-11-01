@@ -16,18 +16,34 @@ Bu hedefler için en uygun yol, **tek bir web kod tabanından bütün platformla
 
 Alternatif olarak Android için Kotlin ve Windows için C# ile ayrı yerel uygulamalar yazılabilirdi. Ama aynı uygulama üç kez yazılır, her özellik üç kez eklenir. Flutter ya da React Native gibi çapraz platform çatıları da mümkün, fakat mevcut kodun baştan yazılmasını gerektirir. Bu uygulamanın ihtiyaçları (form, liste, grafik, çevrimdışı veri, Google API) web teknolojisiyle eksiksiz karşılanıyor.
 
-**Değişmesi gereken teknoloji değil, yapı.** Bugünkü "her şey tek HTML dosyasında" düzeni başlangıç için ideal, ancak büyüdükçe bakımı zorlaşır (şu an ~1.800 satır). Aşağıdaki fazlar bunu adım adım çözüyor.
+**Değişmesi gereken teknoloji değil, yapı.** "Her şey tek HTML dosyasında" düzeni başlangıç için idealdi, ancak büyüdükçe bakımı zorlaşıyordu (~1.800 satır JS). Faz 3 ile kaynak bölündü; kullanıcıya giden çıktı yine tek dosya.
 
-## Şu anki durum (Faz 1 — tamamlandı)
+## Şu anki durum (Faz 1, 2 tamamlandı; Faz 3 ilk adım tamamlandı)
 
 ```
-spor-defteri.html      Uygulamanın tamamı (tek dosya, çevrimdışı; dosyaya çift tıklayınca da çalışır)
-index.html             Web sitesinin giriş sayfası → spor-defteri.html'e yönlendirir
-manifest.webmanifest   PWA tanımı (ad, ikon, renkler)
-sw.js                  Service worker: çevrimdışı önbellek
-icons/                 Uygulama ikonları (192, 512, maskable, Apple)
-YOL-HARITASI.md        Bu belge
+spor-defteri.html        HTML iskeleti (Vite girişi)
+src/app.js               Arayüz ve uygulama akışı (ES modülü)
+src/styles.css           "Atletik" tasarım sistemi, gömülü Inter yazı tipi
+src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (TypeScript)
+  schema.ts              Veri modeli, damgalama, mergeStates
+  training.ts            Hacim, 1RM, ısınma, plaka, güç puanı, kademeli yüklenme kararı
+  recovery.ts            Kas toparlanması
+  dates.ts               Tarih yardımcıları
+tests/                   Vitest birim testleri + smoke.browser.js (tarayıcıda elle çalıştırılan akış testi)
+public/                  Derlemeye olduğu gibi kopyalananlar: sw.js, manifest, ikonlar, index.html yönlendirmesi
+.github/workflows/       main'e gönderimde test → derleme → GitHub Pages yayını
+YOL-HARITASI.md          Bu belge
 ```
+
+**Komutlar** (Node.js gerekir):
+
+| Komut | Ne yapar |
+|---|---|
+| `npm install` | Bağımlılıkları kurar (ilk seferde) |
+| `npm run dev` | Geliştirme sunucusu: http://localhost:8765/spor-defteri.html, kaydedince sayfa yenilenir |
+| `npm test` | Birim testleri |
+| `npm run typecheck` | TypeScript tip kontrolü |
+| `npm run build` | `dist/spor-defteri.html`: CSS ve JS gömülü tek dosya; çift tıklayınca da çalışır |
 
 ### Veri modeli (şema v2, senkronizasyona hazır)
 
@@ -52,26 +68,28 @@ Platformdan bağımsız, kendi tasarım dilimiz. Material 3 ya da iOS dili kulla
 - **Ekranlar:** Bugün, Antrenman (Programlar / Elle kayıt / Haftalık plan), Geçmiş (aylık takvim), İlerleme (Hafta / Hareket / Rekorlar / Kaslar / Güç / Vücut), Profil (Ayarlar / Hareketler / Araçlar / Yedek). Canlı antrenman tam ekran açılır (`#focus`).
 - **UX kuralları:** Silme işlemleri onay sormaz, 5 saniye "Geri al" sunar. Canlı antrenmanda her set anında kaydedilir. Ekran açık tutulur (Wake Lock). Dokunuşlar kısa titreşimle onaylanır (ayarlardan kapatılabilir).
 
-## Faz 2 — Yayına alma ve cihazlara kurulum
+## Faz 2 — Yayına alma ve cihazlara kurulum (tamamlandı)
 
-**Gereken:** GitHub hesabı (ücretsiz).
+Depo: `huseyintanriver409-lab/spor-defteri` (public). Yayın: https://huseyintanriver409-lab.github.io/spor-defteri/
 
-1. Bu klasörü bir GitHub deposuna koy.
-2. GitHub Pages'i aç. Uygulama `https://<kullanıcı>.github.io/spor-defteri/` adresinde yayınlanır.
-3. Android'de Chrome ile bu adresi aç, "Uygulamayı yükle"ye bas. Windows'ta Edge ile aç, "Uygulama olarak yükle"ye bas. İkisi de çevrimdışı çalışır.
-4. Her güncellemeden sonra `sw.js` içindeki `CACHE` sürüm adını artır (`spor-defteri-v2` gibi).
+1. Pages kaynağı **GitHub Actions** (Settings → Pages → Source). `main`'e gönderilen her değişiklik `.github/workflows/pages.yml` ile test edilip derlenir ve yayınlanır. Test başarısızsa yayın yapılmaz.
+2. Android'de Chrome ile adresi aç, "Uygulamayı yükle"ye bas. Windows'ta Edge ile aç, "Uygulama olarak yükle"ye bas. İkisi de çevrimdışı çalışır.
+3. Her güncellemede `public/sw.js` içindeki `CACHE` sürüm adını artır (`spor-defteri-v7` gibi).
 
 **Dikkat:** Her kurulumun (telefon, bilgisayar, tarayıcı) verisi kendi içinde durur. Faz 4'e kadar cihazlar arası aktarım "Yedek → Birleştir" ile yapılır.
 
-## Faz 3 — Kod tabanını büyümeye hazırlamak
+## Faz 3 — Kod tabanını büyümeye hazırlamak (devam ediyor)
 
-**Gereken:** Bilgisayara Node.js kurulumu.
+**Yapıldı (2026-11-01):**
+- **Vite** ile proje yapısı; derleme yine tek bir çevrimdışı HTML üretiyor (`vite-plugin-singlefile`). Kullanıcı açısından hiçbir şey değişmedi: adresler, veri anahtarı (`sporDefteri.v1`) ve davranış aynı.
+- Saf mantık `src/core/` altında **TypeScript** modüllerine çıkarıldı (veri modeli, birleştirme, kademeli yüklenme, toparlanma, ısınma, plaka, güç puanı). Arayüz kodu bu fonksiyonları ince sarmalayıcılarla çağırıyor.
+- **Testler (Vitest):** `mergeStates` (değişmelilik, mezar taşları, ayarlar, cihaza özel alanlar, v1 yedekleri), damgalama, kademeli yüklenme kararları, toparlanma, ısınma, plaka ve güç puanı için 41 test. Testlerin gerçekten hata yakaladığı, koda bilerek hata konarak denendi.
 
-- **Vite** ile proje yapısı: `src/` altında modüller (`data/`, `log/`, `programs/`, `stats/`, `tools/`, `sync/`).
-- **TypeScript**'e kademeli geçiş. Veri modeli tiplerle tanımlanır, hatalar derleme sırasında yakalanır.
-- **IndexedDB**'ye geçiş (localStorage'ın ~5 MB sınırı yerine). Yıllarca kayıt için güvenli alan sağlar. Göç, şema sürümüyle (`v: 3`) otomatik yapılır.
-- **Testler:** Önce `mergeStates`, kademeli yüklenme, rekor ve toparlanma hesapları için birim testleri (Vitest).
-- Derleme yine tek bir çevrimdışı çıktı (veya PWA) üretir. Kullanıcı açısından hiçbir şey değişmez.
+**Sıradaki adımlar:**
+- `src/app.js`'i ekranlara göre modüllere bölmek (`log/`, `programs/`, `stats/`, `tools/`). Bunun ön koşulu, global `state`'i tek bir `store` modülünden dışa aktarmak.
+- Rekor hesaplarını (`renderRecords` içindeki) `core/`'a çıkarıp test etmek.
+- **IndexedDB**'ye geçiş (localStorage'ın ~5 MB sınırı yerine). Göç, şema sürümüyle (`v: 3`) otomatik yapılır; eski veri silinmeden önce IndexedDB'de doğrulanmalı. Veri kaybı riski taşıdığı için ayrı ve dikkatli bir adım.
+- `app.js`'e kademeli olarak tip kontrolü (`// @ts-check`, sonra `.ts`).
 
 ## Faz 4 — Google entegrasyonu
 
@@ -94,3 +112,5 @@ Platformdan bağımsız, kendi tasarım dilimiz. Material 3 ya da iOS dili kulla
 - Yeni bir kayıt türü eklenirse `COLLECTIONS` içine kalıcı bir anahtarla eklenir. Damgalama ve birleştirme otomatik çalışır.
 - Cihaza özel geçici durum (açık ekran, taslak) `mergeStates` sonunda yerelden korunur.
 - Kullanıcı metni HTML'e her zaman `esc()` ile basılır.
+- Tarayıcıya ve `state`'e bağlı olmayan yeni hesaplar `src/core/` altına yazılır ve `tests/` altında test edilir.
+- Göndermeden önce: `npm test`, `npm run typecheck`, `npm run build`; arayüz değiştiyse `tests/smoke.browser.js`.

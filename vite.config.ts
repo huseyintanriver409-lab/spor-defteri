@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
 // Çıktı yine tek bir çevrimdışı HTML dosyası: spor-defteri.html (CSS ve JS içine gömülü).

@@ -1,3 +1,8 @@
+import { MONTHS, DAYS, pad, ymd, parse, niceDate, shortDate, mondayOf } from "./core/dates.ts";
+import { DEFAULTS, withDefaults, mergeStates, takeSnapshot as snapshotOf, stampChanges as stampState } from "./core/schema.ts";
+import { work, volume, e1rm, warmupSets, platesFor as platesForCore, liftScore, repRange, overloadDecision } from "./core/training.ts";
+import { recoveryMap as recoveryMapCore } from "./core/recovery.ts";
+
 const LIB = {
   "Göğüs": ["Bench Press (Barbell)","Dumbbell Bench Press","Incline Bench Press","Incline Dumbbell Press","Decline Bench Press","Decline Dumbbell Press","Smith Machine Bench Press","Smith Machine Incline Press","Chest Press Makinesi","Incline Chest Press Makinesi","Dumbbell Fly","Incline Dumbbell Fly","Pec Deck (Butterfly)","Cable Crossover","Low-to-High Cable Fly","High-to-Low Cable Fly","Dips (Göğüs)","Şınav (Push-up)","Incline Şınav","Decline Şınav","Dumbbell Pullover","Landmine Press","Svend Press","Floor Press"],
   "Sırt": ["Barfiks (Pull-up)","Chin-up","Ağırlıklı Barfiks","Asistanlı Barfiks Makinesi","Lat Pulldown (Geniş)","Lat Pulldown (Dar / V-Bar)","Tek Kol Lat Pulldown","Seated Cable Row","Barbell Row","Pendlay Row","Dumbbell Row (Tek Kol)","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Inverted Row","Straight-Arm Pulldown","Dumbbell Pullover (Sırt)","Deadlift","Rack Pull","Back Extension (Hiperekstansiyon)","Good Morning","Barbell Shrug","Dumbbell Shrug","Superman"],
@@ -18,70 +23,15 @@ const $ = s => document.querySelector(s);
 const ic = (n, cls = "") => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = n => (Math.round(n*10)/10).toLocaleString("tr-TR");
-const pad = n => String(n).padStart(2,"0");
-const ymd = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
-const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
-const MONTHS = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
-const DAYS = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
-const niceDate = s => { const d = parse(s); return d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+", "+DAYS[d.getDay()]; };
-const shortDate = s => { const d = parse(s); return d.getDate()+" "+MONTHS[d.getMonth()]; };
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 /* ---------- Data layer ----------
-   Senkronizasyona hazır veri modeli (şema v2):
-   - Her kayıt koleksiyonunda kalıcı bir anahtar var (COLLECTIONS) ve her kayıt son değiştiği anı "u" alanında taşır.
-   - Silinen kayıtlar "deleted" listesine mezar taşı olarak yazılır; böylece iki cihaz birleştirilirken silinen kayıt geri dirilmez.
-   - Ayarlar tek parça olarak "settingsU" zamanıyla tutulur (son yazan kazanır).
+   Veri modeli, damgalama ve birleştirme core/schema.ts içinde (bkz. YOL-HARITASI.md "Veri modeli").
    Damgalama save() içinde merkezi olarak yapılır: her kayıt bir önceki kaydedilen haliyle karşılaştırılır. */
-const SCHEMA = 2;
-const DEFAULT_PLAN = () => ({ days: {}, dur: 60, remind: 30 });
-const DEFAULTS = () => ({ v: SCHEMA, deviceId: "", entries: [], custom: [], programs: [], active: null, body: [], profile: { sex: "m", bw: "" }, rest: 90, plan: DEFAULT_PLAN(),
-  exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
-  exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true }, favs: [], onboarded: false });
-const COLLECTIONS = { entries: x => x.id, programs: x => x.id, sessions: x => x.id, body: x => x.date, custom: x => x.name };
-const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs"];
-const TOMBSTONE_DAYS = 365;
-// eksik alanları varsayılanlarla tamamlar ve eski şemaları yükseltir (eski kayıtlar ve yedekler için)
-function withDefaults(s){
-  const d = DEFAULTS();
-  const out = { ...d, ...s, profile: { ...d.profile, ...(s.profile||{}) }, plan: { ...d.plan, ...(s.plan||{}) }, prefs: { ...d.prefs, ...(s.prefs||{}) } };
-  for (const c in COLLECTIONS) if (!Array.isArray(out[c])) out[c] = [];
-  if (!Array.isArray(out.deleted)) out.deleted = [];
-  if (!(s.v >= 2)) {
-    // v1 → v2: değişiklik zamanı bilinmeyen eski kayıtlar en eski sayılır, böylece birleştirmede yeni düzenlemeler kazanır
-    for (const c in COLLECTIONS) out[c].forEach(x => { if (!x.u) x.u = x.ts || 1; });
-    out.settingsU = out.settingsU || 1; out.v = SCHEMA;
-  }
-  return out;
-}
 let state = DEFAULTS();
 let snapshot = null;
-const sig = x => { const { u, ...rest } = x; return JSON.stringify(rest); };
-const settingsSig = s => JSON.stringify(SETTINGS.map(k => s[k]));
-function takeSnapshot(){
-  snapshot = { settings: settingsSig(state) };
-  for (const c in COLLECTIONS) snapshot[c] = new Map(state[c].map(x => [COLLECTIONS[c](x), sig(x)]));
-}
-function stampChanges(){
-  if (!snapshot) return takeSnapshot();
-  const now = Date.now();
-  for (const c in COLLECTIONS) {
-    const key = COLLECTIONS[c], prev = snapshot[c], seen = new Set();
-    state[c].forEach(x => {
-      const k = key(x); seen.add(k);
-      if (prev.get(k) !== sig(x)) {
-        x.u = now;
-        // aynı anahtarla yeniden eklenen kayıt (örn. aynı güne yeni ölçü) eski mezar taşını geçersiz kılar
-        if (!prev.has(k)) state.deleted = state.deleted.filter(t => !(t.c === c && t.k === k));
-      }
-    });
-    prev.forEach((_, k) => { if (!seen.has(k)) state.deleted.push({ c, k, at: now }); });
-  }
-  if (settingsSig(state) !== snapshot.settings) state.settingsU = now;
-  const cutoff = now - TOMBSTONE_DAYS*864e5;
-  state.deleted = state.deleted.filter(t => t.at > cutoff);
-  takeSnapshot();
-}
+function takeSnapshot(){ snapshot = snapshotOf(state); }
+function stampChanges(){ snapshot = stampState(state, snapshot); }
 function load(){
   try {
     const raw = localStorage.getItem(KEY);
@@ -94,34 +44,6 @@ function save(){
   stampChanges();
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
   catch(e){ toast("Kaydedilemedi! Yedek al."); }
-}
-// İki veri setini birleştirir: her kayıt için en son değiştirilen sürüm kazanır, mezar taşları silmeleri taşır.
-// Google Drive senkronizasyonu da ileride bu fonksiyonu kullanacak.
-function mergeStates(local, remote){
-  remote = withDefaults(remote);
-  const out = { ...local }, stats = { added: 0, updated: 0, removed: 0 };
-  const tomb = new Map();
-  [...local.deleted, ...remote.deleted].forEach(t => { const k = t.c + "\u0000" + t.k; if (!tomb.has(k) || tomb.get(k).at < t.at) tomb.set(k, t); });
-  for (const c in COLLECTIONS) {
-    const key = COLLECTIONS[c], map = new Map(local[c].map(x => [key(x), x])), added = new Set(), updated = new Set();
-    remote[c].forEach(r => {
-      const k = key(r), l = map.get(k);
-      if (!l) { map.set(k, r); added.add(k); }
-      else if ((r.u||0) > (l.u||0) && sig(r) !== sig(l)) { map.set(k, r); updated.add(k); }
-    });
-    out[c] = [...map.values()].filter(x => {
-      const k = key(x), t = tomb.get(c + "\u0000" + k);
-      const dead = t && t.at >= (x.u||0);
-      if (dead) { if (!added.has(k)) stats.removed++; }
-      else { if (added.has(k)) stats.added++; if (updated.has(k)) stats.updated++; }
-      return !dead;
-    });
-  }
-  if ((remote.settingsU||0) > (local.settingsU||0)) { SETTINGS.forEach(k => out[k] = remote[k]); out.settingsU = remote.settingsU; }
-  out.deleted = [...tomb.values()];
-  // aktif program, canlı antrenman ve taslak bu cihaza özeldir
-  out.active = local.active; out.live = local.live; out.draft = local.draft; out.deviceId = local.deviceId;
-  return { state: out, stats };
 }
 // Tarayıcının confirm() penceresi bazı uygulama içi görüntüleyicilerde engellenir; bu yüzden kendi onay penceremiz
 // choices: [{ label, value, primary? }]; dışarı tıklamak null döndürür
@@ -210,9 +132,6 @@ function equipOf(name){
 // set türleri: w = ısınma (istatistiklere girmez), d = drop set, f = tükenişe kadar
 const SET_TYPES = { w: "Isınma", d: "Drop", f: "Tükeniş" };
 const TYPE_LETTER = { w: "I", d: "D", f: "T" };
-const work = sets => sets.filter(s => s.t !== "w");
-const volume = sets => work(sets).reduce((a,s) => a + (+s.w||0)*(+s.r||0), 0);
-const e1rm = (w,r) => r<=0 ? 0 : r===1 ? w : w*(1+r/30);
 // Süreli hareketler (plank, wall sit…): set { w: ek ağırlık, sec: süre, r: 0 }. r=0 olduğu için hacim, 1RM ve tekrar rekorlarına girmez.
 const TIMED_RE = /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer/i;
 const isTimed = name => { const p = (state.exPrefs[name] || {}).timed; return p != null ? p : !isCardio(name) && TIMED_RE.test(name); };
@@ -422,13 +341,6 @@ $("#addSet").onclick = () => {
   setRow({ w: last ? last.querySelector(".w").value : "", r: last ? last.querySelector(".r").value : "", rir: s.rir });
   $("#setRows").lastChild.querySelector(".w").focus(); saveDraft();
 };
-function warmupSets(w, bar){
-  const r25 = x => Math.round(x/2.5)*2.5, out = [];
-  const steps = bar > 0 ? [[.4,5],[.6,3],[.8,2]] : [[.5,8],[.75,4]];
-  if (bar > 0 && w > bar*1.25) out.push({ w: bar, r: 10 });
-  steps.forEach(([p,r]) => { const x = r25(w*p); if (x > bar && x < w && !out.some(o => o.w===x)) out.push({ w: x, r }); });
-  return out;
-}
 const barFor = ex => equipOf(ex) === "Barbell" ? 20 : 0;
 $("#addWarm").onclick = () => {
   const ex = $("#logEx").value.trim();
@@ -798,14 +710,10 @@ function suggestFor(it){
   // önceki seansa göre kilo/tekrar önerisi ve kademeli yüklenme
   const today = state.live ? state.live.date : ymd(new Date()), c = isCardio(it.ex);
   const prev = state.entries.filter(e => e.ex===it.ex && e.date < today).sort((a,b) => b.date.localeCompare(a.date))[0];
-  const nums = (String(it.reps || "").match(/\d+(\.\d+)?/g) || []).map(Number);
-  const lo = nums[0] || "", hi = nums[nums.length-1] || lo, sets = it.sets || 3;
-  const ws = prev ? work(prev.sets) : [], first = ws.slice(0, sets);
-  const full = !c && hi && ws.length >= sets && first.every(s => (+s.w||0) > 0);
-  const hitTop = full && first.every(s => (+s.r||0) >= hi);
-  const easy = full && !hitTop && first.every(s => (+s.r||0) >= lo && s.rir != null && s.rir >= 3);
-  const hard = full && first.some(s => s.rir === 0 && (+s.r||0) < lo);
-  const inc = hitTop || easy ? overloadStep(it.ex) : 0;
+  const range = repRange(it.reps), { lo } = range, sets = it.sets || 3;
+  const ws = prev ? work(prev.sets) : [];
+  const { hitTop, easy, hard, increase } = overloadDecision(ws, sets, range, c);
+  const inc = increase ? overloadStep(it.ex) : 0;
   const base = ws[0];
   if (isTimed(it.ex)) {
     // süreli: hedef süreyi bütün setlerde tutturduysa +5 sn öner
@@ -1239,7 +1147,6 @@ $("#hdAdd").onclick = () => { segState.train = "log"; showTab("train"); resetEdi
 
 /* ---------- Week ---------- */
 let weekStart = mondayOf(new Date());
-function mondayOf(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay()+6)%7); return x; }
 $("#wPrev").onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderWeek(); };
 $("#wNext").onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderWeek(); };
 $("#wToday").onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); };
@@ -1432,26 +1339,7 @@ function renderRecords(){
 }
 
 /* ---------- Recovery ---------- */
-const BIG_MUSCLES = ["Göğüs","Lat","Trapez","Bel","Quadriceps","Hamstring","Kalça"];
-function recoveryMap(){
-  const last = {};
-  state.entries.filter(e => !isCardio(e.ex)).forEach(e => {
-    const n = work(e.sets).length, m = musclesOf(e.ex);
-    const add = (mu, v) => { const o = last[mu]; if (!o || e.date > o.date) last[mu] = { date: e.date, sets: v }; else if (e.date === o.date) o.sets += v; };
-    m.p.forEach(mu => add(mu, n)); m.s.forEach(mu => add(mu, n/2));
-  });
-  const now = Date.now(), res = {};
-  for (const mu in last) {
-    const { date, sets } = last[mu];
-    // antrenman saati bilinmiyorsa günün 18:00'i varsayılır
-    const ses = state.sessions.filter(s => s.date === date).sort((a,b) => b.end - a.end)[0];
-    const at_ = ses ? ses.end : parse(date).getTime() + 18*36e5;
-    const need = (BIG_MUSCLES.includes(mu) ? 48 : 36) + (sets >= 8 ? 24 : 0);
-    const hrs = Math.max(0, (now - at_)/36e5);
-    res[mu] = { date, sets, hrs, need, pct: Math.min(1, hrs/need) };
-  }
-  return res;
-}
+const recoveryMap = () => recoveryMapCore({ entries: state.entries, sessions: state.sessions, isCardio, musclesOf });
 function renderRecovery(){
   const R = recoveryMap();
   const shown = MUSCLE_ORDER.filter(m => R[m] || ["Göğüs","Lat","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır","Karın"].includes(m));
@@ -1491,11 +1379,6 @@ const STD = {
 const LEVELS = ["Yeni başlayan","Başlangıç","Acemi","Orta","İleri","Elit"];
 const latestWeight = () => { const b = state.body.filter(x => x.weight).sort((a,b) => b.date.localeCompare(a.date))[0]; return b ? b.weight : null; };
 const bodyweight = () => latestWeight() || parseFloat(state.profile.bw) || 0;
-function liftScore(ratio, t){
-  if (ratio < t[0]) return { s: 20*ratio/t[0], lv: 0 };
-  for (let i=0;i<4;i++) if (ratio < t[i+1]) return { s: 20*(i+1) + 20*(ratio-t[i])/(t[i+1]-t[i]), lv: i+1 };
-  return { s: 100, lv: 5 };
-}
 $("#pfSex").onchange = () => { state.profile.sex = $("#pfSex").value; save(); renderPower(); };
 $("#pfBw").oninput = () => { state.profile.bw = $("#pfBw").value; save(); renderPower(true); };
 function renderPower(keepInput){
@@ -1622,11 +1505,7 @@ function renderRM(){
 }
 const PLATES = [[25,"#d93025",80],[20,"#1a73e8",76],[15,"#f2b632",70],[10,"#1f9d55",62],[5,"#6b7280",50],[2.5,"#374151",42],[1.25,"#9aa3ae",36]];
 // bir tarafa takılacak plakalar (büyükten küçüğe) ve karşılanamayan kalan
-function platesFor(side){
-  const used = [];
-  PLATES.filter(([w]) => state.plates.includes(w)).forEach(([w]) => { while (side >= w - 1e-9) { used.push(w); side -= w; } });
-  return { used, rest: side };
-}
+const platesFor = side => platesForCore(side, state.plates);
 // plakalar 1,25 gibi iki ondalıklı olabilir; fmt() tek ondalığa yuvarladığı için ayrı biçimlenir
 const pfmt = w => String(+w).replace(".", ",");
 const plateText = used => { const g = {}; used.forEach(w => g[w] = (g[w]||0)+1); return Object.entries(g).sort((a,b)=>b[0]-a[0]).map(([w,n]) => `${n}× ${pfmt(w)}`).join(" + "); };
