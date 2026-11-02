@@ -2,11 +2,13 @@
    Claude (ya da bir arkadaş) programı tek bir bağlantı olarak verir; uygulama açılınca önizleyip ekler.
    Biçim, elle ve dil modeliyle hatasız yazılabilsin diye okunabilir metindir (base64 değil):
 
-     …/spor-defteri.html#ekle=p=Üst+Alt;g=Üst:Bench+Press*4*6-8,Barbell+Row*4*6-8|Alt:Back+Squat*4*6-8;w=MO:0,TH:1
+     …/spor-defteri.html#ekle=p=Üst+Alt;g=Üst:Bench+Press/4/6-8,Barbell+Row/4/6-8;g=Alt:Back+Squat/4/6-8;w=MO:0,TH:1
 
-   p = program adı · g = günler ("|" ile ayrılır), her gün "Ad:" + hareketler ("," ile; hareket*set*tekrar)
+   p = program adı · her gün ayrı bir g= ("Ad:" + "," ile ayrılmış hareketler; hareket/set/tekrar)
    w = isteğe bağlı haftalık plan (gün kodu:gün sırası; MO/TU/WE/TH/FR/SA/SU ya da Pzt/Sal/…)
-   Boşluk yerine "+" ya da %20 kullanılabilir. Tarayıcıya bağlı değildir; testleri tests/importer.test.ts. */
+   Boşluk yerine "+" ya da %20 kullanılabilir. Tarayıcıya bağlı değildir; testleri tests/importer.test.ts.
+   Eski biçim (günler "|", hareket*set*tekrar) de okunur; ama yazılmaz: Claude'un telefon uygulaması "*4*"ü italik
+   sanıp bağlantıyı ilk hareketten sonra kesiyor, Android'in bağlantı tanıyıcısı da "|" işaretinde duruyor. */
 
 export const LINK_KEY = "ekle";
 
@@ -73,18 +75,21 @@ export function extractPayload(input: string): string | null {
 export function parseProgram(input: string, knownExercises: string[]): ImportedProgram | null {
   const payload = extractPayload(input);
   if (!payload) return null;
-  const parts: Record<string, string> = {};
+  const parts: Record<string, string> = {}, dayTexts: string[] = [];
   for (const seg of payload.split(";")) {
     const i = seg.indexOf("=");
-    if (i > 0) parts[seg.slice(0, i).trim().toLowerCase()] = seg.slice(i + 1);
+    if (i <= 0) continue;
+    const key = seg.slice(0, i).trim().toLowerCase(), val = seg.slice(i + 1);
+    if (key === "g") dayTexts.push(...val.split("|"));
+    else parts[key] = val;
   }
-  if (!parts.g) return null;
+  if (!dayTexts.length) return null;
   const warnings: string[] = [];
-  const days: ImportDay[] = parts.g.split("|").map((d, di) => {
+  const days: ImportDay[] = dayTexts.map((d, di) => {
     const c = d.indexOf(":");
     const name = clean(c >= 0 ? d.slice(0, c) : "") || String.fromCharCode(65 + di);
     const items = (c >= 0 ? d.slice(c + 1) : d).split(",").map(x => x.trim()).filter(Boolean).map(raw => {
-      const [exRaw, setsRaw, repsRaw] = raw.split("*").map(clean);
+      const [exRaw, setsRaw, repsRaw] = raw.split(/[/*]/).map(clean);
       const sets = Math.min(20, Math.max(1, parseInt(setsRaw) || 3));
       const reps = (repsRaw || "").match(/^\d+(-\d+)?$/) ? repsRaw : (repsRaw ? (repsRaw.match(/\d+(-\d+)?/) || [""])[0] : "");
       const m = matchExercise(exRaw, knownExercises);
@@ -107,10 +112,10 @@ export function parseProgram(input: string, knownExercises: string[]): ImportedP
 
 // Uygulamadaki bir programı paylaşılabilir bağlantıya çevirir (aynı biçim; boşluklar "+")
 export function buildLink(base: string, name: string, days: { name: string; items: { ex: string; sets: number; reps?: string }[] }[], plan: [string, number][] = []): string {
-  const enc = (s: string) => encodeURIComponent(s.replace(/[;|:,*]/g, " ").trim()).replace(/%20/g, "+");
-  const g = days.map(d => `${enc(d.name)}:${d.items.map(i => `${enc(i.ex)}*${i.sets}*${encodeURIComponent(i.reps || "")}`).join(",")}`).join("|");
+  const enc = (s: string) => encodeURIComponent(s.replace(/[;|:,*/]/g, " ").trim()).replace(/%20/g, "+");
+  const g = days.map(d => `;g=${enc(d.name)}:${d.items.map(i => `${enc(i.ex)}/${i.sets}/${encodeURIComponent(i.reps || "")}`).join(",")}`).join("");
   const w = plan.length ? `;w=${plan.map(([c, i]) => `${c}:${i}`).join(",")}` : "";
-  return `${base}#${LINK_KEY}=p=${enc(name)};g=${g}${w}`;
+  return `${base}#${LINK_KEY}=p=${enc(name)}${g}${w}`;
 }
 
 // Claude'a verilecek hazır istek: biçimi ve kuralları anlatır
@@ -119,9 +124,11 @@ export function claudePrompt(base: string, wish: string): string {
     "Spor Defteri adlı antrenman uygulamam için bana bir ağırlık antrenmanı programı hazırla." + (wish ? " İsteğim: " + wish : ""),
     "Önce bana uygun olup olmadığını anlamak için gerekirse kısaca soru sor (deneyim, hedef, ekipman, haftada kaç gün).",
     "Programı kısaca açıkla (hangi gün ne çalışılır, nasıl ilerlenir). Sonra programı uygulamaya eklemem için TEK bir bağlantı ver. Bağlantı biçimi:",
-    `${base}#ekle=p=Program+Adı;g=Gün1+Adı:Hareket+Adı*set*tekrar,Hareket+Adı*set*tekrar|Gün2+Adı:Hareket*set*tekrar;w=MO:0,WE:1,FR:0`,
-    "Kurallar: boşluk yerine + kullan; günleri | ile, hareketleri virgülle ayır; hareket*set*tekrar (tekrar 8 ya da 8-12 gibi; plank gibi süreli hareketlerde saniye).",
-    "Hareket adlarını yaygın İngilizce adlarıyla yaz (Back Squat, Bench Press (Barbell), Romanian Deadlift, Lat Pulldown, Seated Cable Row, Overhead Press (Barbell), Leg Press, Plank…).",
+    `${base}#ekle=p=Program+Adi;g=Gun1+Adi:Hareket+Adi/set/tekrar,Hareket+Adi/set/tekrar;g=Gun2+Adi:Hareket+Adi/set/tekrar;w=MO:0,WE:1,FR:0`,
+    "Örnek: g=Ust+Vucut:Bench+Press/4/6-8,Barbell+Row/4/8-10,Plank/3/45",
+    "Kurallar: boşluk yerine + kullan; her gün için ayrı bir ;g= yaz; hareketleri virgülle ayır; hareket/set/tekrar (tekrar 8 ya da 8-12 gibi; plank gibi süreli hareketlerde saniye).",
+    "Bağlantıda yıldız (*), dikey çizgi (|), parantez, boşluk ve Türkçe harf kullanma; telefonda bağlantı yarıda kesiliyor.",
+    "Hareket adlarını yaygın İngilizce adlarıyla yaz (Back Squat, Bench Press, Romanian Deadlift, Lat Pulldown, Seated Cable Row, Overhead Press, Leg Press, Plank…).",
     "w isteğe bağlı haftalık plandır: gün kodu (MO TU WE TH FR SA SU) : gün sırası (0'dan başlar).",
     "Bağlantıyı tıklanabilir olarak, kod bloğu içine koymadan yaz.",
   ].join("\n");

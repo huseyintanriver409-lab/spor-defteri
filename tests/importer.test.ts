@@ -61,6 +61,16 @@ describe("programı çözme", () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it("yeni biçim: her gün ayrı g=, hareket/set/tekrar", () => {
+    const r = parseProgram(`${BASE}#ekle=p=Ust+Alt;g=Ust:Bench+Press/4/6-8,Barbell+Row/4/8-10,Overhead+Press/3/8;g=Alt:Back+Squat/4/6-8,Plank/3/45;w=MO:0,TH:1`, known)!;
+    expect(r.days.map(d => [d.name, d.items.map(i => [i.ex, i.sets, i.reps])])).toEqual([
+      ["Ust", [["Bench Press (Barbell)", 4, "6-8"], ["Barbell Row", 4, "8-10"], ["Overhead Press (Barbell)", 3, "8"]]],
+      ["Alt", [["Back Squat", 4, "6-8"], ["Plank", 3, "45"]]],
+    ]);
+    expect(r.plan).toEqual([["MO", 0], ["TH", 1]]);
+    expect(r.warnings).toEqual([]);
+  });
+
   it("Türkçe gün adlarını kabul eder, geçersiz plan girdisini uyarıyla atlar", () => {
     const r = parseProgram("p=X;g=A:Back Squat*3*5;w=Pzt:0,Çarşamba:0,Zz:0,Cum:5", known)!;
     expect(r.plan).toEqual([["MO", 0], ["WE", 0]]);
@@ -95,6 +105,8 @@ describe("paylaşım bağlantısı", () => {
     const link = buildLink(BASE, "Güç; Programı", days, [["MO", 0], ["TH", 1]]);
     expect(link.startsWith(BASE + "#ekle=")).toBe(true);
     expect(link).not.toMatch(/\s/);
+    // telefondaki markdown ve Android bağlantı tanıyıcısı bunlarda bağlantıyı kesiyor
+    expect(link).not.toMatch(/[*|_~]/);
     const r = parseProgram(link, known)!;
     expect(r.name).toBe("Güç Programı");
     expect(r.days.map(d => [d.name, d.items.map(i => [i.ex, i.sets, i.reps])])).toEqual(days.map(d => [d.name, d.items.map(i => [i.ex, i.sets, i.reps])]));
@@ -105,5 +117,8 @@ describe("paylaşım bağlantısı", () => {
     const p = claudePrompt(BASE, "evde 3 gün");
     expect(p).toContain(BASE + "#ekle=");
     expect(p).toContain("evde 3 gün");
+    const example = p.split("\n").find(l => l.startsWith(BASE))!;
+    expect(example).not.toMatch(/[*|_~()]/);
+    expect(parseProgram(example, known)!.days).toHaveLength(2);
   });
 });

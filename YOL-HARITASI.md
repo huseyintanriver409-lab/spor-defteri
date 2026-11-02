@@ -155,7 +155,8 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 
 Claude (ya da bir arkadaş) programı tek bir bağlantı olarak verir; dokununca uygulama "Bu programı ekleyeyim mi?" önizlemesini açar.
 
-- Biçim (okunabilir, base64 değil): `…/spor-defteri.html#ekle=p=Ad;g=Gün1:Hareket*set*tekrar,…|Gün2:…;w=MO:0,WE:1`. Boşluk yerine `+`.
+- Biçim (okunabilir, base64 değil): `…/spor-defteri.html#ekle=p=Ad;g=Gün1:Hareket/set/tekrar,…;g=Gün2:…;w=MO:0,WE:1`. Boşluk yerine `+`.
+- Bağlantıda `*`, `|`, `_`, `~` kullanılmaz: Claude'un telefon uygulaması `*4*`'ü italik sanıp bağlantıyı ilk hareketten sonra kesiyordu (2026-11-02, v13'te düzeldi); Android'in bağlantı tanıyıcısı da `|` işaretinde duruyor. Eski biçim (`|`, `*`) hâlâ okunur.
 - Hareket adları esnek eşleşir (Türkçe harfler, tire, kısmi ad); bulunamayan "yeni hareket" olarak eklenir.
 - **Claude ile program yap** (Antrenman → Programlar): Claude'u biçimi anlatan hazır bir istekle açar (`claude.ai/new?q=…`, istek panoya da kopyalanır). Bağlantı açılmazsa Claude'un cevabı yapıştırılır.
 - Program kartındaki paylaş düğmesi aynı biçimde bağlantı üretir.
