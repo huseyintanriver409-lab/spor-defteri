@@ -69,7 +69,7 @@ export function openLibrary(){
   $("#libRec").onclick = () => openRecommender();
 }
 
-// Dört soru, cevap değiştikçe öneri güncellenir. onboarding: ilk açılışta, üstte "Biliyorum, atla" ile.
+// Dört soru, cevap değiştikçe öneri güncellenir. onboarding: ilk açılışta, üstte "Atla" ile.
 export function openRecommender({ onboarding = false } = {}){
   const a = { level: "yeni", goal: "genel", equip: "salon", days: 3 };
   const markDone = onboarding ? () => { state.onboarded = true; save(); } : undefined;
@@ -77,7 +77,7 @@ export function openRecommender({ onboarding = false } = {}){
   const head = onboarding
     ? `<div class="row" style="align-items:flex-start;margin-top:6px"><div class="grow"><div class="eyebrow">Hoş geldin</div>
          <h3 style="font-size:26px;margin:4px 0 6px;letter-spacing:-.035em">Sana uygun programı bulalım</h3></div>
-         <button class="btn quiet" id="obSkip" style="flex:none">Biliyorum, atla</button></div>
+         <button class="btn quiet" id="obSkip" style="flex:none">Atla</button></div>
        <p class="muted" style="margin:0 0 4px">Dört soru; önerim hemen aşağıda çıkar. Ne yapacağını biliyorsan atla, programını kendin kur.</p>`
     : sheetHead("Bana program öner");
   openSheet(head,

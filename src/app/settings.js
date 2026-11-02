@@ -37,7 +37,7 @@ export function setTheme(t){
 }
 
 /* ---------- First run ---------- */
-// Yeni kullanıcıya program önerisi ekranı açılır; bilen "Biliyorum, atla" ile geçer.
+// Yeni kullanıcıya program önerisi ekranı açılır; bilen "Atla" ile geçer.
 export function maybeOnboard(){
   if (state.onboarded) return;
   if (state.entries.length || state.programs.length) { state.onboarded = true; save(); return; }

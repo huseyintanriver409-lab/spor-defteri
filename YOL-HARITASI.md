@@ -146,7 +146,7 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 
 - 8 hazır program (`src/core/programs.ts`): Başlangıç Tam Vücut, 3×5 Doğrusal Güç, 5×5 Güç, GZCLP, Üst/Alt, Push/Pull/Legs, Ev Dumbbell Tam Vücut, Vücut Ağırlığı Başlangıç. Her birinde kime uygun olduğu, haftalık düzen, nasıl ilerleneceği, takılınca ne yapılacağı, yeni başlayana ipuçları ve kaynak.
 - **Bana program öner:** deneyim, öncelik, ekipman ve haftada kaç gün sorulur; öneri, gerekçesi ve alternatifiyle anında çıkar. Dayanak: ACSM 2009 (yeni başlayan 2-3 gün, 8-12 RM, hedefin 1-2 fazlasında %2-10 artış), CDC/DSÖ (haftada ≥2 gün kuvvet, 150 dk orta kardiyo).
-- **İlk açılış** doğrudan bu öneri ekranıdır; bilen "Biliyorum, atla" ile geçer.
+- **İlk açılış** doğrudan bu öneri ekranıdır; bilen "Atla" ile geçer.
 - Programdan eklenen günler `lib` alanıyla hazır programa bağlıdır; aynı program ikinci kez eklenirse kopya oluşmaz. "Haftalık plana yerleştir" mevcut planın yerine geçer.
 - Testler: `tests/programs.test.ts` (her hareket kütüphanede var; 135 cevap birleşiminin hepsinde geçerli öneri; ekipman ve seviye uyumu).
 - Kapsam dışı: yüzde hesabıyla çalışan programlar (5/3/1), hareket anlatım videoları.
