@@ -1,6 +1,6 @@
 import { e1rm, volume, warmupSets, work } from "../core/training.ts";
 import { niceDate, ymd } from "../core/dates.ts";
-import { $, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
+import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
 import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
 import { autoLogged } from "./programs.js";
@@ -155,7 +155,10 @@ export function bindEntryActions(root, rerender){
   root.querySelectorAll("[data-del]").forEach(b => b.onclick = () => deleteEntry(b.dataset.del, rerender));
   root.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => editEntry(b.dataset.edit));
 }
-export function deleteEntry(id, rerender){
+// Silmeden önce sorar: telefon cepteyken yanlışlıkla dokunulunca kayıt gitmesin. "Geri al" yine de kalır.
+export async function deleteEntry(id, rerender){
+  const found = state.entries.find(e => e.id===id); if (!found) return;
+  if (!(await ask(`${found.ex} kaydı silinsin mi?\n${found.sets.length} set · ${niceDate(found.date)}`))) return;
   const i = state.entries.findIndex(e => e.id===id); if (i < 0) return;
   const [e] = state.entries.splice(i, 1); save(); rerender(); buzz(15);
   undoable(`${e.ex} silindi`, () => { state.entries.splice(Math.min(i, state.entries.length), 0, e); save(); rerender(); });

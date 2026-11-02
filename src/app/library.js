@@ -1,5 +1,5 @@
 import { shortDate, ymd } from "../core/dates.ts";
-import { $, LIB, esc, fmt, ic, save, setState, state, toast } from "./store.js";
+import { $, LIB, ask, esc, fmt, ic, save, setState, state, toast } from "./store.js";
 import { EQUIPS, HOME, allEx, equipOf, musclesOf } from "./exercises.js";
 import { emptyHTML, segState, showTab, undoable } from "./ui.js";
 import { refreshDatalist, resetEditor } from "./log.js";
@@ -33,8 +33,11 @@ export function renderLib(){
     segState.train = "log"; showTab("train"); resetEditor(); $("#logEx").value = n; $("#logEx").dispatchEvent(new Event("input"));
     $("#setRows .w").focus();
   });
-  $("#libList").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
-    const n = b.dataset.rm, i = state.custom.findIndex(c => c.name === n), [c] = state.custom.splice(i, 1);
+  $("#libList").querySelectorAll("[data-rm]").forEach(b => b.onclick = async () => {
+    const n = b.dataset.rm;
+    if (!(await ask(`"${n}" hareketi listeden kaldırılsın mı?\nBu hareketle girdiğin eski kayıtlar silinmez.`, "Kaldır"))) return;
+    const i = state.custom.findIndex(c => c.name === n); if (i < 0) return;
+    const [c] = state.custom.splice(i, 1);
     save(); refreshDatalist(); renderLib();
     undoable(`"${n}" kaldırıldı`, () => { state.custom.splice(i, 0, c); save(); refreshDatalist(); renderLib(); });
   });
@@ -52,8 +55,10 @@ export function renderBody(){
   $("#bTable").innerHTML = list.length ? `<tr><th>Tarih</th>${BODY.map(([,l]) => `<th>${l}</th>`).join("")}<th></th></tr>` +
     list.slice().reverse().map(b => `<tr><td>${shortDate(b.date)}</td>${BODY.map(([k]) => `<td>${b[k] ? fmt(b[k]) : "–"}</td>`).join("")}<td><button class="iconbtn danger" data-bdel="${b.date}" title="Sil">${ic("trash-2")}</button></td></tr>`).join("")
     : `<tr><td>${emptyHTML("ruler", "Henüz ölçü yok", "Yukarıdan ilk ölçünü kaydet.")}</td></tr>`;
-  $("#bTable").querySelectorAll("[data-bdel]").forEach(btn => btn.onclick = () => {
-    const i = state.body.findIndex(b => b.date === btn.dataset.bdel), [rec] = state.body.splice(i, 1);
+  $("#bTable").querySelectorAll("[data-bdel]").forEach(btn => btn.onclick = async () => {
+    if (!(await ask(`${shortDate(btn.dataset.bdel)} tarihli ölçü silinsin mi?`))) return;
+    const i = state.body.findIndex(b => b.date === btn.dataset.bdel); if (i < 0) return;
+    const [rec] = state.body.splice(i, 1);
     save(); renderBody();
     undoable("Ölçü silindi", () => { state.body.splice(i, 0, rec); save(); renderBody(); });
   });

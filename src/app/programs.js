@@ -1,6 +1,6 @@
 import { pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
-import { $, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
+import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, musclesOf, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, undoable } from "./ui.js";
 import { refreshDatalist } from "./log.js";
@@ -63,8 +63,11 @@ export function renderProg(){
     const p = find(b.dataset.pcopy);
     state.programs.push({ id: uid(), name: p.name+" (kopya)", items: p.items.map(i => ({...i})) }); save(); renderProg(); toast("Kopyalandı", "copy");
   });
-  $("#pList").querySelectorAll("[data-pdel]").forEach(b => b.onclick = () => {
-    const i = state.programs.findIndex(x => x.id===b.dataset.pdel), p = state.programs[i];
+  $("#pList").querySelectorAll("[data-pdel]").forEach(b => b.onclick = async () => {
+    const target = state.programs.find(x => x.id===b.dataset.pdel); if (!target) return;
+    const inPlan = Object.values(state.plan.days).some(d => d.prog === target.id);
+    if (!(await ask(`"${target.name}" programı silinsin mi?${inPlan ? "\nHaftalık plandaki günleri de boşalır." : ""}\nEski antrenman kayıtların silinmez.`))) return;
+    const i = state.programs.findIndex(x => x.id===target.id), p = state.programs[i]; if (i < 0) return;
     const days = JSON.parse(JSON.stringify(state.plan.days)), wasActive = state.active === p.id;
     state.programs.splice(i, 1);
     if (wasActive) state.active = null;

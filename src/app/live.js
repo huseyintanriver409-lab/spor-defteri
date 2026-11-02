@@ -284,9 +284,13 @@ export function completeSet(){
   if (rest) startTimer(restFor(it.ex));
   renderFocus();
 }
-export function removeDoneSet(i){
-  const it = liveItems()[state.live.idx], e = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
-  if (!e) return;
+// Antrenman sırasında tamamlanan sete dokunmak onu siler; cepteyken yanlışlıkla olmasın diye önce sorar
+export async function removeDoneSet(i){
+  const it = liveItems()[state.live.idx], e0 = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
+  if (!e0 || !e0.sets[i]) return;
+  if (!(await ask(`${it.ex}: ${i + 1}. set silinsin mi?\n${setLabel(e0.sets[i], isCardio(it.ex))}`))) return;
+  const e = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
+  if (!e || !e.sets[i]) return;
   const [s] = e.sets.splice(i, 1); let pos = -1;
   if (!e.sets.length) { pos = state.entries.indexOf(e); state.entries.splice(pos, 1); }
   save(); renderFocus(); buzz(15);
@@ -321,8 +325,10 @@ export function openExPrefs(it){
     if (Object.keys(np).length) state.exPrefs[it.ex] = np; else delete state.exPrefs[it.ex];
     save(); closeSheet(); renderFocus();
   };
-  $("#xpRemove").onclick = () => {
-    const items = liveItems(), i = items.indexOf(it);
+  $("#xpRemove").onclick = async () => {
+    closeSheet();
+    if (!(await ask(`${it.ex} bu antrenmandan çıkarılsın mı?\nYaptığın setler kayıtlı kalır.`, "Çıkar"))) return;
+    const items = liveItems(), i = items.indexOf(it); if (i < 0) return;
     items.splice(i, 1); save(); closeSheet(); renderFocus();
     undoable(`${it.ex} antrenmandan çıkarıldı`, () => { items.splice(i, 0, it); state.live.idx = i; save(); renderFocus(); });
   };
