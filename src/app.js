@@ -21,9 +21,10 @@ import { setup as setup_backup } from "./app/backup.js";
 import { setup as setup_cloud } from "./app/cloud.js";
 import { setup as setup_settings } from "./app/settings.js";
 import { setup as setup_presets } from "./app/presets.js";
+import { setup as setup_importer, handleImportLink } from "./app/importer.js";
 
 // Modüllerin düğme bağlamaları ve ilk hazırlıkları, eskiden tek dosyadaki sırayla
-setup_ui(); setup_log(); setup_programs(); setup_live(); setup_history(); setup_stats(); setup_library(); setup_tools(); setup_backup(); setup_cloud(); setup_settings(); setup_presets();
+setup_ui(); setup_log(); setup_programs(); setup_live(); setup_history(); setup_stats(); setup_library(); setup_tools(); setup_backup(); setup_cloud(); setup_settings(); setup_presets(); setup_importer();
 
 /* ---------- Init ---------- */
 load(); setTDur(state.rest || 90); refreshDatalist();
@@ -38,5 +39,7 @@ renderSyncStatus(); renderCalStatus();
 // Google betiği önceden yüklenir ki "bağlan" dokunuşu giriş penceresini doğrudan açabilsin
 if (syncCanRun() && (sync.on || calOn() || !state.onboarded)) preloadGoogle().catch(() => {});
 maybeOnboard();
+// #ekle=… bağlantısıyla açıldıysa programı önizle (ilk açılış ekranının yerine geçer)
+handleImportLink();
 // önce Drive (başka cihazdan gelen antrenmanlar ve takvim ayarı), sonra takvim
 runSync(false); runCal(false);

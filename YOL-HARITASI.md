@@ -34,6 +34,7 @@ src/app/                 Arayüz, ekran ekran:
   library.js / tools.js  hareketler, vücut ölçüleri; 1RM, plaka, ısınma, dinlenme sayacı
   backup.js / cloud.js   yedek ve CSV; Google Drive ve Google Takvim
   presets.js             hazır program listesi, program ayrıntısı, "Bana program öner" (ilk açılış da bu)
+  importer.js            bağlantıyla gelen programın önizlemesi, paylaşma, "Claude ile program yap"
   settings.js            ayarlar, tema, ilk açılış, erişilebilirlik, PWA kaydı
 src/styles.css           "Atletik" tasarım sistemi, gömülü Inter yazı tipi
 src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (TypeScript)
@@ -45,6 +46,7 @@ src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (T
   dates.ts               Tarih yardımcıları
   library.ts             Hareket kütüphanesi (kas grubuna göre)
   programs.ts            Hazır programlar ve "Bana program öner" kuralları (kaynakları dosyada)
+  importer.ts            Bağlantıyla program ekleme biçimi (#ekle=…), hareket eşleştirme, Claude isteği
 src/sync/                Google girişi (google.ts), Drive dosyası (drive.ts), Takvim istemcisi (calendar.ts)
 src/config.ts            Google istemci kimliği (.env → VITE_GOOGLE_CLIENT_ID)
 tests/                   Vitest birim testleri + smoke.browser.js (tarayıcıda elle çalıştırılan akış testi)
@@ -148,6 +150,19 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 - Programdan eklenen günler `lib` alanıyla hazır programa bağlıdır; aynı program ikinci kez eklenirse kopya oluşmaz. "Haftalık plana yerleştir" mevcut planın yerine geçer.
 - Testler: `tests/programs.test.ts` (her hareket kütüphanede var; 135 cevap birleşiminin hepsinde geçerli öneri; ekipman ve seviye uyumu).
 - Kapsam dışı: yüzde hesabıyla çalışan programlar (5/3/1), hareket anlatım videoları.
+
+## Claude ile program: bağlantı (2026-11-02)
+
+Claude (ya da bir arkadaş) programı tek bir bağlantı olarak verir; dokununca uygulama "Bu programı ekleyeyim mi?" önizlemesini açar.
+
+- Biçim (okunabilir, base64 değil): `…/spor-defteri.html#ekle=p=Ad;g=Gün1:Hareket*set*tekrar,…|Gün2:…;w=MO:0,WE:1`. Boşluk yerine `+`.
+- Hareket adları esnek eşleşir (Türkçe harfler, tire, kısmi ad); bulunamayan "yeni hareket" olarak eklenir.
+- **Claude ile program yap** (Antrenman → Programlar): Claude'u biçimi anlatan hazır bir istekle açar (`claude.ai/new?q=…`, istek panoya da kopyalanır). Bağlantı açılmazsa Claude'un cevabı yapıştırılır.
+- Program kartındaki paylaş düğmesi aynı biçimde bağlantı üretir.
+- Android'de APK bu adresleri sahiplendiği için (autoVerify + assetlinks) bağlantı doğrudan uygulamayı açar.
+- Testler: `tests/importer.test.ts`.
+
+**Sonraki seçenek (Yol 2):** Claude'un uygulamaya doğrudan yazdığı bir bağlayıcı (uzak MCP sunucusu, Cloudflare Workers + Google girişi; Drive'daki dosyaya `mergeStates` ile yazar). Önce Drive appDataFolder'ın aynı projedeki başka bir OAuth istemcisiyle paylaşılıp paylaşılmadığı test edilmeli; herkese açmak için OAuth uygulamasının "yayında" olması gerekir.
 
 ## Faz 5 — Mağazalar (isteğe bağlı)
 
