@@ -33,6 +33,7 @@ src/app/                 Arayüz, ekran ekran:
   stats.js               hafta, süreklilik, hareket grafiği, rekorlar, kaslar, güç skoru
   library.js / tools.js  hareketler, vücut ölçüleri; 1RM, plaka, ısınma, dinlenme sayacı
   backup.js / cloud.js   yedek ve CSV; Google Drive ve Google Takvim
+  presets.js             hazır program listesi, program ayrıntısı, "Bana program öner" (ilk açılış da bu)
   settings.js            ayarlar, tema, ilk açılış, erişilebilirlik, PWA kaydı
 src/styles.css           "Atletik" tasarım sistemi, gömülü Inter yazı tipi
 src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (TypeScript)
@@ -42,6 +43,8 @@ src/core/                Tarayıcıya bağımlı olmayan, test edilen mantık (T
   sync.ts                Bulut eşitleme akışı (depodan bağımsız)
   calendar.ts            Google Takvim: neyin yazılacağı, etkinlik içerikleri, kimlikler
   dates.ts               Tarih yardımcıları
+  library.ts             Hareket kütüphanesi (kas grubuna göre)
+  programs.ts            Hazır programlar ve "Bana program öner" kuralları (kaynakları dosyada)
 src/sync/                Google girişi (google.ts), Drive dosyası (drive.ts), Takvim istemcisi (calendar.ts)
 src/config.ts            Google istemci kimliği (.env → VITE_GOOGLE_CLIENT_ID)
 tests/                   Vitest birim testleri + smoke.browser.js (tarayıcıda elle çalıştırılan akış testi)
@@ -135,6 +138,16 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 - Testler: `tests/calendar.test.ts` (27 test).
 
 **Sıradaki (isteğe bağlı):** Takvimde elle taşınan/eklenen antrenmanları uygulamada göstermek (takvimden okuma).
+
+
+## Hazır programlar ve program önerisi (2026-11-02)
+
+- 8 hazır program (`src/core/programs.ts`): Başlangıç Tam Vücut, 3×5 Doğrusal Güç, 5×5 Güç, GZCLP, Üst/Alt, Push/Pull/Legs, Ev Dumbbell Tam Vücut, Vücut Ağırlığı Başlangıç. Her birinde kime uygun olduğu, haftalık düzen, nasıl ilerleneceği, takılınca ne yapılacağı, yeni başlayana ipuçları ve kaynak.
+- **Bana program öner:** deneyim, öncelik, ekipman ve haftada kaç gün sorulur; öneri, gerekçesi ve alternatifiyle anında çıkar. Dayanak: ACSM 2009 (yeni başlayan 2-3 gün, 8-12 RM, hedefin 1-2 fazlasında %2-10 artış), CDC/DSÖ (haftada ≥2 gün kuvvet, 150 dk orta kardiyo).
+- **İlk açılış** doğrudan bu öneri ekranıdır; bilen "Biliyorum, atla" ile geçer.
+- Programdan eklenen günler `lib` alanıyla hazır programa bağlıdır; aynı program ikinci kez eklenirse kopya oluşmaz. "Haftalık plana yerleştir" mevcut planın yerine geçer.
+- Testler: `tests/programs.test.ts` (her hareket kütüphanede var; 135 cevap birleşiminin hepsinde geçerli öneri; ekipman ve seviye uyumu).
+- Kapsam dışı: yüzde hesabıyla çalışan programlar (5/3/1), hareket anlatım videoları.
 
 ## Faz 5 — Mağazalar (isteğe bağlı)
 

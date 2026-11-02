@@ -8,18 +8,6 @@ import { startWorkout } from "./live.js";
 import { groups } from "./library.js";
 
 /* ---------- Programs ---------- */
-export const TEMPLATES = {
-  "Push (İtiş)": [["Bench Press (Barbell)",4,"6-8"],["Incline Dumbbell Press",3,"8-10"],["Seated Dumbbell Shoulder Press",3,"8-10"],["Lateral Raise (Dumbbell)",3,"12-15"],["Triceps Pushdown (Halat)",3,"10-12"],["Overhead Cable Extension",3,"10-12"]],
-  "Pull (Çekiş)": [["Deadlift",3,"5"],["Barfiks (Pull-up)",3,"6-10"],["Seated Cable Row",3,"8-12"],["Face Pull",3,"12-15"],["Barbell Curl",3,"8-12"],["Hammer Curl",3,"10-12"]],
-  "Legs (Bacak)": [["Back Squat",4,"6-8"],["Romanian Deadlift",3,"8-10"],["Leg Press",3,"10-12"],["Lying Leg Curl",3,"10-12"],["Leg Extension",3,"12-15"],["Standing Calf Raise",4,"12-15"]],
-  "Upper (Üst Vücut)": [["Bench Press (Barbell)",4,"6-8"],["Barbell Row",4,"6-8"],["Overhead Press (Barbell)",3,"8-10"],["Lat Pulldown (Geniş)",3,"8-12"],["EZ-Bar Curl",2,"10-12"],["Skull Crusher (EZ-Bar)",2,"10-12"]],
-  "Lower (Alt Vücut)": [["Back Squat",4,"6-8"],["Romanian Deadlift",3,"8-10"],["Bulgarian Split Squat",3,"10"],["Seated Leg Curl",3,"10-12"],["Seated Calf Raise",4,"12-15"],["Hanging Leg Raise",3,"10-15"]],
-  "Full Body A": [["Back Squat",3,"5"],["Bench Press (Barbell)",3,"5"],["Barbell Row",3,"5"],["Plank",3,"45"]],
-  "Full Body B": [["Back Squat",3,"5"],["Overhead Press (Barbell)",3,"5"],["Deadlift",1,"5"],["Hanging Knee Raise",3,"12"]],
-  "5x5 (A)": [["Back Squat",5,"5"],["Bench Press (Barbell)",5,"5"],["Barbell Row",5,"5"]],
-  "5x5 (B)": [["Back Squat",5,"5"],["Overhead Press (Barbell)",5,"5"],["Deadlift",1,"5"]]
-};
-export const fromTemplate = n => ({ id: uid(), name: n, items: TEMPLATES[n].map(([ex,sets,reps]) => ({ex, sets, reps})) });
 export let progEditId = null;
 export function pRow(it = {ex:"", sets:3, reps:"10"}){
   const div = document.createElement("div");
@@ -182,12 +170,6 @@ export function fold(line){
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
-$("#tplSel").innerHTML = Object.keys(TEMPLATES).map(n => `<option>${esc(n)}</option>`).join("");
-$("#tplAdd").onclick = () => {
-  const n = $("#tplSel").value;
-  state.programs.push(fromTemplate(n));
-  save(); renderProg(); toast(`"${n}" eklendi`, "check");
-};
 $("#pAddRow").onclick = () => pRow().querySelector(".pe").click();
 $("#pCancel").onclick = resetProgEditor;
 $("#pSave").onclick = () => {

@@ -65,7 +65,7 @@ export function equipOf(name){
   if (/makine|machine|leg press|hack squat|pec deck|pendulum|belt squat|leg extension|leg curl|standing calf|seated calf|donkey|chest-supported|reverse pec|t-bar|glute-ham|reverse hyper/.test(n)) return "Makine";
   if (/plate|sled|battle|wall ball|man maker|ab wheel/.test(n)) return "Diğer";
   if (/dumbbell|goblet|arnold|hammer curl|concentration|kickback|farmer|bulgarian|lunge|step-up|spider|zottman|side bend|seal row|y-raise|lateral raise|front raise|rear delt|svend|pullover|wrist/.test(n)) return "Dumbbell";
-  if (/şınav|push-up|barfiks|pull-up|chin-up|dips|plank|crunch|mekik|sit-up|leg raise|knee raise|burpee|mountain|v-up|hollow|l-sit|dead bug|bird dog|superman|nordic|pistol|sissy|inverted|dead hang|glute bridge|frog|wall sit|muscle-up|box jump|handstand|dragon|tek bacak calf|tibialis|back extension|russian/.test(n)) return "Vücut Ağırlığı";
+  if (/şınav|push-up|barfiks|pull-up|chin-up|dips|plank|crunch|mekik|sit-up|leg raise|knee raise|burpee|mountain|v-up|hollow|l-sit|dead bug|bird dog|superman|nordic|pistol|sissy|inverted|dead hang|glute bridge|frog|wall sit|muscle-up|box jump|handstand|dragon|tek bacak calf|tibialis|back extension|russian|air squat/.test(n)) return "Vücut Ağırlığı";
   if (g === "Diğer") return "Diğer";
   return "Barbell";
 }

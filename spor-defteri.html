@@ -41,6 +41,14 @@
     <div id="train-prog">
       <button class="btn primary xl" id="startEmpty" style="margin-bottom:12px"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Boş antrenman başlat</button>
       <div id="pList"></div>
+      <div class="card">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Hazır programlar</h2>
+        <p class="muted" style="margin-top:-4px">5×5, 3×5, GZCLP, tam vücut, ev ve ekipmansız programlar: kime uygun oldukları ve nasıl ilerleneceğiyle.</p>
+        <div class="row">
+          <button class="btn primary" id="recOpen"><svg class="ic" aria-hidden="true"><use href="#i-lightbulb"/></svg>Bana program öner</button>
+          <button class="btn" id="libOpen"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Bütün programlar</button>
+        </div>
+      </div>
       <div class="card" id="pEditor">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></span><span id="pTitle">Yeni program</span></h2>
         <label for="pName">Program adı</label>
@@ -53,13 +61,6 @@
           <span class="grow"></span>
           <button class="btn quiet hidden" id="pCancel">Vazgeç</button>
           <button class="btn primary" id="pSave"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>Kaydet</button>
-        </div>
-      </div>
-      <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Hazır şablonlar</h2>
-        <div class="row">
-          <div class="grow"><select id="tplSel" aria-label="Şablon"></select></div>
-          <button class="btn" id="tplAdd"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Ekle</button>
         </div>
       </div>
     </div>

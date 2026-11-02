@@ -1,8 +1,7 @@
 import { $, fmt, ic, save, setState, state, toast } from "./store.js";
-import { buzz, closeSheet, keepAwake, openSheet, refreshAll } from "./ui.js";
-import { fromTemplate } from "./programs.js";
+import { buzz, keepAwake } from "./ui.js";
+import { openRecommender } from "./presets.js";
 import { mmss, setTDur, tDur } from "./tools.js";
-import { connectDrive, syncCanRun } from "./cloud.js";
 
 /* ---------- Settings ---------- */
 export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
@@ -38,32 +37,11 @@ export function setTheme(t){
 }
 
 /* ---------- First run ---------- */
-export const STARTERS = { ppl: ["Push (İtiş)", "Pull (Çekiş)", "Legs (Bacak)"], ul: ["Upper (Üst Vücut)", "Lower (Alt Vücut)"], fb: ["Full Body A", "Full Body B"], s5: ["5x5 (A)", "5x5 (B)"], none: [] };
-export const PLAN_DAYS = { 2: ["MO","TH"], 3: ["MO","WE","FR"], 4: ["MO","TU","TH","FR"], 5: ["MO","TU","WE","FR","SA"], 6: ["MO","TU","WE","TH","FR","SA"] };
+// Yeni kullanıcıya program önerisi ekranı açılır; bilen "Biliyorum, atla" ile geçer.
 export function maybeOnboard(){
   if (state.onboarded) return;
   if (state.entries.length || state.programs.length) { state.onboarded = true; save(); return; }
-  let goal = 3, starter = "ppl";
-  openSheet(`<div class="eyebrow" style="margin-top:6px">Hoş geldin</div><h3 style="font-size:28px;margin:4px 0 6px;letter-spacing:-.035em">Hadi başlayalım</h3>
-      <p class="muted" style="margin:0 0 4px">İki soru, sonra ilk antrenmanına hazırsın.</p>`,
-    `<div class="pk-head">Haftada kaç gün çalışacaksın?</div><div class="optgrid" id="obGoal">${[2,3,4,5,6].map(n => `<button class="fchip${n===goal?" on":""}" data-v="${n}">${n} gün</button>`).join("")}</div>
-     <div class="pk-head">Başlangıç programı</div><div class="optgrid" id="obProg">${[["ppl","Push / Pull / Legs"],["ul","Üst / Alt vücut"],["fb","Tüm vücut"],["s5","5x5 güç"],["none","Kendim oluşturacağım"]].map(([k,l]) => `<button class="fchip${k===starter?" on":""}" data-v="${k}">${l}</button>`).join("")}</div>
-     <p class="muted small" style="margin-top:16px">Seçtiğin program haftalık planına yerleşir; istediğin zaman değiştirebilirsin.</p>
-     <button class="btn primary xl" id="obGo" style="margin-top:6px">Başla${ic("arrow-right")}</button>
-     <button class="ghost" id="obSkip" style="width:100%;justify-content:center;margin-top:6px">Şimdilik atla</button>
-     ${syncCanRun() ? `<button class="ghost" id="obDrive" style="width:100%;justify-content:center;margin-top:2px">${ic("cloud")}Başka cihazda kullanıyorum: Drive'dan getir</button>` : ""}`,
-    () => { state.onboarded = true; save(); });
-  const pick = (id, set) => $(id).querySelectorAll("button").forEach(b => b.onclick = () => { set(b.dataset.v); $(id).querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); buzz(5); });
-  pick("#obGoal", v => goal = +v); pick("#obProg", v => starter = v);
-  $("#obGo").onclick = () => {
-    state.goal = goal;
-    const ids = STARTERS[starter].map(n => { const p = fromTemplate(n); state.programs.push(p); return p.id; });
-    if (ids.length) (PLAN_DAYS[goal] || []).forEach((code, i) => state.plan.days[code] = { prog: ids[i % ids.length], time: "19:00" });
-    state.onboarded = true; save(); closeSheet(); refreshAll(); toast("Hazırsın! Bugün ekranından başla", "biceps-flexed");
-  };
-  $("#obSkip").onclick = closeSheet;
-  // başlangıç programı oluşturmadan bağlanır; yoksa programlar iki cihazda farklı kimlikle iki kez oluşur
-  if ($("#obDrive")) $("#obDrive").onclick = () => { closeSheet(); connectDrive(); };
+  openRecommender({ onboarding: true });
 }
 
 /* ---------- Accessibility ----------
