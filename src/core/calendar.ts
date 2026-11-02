@@ -3,16 +3,26 @@
    - Biten antrenmanlar (sessions) gerçek başlangıç/bitiş saatiyle etkinlik olur. Yazılan oturuma cal: 1
      işareti konur; işaret Drive ile eşitlendiği için takvim izni tek cihazda olsa da bütün cihazların
      antrenmanları yazılır.
-   - Haftalık plan, her gün için tekrarlayan (RRULE) ve hatırlatmalı bir etkinliktir; plan değişince
-     imzası (planSig) değişir ve yedi gün yeniden yazılır.
+   - Haftalık plan, her tarih için ayrı ve hatırlatmalı bir etkinliktir: bugünden planın bitiş tarihine
+     (plan.until) kadar, bitiş yoksa HORIZON_DAYS ilerisine kadar (her açılışta ilerler). Yazılan tarihler
+     gcal.dates'te tutulur; plan değişince imzası (planSig) değişir, plandan çıkan tarihler silinir, kalanlar
+     yeniden yazılır. Geçmiş tarihlere dokunulmaz.
+   - O gün antrenman bitince ilk oturum aynı tarih kimliğiyle "✅" etkinliği olarak yazılır: takvimdeki plan
+     etkinliği tamamlandıya döner, yanında ikinci bir etkinlik açılmaz.
    Etkinlik kimlikleri kayıttan türetilir: aynı oturum iki cihazdan yazılsa da tek etkinlik olur. */
-import { pad, ymd } from "./dates.ts";
+import { pad, parse, ymd } from "./dates.ts";
 
 export const CAL_SUMMARY = "Spor Defteri";
 export const CAL_DESCRIPTION = "Spor Defteri uygulamasının yazdığı antrenmanlar ve haftalık plan.";
 // takvim açılınca en fazla bu kadar gün geriye bakılır; bir çalıştırmada en fazla bu kadar oturum yazılır
 export const BACKFILL_DAYS = 30;
 export const MAX_PER_RUN = 20;
+// bitiş tarihi yoksa plan bu kadar gün ilerisine yazılır; bitiş tarihi en fazla bu kadar ileride olabilir
+export const HORIZON_DAYS = 56;
+export const MAX_UNTIL_DAYS = 366;
+// bir çalıştırmada en fazla bu kadar plan etkinliği yazılır, kalanı sonraki sefere
+export const MAX_PLAN_PER_RUN = 60;
+export const DONE_MARK = "✅ ";
 
 const WEEKDAYS: [string, number][] = [["MO", 1], ["TU", 2], ["WE", 3], ["TH", 4], ["FR", 5], ["SA", 6], ["SU", 0]];
 
@@ -31,64 +41,74 @@ export class CalendarMissing extends Error {}
 export const eventId = (prefix: string, raw: string): string =>
   prefix + [...new TextEncoder().encode(raw)].map(b => b.toString(16).padStart(2, "0")).join("");
 export const sessionEventId = (sessionId: string) => eventId("sdses", sessionId);
+export const dayEventId = (date: string) => eventId("sdgun", date);
+// eski sürümün haftalık tekrarlayan plan etkinlikleri (artık yalnız silmek için)
 export const planEventId = (dayCode: string) => eventId("sdplan", dayCode);
 
 // Yerel saatle "YYYY-MM-DDTHH:MM:00" (tekrarlayan etkinlikler saat dilimiyle birlikte bunu ister)
 export const localDateTime = (d: Date) => `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 
-// bugün ya da sonraki ilk `jsDay` günü (0 = pazar)
-export function nextDateFor(jsDay: number, from: Date): Date {
-  const d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-  while (d.getDay() !== jsDay) d.setDate(d.getDate() + 1);
-  return d;
-}
-
-export interface Plan { days: Record<string, { prog: string; time?: string }>; dur: number; remind: number }
+export interface Plan { days: Record<string, { prog: string; time?: string }>; dur: number; remind: number; until?: string }
 export interface Program { id: string; name: string; items: { ex: string; sets: number; reps?: string }[] }
 
-const planDays = (plan: Plan, programs: Program[]) =>
-  WEEKDAYS.map(([code, js]) => {
-    const d = plan.days[code];
-    return { code, js, d, p: d ? programs.find(x => x.id === d.prog) : undefined };
-  });
-
-// Takvimdeki planın neye göre yazıldığı. Tarih içermez: aynı plan her gün yeniden yazılmaz.
+// Takvimdeki planın neye göre yazıldığı. Bugünün tarihini içermez: aynı plan her gün yeniden yazılmaz.
+// Önek, imzanın tarihli plana ait olduğunu gösterir; eski sürüm (tekrarlayan etkinlik) "[" ile başlayan imza yazar.
+export const SIG_PREFIX = "d1:";
 export function planSignature(plan: Plan, programs: Program[]): string {
-  return JSON.stringify([plan.dur, plan.remind, planDays(plan, programs).map(({ code, d, p }) => p ? [code, d!.time || "19:00", p.name, p.items] : [code])]);
+  return SIG_PREFIX + JSON.stringify([plan.dur, plan.remind, plan.until || "", WEEKDAYS.map(([code]) => {
+    const d = plan.days[code], p = d && programs.find(x => x.id === d.prog);
+    return p ? [code, d!.time || "19:00", p.name, p.items] : [code];
+  })]);
 }
 
-export function planEvents(plan: Plan, programs: Program[], opts: { today: Date; timeZone: string; describe: (p: Program) => string }) {
-  return planDays(plan, programs).map(({ code, js, d, p }) => {
-    if (!p) return { id: planEventId(code), body: null };
-    const [h, m] = (d!.time || "19:00").split(":").map(Number);
-    const start = nextDateFor(js, opts.today); start.setHours(h, m, 0, 0);
-    const end = new Date(start.getTime() + (plan.dur || 60) * 60000);
-    return {
-      id: planEventId(code),
-      body: {
-        summary: "Antrenman: " + p.name,
-        description: opts.describe(p),
-        start: { dateTime: localDateTime(start), timeZone: opts.timeZone },
-        end: { dateTime: localDateTime(end), timeZone: opts.timeZone },
-        recurrence: [`RRULE:FREQ=WEEKLY;BYDAY=${code}`],
-        reminders: plan.remind > 0 ? { useDefault: false, overrides: [{ method: "popup", minutes: plan.remind }] } : { useDefault: false },
-        status: "confirmed",
-      },
-    };
-  });
+export interface PlannedDay { date: string; code: string; time: string; p: Program }
+
+// Planın takvimde olması gereken tarihleri: bugünden bitiş tarihine (yoksa HORIZON_DAYS ilerisine) kadar
+export function plannedDates(plan: Plan, programs: Program[], today: Date): PlannedDay[] {
+  const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + (plan.until ? MAX_UNTIL_DAYS : HORIZON_DAYS));
+  if (plan.until && /^\d{4}-\d{2}-\d{2}$/.test(plan.until) && parse(plan.until) < end) end = parse(plan.until);
+  const out: PlannedDay[] = [];
+  for (; d <= end; d.setDate(d.getDate() + 1)) {
+    const code = WEEKDAYS.find(([, js]) => js === d.getDay())![0];
+    const e = plan.days[code], p = e && programs.find(x => x.id === e.prog);
+    if (p) out.push({ date: ymd(d), code, time: e.time || "19:00", p });
+  }
+  return out;
+}
+
+export function plannedEvent(x: PlannedDay, plan: Plan, opts: { timeZone: string; describe: (p: Program) => string }) {
+  const [h, m] = x.time.split(":").map(Number);
+  const start = parse(x.date); start.setHours(h, m, 0, 0);
+  const end = new Date(start.getTime() + (plan.dur || 60) * 60000);
+  return {
+    summary: "Antrenman: " + x.p.name,
+    description: opts.describe(x.p),
+    start: { dateTime: localDateTime(start), timeZone: opts.timeZone },
+    end: { dateTime: localDateTime(end), timeZone: opts.timeZone },
+    reminders: plan.remind > 0 ? { useDefault: false, overrides: [{ method: "popup", minutes: plan.remind }] } : { useDefault: false },
+    status: "confirmed",
+  };
 }
 
 export interface Session { id: string; date: string; start: number; end: number; prog?: string | null; cal?: number }
 
 export function sessionEvent(s: Session, text: { title: string; details: string }) {
   return {
-    summary: text.title,
+    summary: DONE_MARK + text.title,
     description: text.details,
     start: { dateTime: new Date(s.start).toISOString() },
     end: { dateTime: new Date(Math.max(s.end, s.start + 60000)).toISOString() },
     reminders: { useDefault: false },
     status: "confirmed",
   };
+}
+
+// Günün ilk antrenmanı o tarihin plan etkinliğinin yerine yazılır; aynı gün başka bir antrenman
+// önce başladıysa ya da zaten yazıldıysa kendi kimliğiyle ayrı etkinlik olur
+export function sessionTargetId(s: Session, sessions: Session[]): string {
+  const same = sessions.filter(x => x.date === s.date && x.id !== s.id && x.end);
+  return same.some(x => x.cal || x.start < s.start) ? sessionEventId(s.id) : dayEventId(s.date);
 }
 
 // Henüz takvime yazılmamış, son BACKFILL_DAYS içinde biten oturumlar (eskiden yeniye, en fazla MAX_PER_RUN)
@@ -98,7 +118,7 @@ export function pendingSessions(sessions: Session[], now: number): Session[] {
 }
 
 export interface CalendarState {
-  gcal: { log: boolean; plan: boolean; id: string; planSig: string };
+  gcal: { log: boolean; plan: boolean; id: string; planSig: string; dates?: string[]; dated?: number };
   plan: Plan; programs: Program[]; sessions: Session[];
 }
 export interface CalendarHelpers {
@@ -123,31 +143,47 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
     try { await fn(await ensure()); }
     catch (e) {
       if (!(e instanceof CalendarMissing)) throw e;
-      g.id = ""; g.planSig = "";
+      g.id = ""; g.planSig = ""; g.dates = [];
       await fn(await ensure());
     }
   };
 
-  const target = g.plan ? planSignature(state.plan, state.programs) : "";
-  if (target !== g.planSig) {
-    if (!g.plan && !g.id) g.planSig = "";
-    else {
-      const evs = planEvents(state.plan, state.programs, { today: new Date(now), timeZone: h.timeZone, describe: h.describeProgram });
-      await withCal(async cal => {
-        for (const ev of evs) {
-          if (g.plan && ev.body) await client.upsertEvent(cal, ev.id, ev.body);
-          else await client.deleteEvent(cal, ev.id);
-        }
-      });
-      g.planSig = target; out.planUpdated = true;
+  if (g.log) {
+    for (const s of pendingSessions(state.sessions, now)) {
+      await withCal(cal => client.upsertEvent(cal, sessionTargetId(s, state.sessions), sessionEvent(s, h.describeSession(s))));
+      s.cal = 1; out.written++;
     }
   }
 
-  if (g.log) {
-    for (const s of pendingSessions(state.sessions, now)) {
-      await withCal(cal => client.upsertEvent(cal, sessionEventId(s.id), sessionEvent(s, h.describeSession(s))));
-      s.cal = 1; out.written++;
+  // eski sürümün haftalık tekrarlayan etkinlikleri silinir: ilk sefer ve eski sürümde kalmış bir cihaz
+  // onları yeniden yazdıysa (imzası eski biçimde)
+  if (!g.dated || (g.planSig && !g.planSig.startsWith(SIG_PREFIX))) {
+    if (g.id) await withCal(async cal => { for (const [code] of WEEKDAYS) await client.deleteEvent(cal, planEventId(code)); });
+    g.dated = 1;
+  }
+
+  // geçmiş tarihler ve antrenmanı yapılmış günler artık planın değil (yapılan gün ✅ etkinliğiyle değişti)
+  const today = ymd(new Date(now));
+  const done = new Set(g.log ? state.sessions.filter(s => s.end).map(s => s.date) : []);
+  g.dates = (g.dates || []).filter(d => d >= today && !done.has(d));
+  const want = g.plan ? plannedDates(state.plan, state.programs, new Date(now)).filter(x => !done.has(x.date)) : [];
+  const target = g.plan ? planSignature(state.plan, state.programs) : "";
+  if (target !== g.planSig) {
+    if (!g.id) g.dates = [];
+    // plandan çıkan tarihler silinir; kalanlar aşağıda yeni haliyle yeniden yazılır
+    const keep = new Set(want.map(x => x.date));
+    for (const d of [...g.dates]) {
+      if (!keep.has(d)) await withCal(cal => client.deleteEvent(cal, dayEventId(d)));
+      g.dates = g.dates.filter(x => x !== d);
     }
+    g.planSig = target; out.planUpdated = true;
+  }
+  let n = 0;
+  for (const x of want) {
+    if (g.dates.includes(x.date)) continue;
+    if (n++ >= MAX_PLAN_PER_RUN) break;
+    await withCal(cal => client.upsertEvent(cal, dayEventId(x.date), plannedEvent(x, state.plan, { timeZone: h.timeZone, describe: h.describeProgram })));
+    g.dates.push(x.date); out.planUpdated = true;
   }
   return out;
 }

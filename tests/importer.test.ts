@@ -71,6 +71,31 @@ describe("programı çözme", () => {
     expect(r.warnings).toEqual([]);
   });
 
+  it("plan saatleri ve bitiş tarihi; sırasız günler programın günlerine sırayla dağılır", () => {
+    const r = parseProgram(`${BASE}#ekle=p=AB;g=A:Back+Squat/3/5;g=B:Deadlift/1/5;w=MO@18:00,WE@7,SA:0@10.30;u=2027-01-06`, known)!;
+    expect(r.plan).toEqual([["MO", 0], ["WE", 1], ["SA", 0]]);
+    expect(r.times).toEqual({ MO: "18:00", WE: "07:00", SA: "10:30" });
+    expect(r.until).toBe("2027-01-06");
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("programsız bağlantı yalnız planı taşır (pazartesi, çarşamba, cumartesi; 6 Ocak'a kadar)", () => {
+    const r = parseProgram(`Planın hazır: ${BASE}#ekle=w=MO@18:00,WE@18:00,SA@10:00;u=6.1.2027`, known)!;
+    expect(r.days).toEqual([]);
+    expect(r.plan).toEqual([["MO", -1], ["WE", -1], ["SA", -1]]);
+    expect(r.times).toEqual({ MO: "18:00", WE: "18:00", SA: "10:00" });
+    expect(r.until).toBe("2027-01-06");
+    expect(parseProgram(`${BASE}#ekle=w=Zz`, known)).toBeNull();
+  });
+
+  it("geçersiz saat ve tarih uyarıyla atlanır", () => {
+    const r = parseProgram("w=MO@25:00,TU;u=2027-02-30", known)!;
+    expect(r.plan).toEqual([["MO", -1], ["TU", -1]]);
+    expect(r.times).toEqual({});
+    expect(r.until).toBe("");
+    expect(r.warnings).toHaveLength(2);
+  });
+
   it("Türkçe gün adlarını kabul eder, geçersiz plan girdisini uyarıyla atlar", () => {
     const r = parseProgram("p=X;g=A:Back Squat*3*5;w=Pzt:0,Çarşamba:0,Zz:0,Cum:5", known)!;
     expect(r.plan).toEqual([["MO", 0], ["WE", 0]]);
@@ -114,9 +139,13 @@ describe("paylaşım bağlantısı", () => {
   });
 
   it("Claude isteği biçimi ve adresi içerir", () => {
-    const p = claudePrompt(BASE, "evde 3 gün");
+    const p = claudePrompt(BASE, "evde 3 gün", "2026-11-02");
     expect(p).toContain(BASE + "#ekle=");
     expect(p).toContain("evde 3 gün");
+    expect(p).toContain("2026-11-02");
+    // yalnız plan örneği de çözülebilir olmalı
+    const planOnly = p.slice(p.indexOf(BASE + "#ekle=w="));
+    expect(parseProgram(planOnly, known)!.until).toBe("2027-01-06");
     const example = p.split("\n").find(l => l.startsWith(BASE))!;
     expect(example).not.toMatch(/[*|_~()]/);
     expect(parseProgram(example, known)!.days).toHaveLength(2);

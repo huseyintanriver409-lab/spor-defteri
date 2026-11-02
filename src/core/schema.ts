@@ -17,11 +17,13 @@ export type State = {
   [k: string]: any;
 };
 
-export const DEFAULT_PLAN = () => ({ days: {}, dur: 60, remind: 30 });
-// Google Takvim: log = biten antrenmanları yaz, plan = haftalık planı tekrarlayan etkinlik olarak koy,
-// id = uygulamanın oluşturduğu "Spor Defteri" takviminin kimliği, planSig = takvimdeki planın imzası.
+// until = planın bitiş tarihi ("YYYY-MM-DD", boşsa süresiz)
+export const DEFAULT_PLAN = () => ({ days: {}, dur: 60, remind: 30, until: "" });
+// Google Takvim: log = biten antrenmanları yaz, plan = haftalık planı tarih tarih etkinlik olarak koy,
+// id = uygulamanın oluşturduğu "Spor Defteri" takviminin kimliği, planSig = takvimdeki planın imzası,
+// dates = takvime yazılmış plan tarihleri, dated = eski sürümün tekrarlayan plan etkinlikleri silindi.
 // Ayarlarla birlikte eşitlenir; böylece cihazlar aynı takvimi kullanır ve plan bir kez yazılır.
-export const DEFAULT_GCAL = () => ({ log: false, plan: false, id: "", planSig: "" });
+export const DEFAULT_GCAL = () => ({ log: false, plan: false, id: "", planSig: "", dates: [] as string[], dated: 0 });
 export const DEFAULTS = (): State => ({ v: SCHEMA, deviceId: "", entries: [], custom: [], programs: [], active: null, body: [], profile: { sex: "m", bw: "" }, rest: 90, plan: DEFAULT_PLAN(),
   exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
   exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true }, favs: [], onboarded: false, gcal: DEFAULT_GCAL() });

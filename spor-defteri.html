@@ -106,6 +106,9 @@
           <div><label for="planDur">Süre (dk)</label><input type="number" inputmode="numeric" min="10" step="5" id="planDur"></div>
           <div><label for="planRemind">Hatırlatma (dk önce)</label><input type="number" inputmode="numeric" min="0" step="5" id="planRemind"></div>
         </div>
+        <label for="planUntil" style="margin-top:12px">Bitiş tarihi (boşsa süresiz)</label>
+        <div class="row" style="flex-wrap:nowrap"><input type="date" id="planUntil" class="grow"><button class="btn quiet" id="planUntilClear">Süresiz</button></div>
+        <button class="btn" id="planClaude" style="margin-top:12px;width:100%;justify-content:center"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Claude ile planla</button>
         <div class="row" style="margin-top:12px"><span class="grow muted small" id="planInfo"></span><button class="btn primary" id="planIcs"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Takvim dosyası</button></div>
         <details style="margin-top:12px">
           <summary class="small">Google Takvim'e nasıl yüklerim?</summary>

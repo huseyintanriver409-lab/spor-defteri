@@ -5,7 +5,9 @@
      …/spor-defteri.html#ekle=p=Üst+Alt;g=Üst:Bench+Press/4/6-8,Barbell+Row/4/6-8;g=Alt:Back+Squat/4/6-8;w=MO:0,TH:1
 
    p = program adı · her gün ayrı bir g= ("Ad:" + "," ile ayrılmış hareketler; hareket/set/tekrar)
-   w = isteğe bağlı haftalık plan (gün kodu:gün sırası; MO/TU/WE/TH/FR/SA/SU ya da Pzt/Sal/…)
+   w = isteğe bağlı haftalık plan: gün kodu:gün sırası@saat (MO/TU/WE/TH/FR/SA/SU ya da Pzt/Sal/…; sıra ve saat isteğe bağlı)
+   u = isteğe bağlı bitiş tarihi (YYYY-AA-GG ya da GG.AA.YYYY); plan o güne kadar takvime yazılır
+   Programsız bağlantı yalnız planı değiştirir, günlere mevcut programlar konur: …#ekle=w=MO@18:00,WE,SA;u=2027-01-06
    Boşluk yerine "+" ya da %20 kullanılabilir. Tarayıcıya bağlı değildir; testleri tests/importer.test.ts.
    Eski biçim (günler "|", hareket*set*tekrar) de okunur; ama yazılmaz: Claude'un telefon uygulaması "*4*"ü italik
    sanıp bağlantıyı ilk hareketten sonra kesiyor, Android'in bağlantı tanıyıcısı da "|" işaretinde duruyor. */
@@ -14,7 +16,10 @@ export const LINK_KEY = "ekle";
 
 export interface ImportItem { ex: string; sets: number; reps: string; original: string; known: boolean }
 export interface ImportDay { name: string; items: ImportItem[] }
-export interface ImportedProgram { name: string; days: ImportDay[]; plan: [string, number][]; warnings: string[] }
+// plan: [gün kodu, gün sırası]; programsız bağlantıda (days boş) sıra -1. times: gün kodu → "SS:DD"
+export interface ImportedProgram {
+  name: string; days: ImportDay[]; plan: [string, number][]; times: Record<string, string>; until: string; warnings: string[];
+}
 
 const DAY_CODES: Record<string, string> = {
   mo: "MO", pzt: "MO", pazartesi: "MO", tu: "TU", sal: "TU", sali: "TU", we: "WE", car: "WE", carsamba: "WE",
@@ -64,7 +69,7 @@ export function extractPayload(input: string): string | null {
     const count = (c: string) => s.split(c).length - 1;
     while (s.endsWith(")") && count(")") > count("(")) s = s.slice(0, -1);
     s = s.replace(/[.,]+$/, "");
-  } else if (/^p=/.test(s)) {
+  } else if (/^[pw]=/.test(s)) {
     // bağlantısız, elle yazılmış metin: satır sonları ayraç sayılmaz
     s = s.replace(/\s*\n\s*/g, "");
   } else return null;
@@ -83,7 +88,7 @@ export function parseProgram(input: string, knownExercises: string[]): ImportedP
     if (key === "g") dayTexts.push(...val.split("|"));
     else parts[key] = val;
   }
-  if (!dayTexts.length) return null;
+  if (!dayTexts.length && !parts.w) return null;
   const warnings: string[] = [];
   const days: ImportDay[] = dayTexts.map((d, di) => {
     const c = d.indexOf(":");
@@ -98,16 +103,46 @@ export function parseProgram(input: string, knownExercises: string[]): ImportedP
     }).filter(it => it.ex);
     return { name, items };
   }).filter(d => d.items.length);
-  if (!days.length) return null;
-  const plan: [string, number][] = [];
-  if (parts.w) for (const pair of parts.w.split(",")) {
-    const [d, n] = pair.split(":").map(x => x.trim());
+  if (dayTexts.length && !days.length) return null;
+  const plan: [string, number][] = [], times: Record<string, string> = {};
+  if (parts.w) for (const pair of parts.w.split(",").map(x => x.trim()).filter(Boolean)) {
+    const [dayPart, timePart] = pair.split("@");
+    const [d, n] = dayPart.split(":").map(x => x.trim());
     const code = DAY_CODES[normalize(d || "").replace(/ /g, "")];
-    const idx = parseInt(n);
-    if (code && idx >= 0 && idx < days.length && !plan.some(([c]) => c === code)) plan.push([code, idx]);
-    else warnings.push(`Plan girdisi anlaşılamadı: "${pair.trim()}"`);
+    // sıra yazılmamışsa günler programın günlerine sırayla dağıtılır; programsız bağlantıda sıra yok (-1)
+    const idx = !days.length ? -1 : n ? parseInt(n) : plan.length % days.length;
+    if (!code || plan.some(([c]) => c === code) || (days.length && !(idx >= 0 && idx < days.length))) {
+      warnings.push(`Plan girdisi anlaşılamadı: "${pair}"`); continue;
+    }
+    plan.push([code, idx]);
+    if (timePart) {
+      const t = parseTime(timePart);
+      if (t) times[code] = t; else warnings.push(`Saat anlaşılamadı: "${timePart}"`);
+    }
   }
-  return { name: clean(parts.p || "") || "Claude'dan program", days, plan, warnings };
+  if (!days.length && !plan.length) return null;
+  let until = "";
+  if (parts.u) { until = parseDate(parts.u); if (!until) warnings.push(`Bitiş tarihi anlaşılamadı: "${parts.u}"`); }
+  return { name: clean(parts.p || "") || "Claude'dan program", days, plan, times, until, warnings };
+}
+
+// "18:00", "18.30", "1830", "7" → "SS:DD"
+export function parseTime(s: string): string {
+  const m = s.trim().match(/^(\d{1,2})(?:[:.]?(\d{2}))?$/);
+  if (!m || +m[1] > 23 || +(m[2] || 0) > 59) return "";
+  return m[1].padStart(2, "0") + ":" + (m[2] || "00");
+}
+
+// "2027-01-06", "6.1.2027", "06/01/2027" → "YYYY-AA-GG" (geçersiz tarihse "")
+export function parseDate(s: string): string {
+  s = s.trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/), y: number, mo: number, d: number;
+  if (m) [y, mo, d] = [+m[1], +m[2], +m[3]];
+  else if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]];
+  else return "";
+  const dt = new Date(y, mo - 1, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return "";
+  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
 // Uygulamadaki bir programı paylaşılabilir bağlantıya çevirir (aynı biçim; boşluklar "+")
@@ -118,18 +153,20 @@ export function buildLink(base: string, name: string, days: { name: string; item
   return `${base}#${LINK_KEY}=p=${enc(name)}${g}${w}`;
 }
 
-// Claude'a verilecek hazır istek: biçimi ve kuralları anlatır
-export function claudePrompt(base: string, wish: string): string {
+// Claude'a verilecek hazır istek: biçimi ve kuralları anlatır. today: "YYYY-AA-GG" ("6 Ocak'a kadar" doğru yıla çözülsün)
+export function claudePrompt(base: string, wish: string, today = ""): string {
   return [
-    "Spor Defteri adlı antrenman uygulamam için bana bir ağırlık antrenmanı programı hazırla." + (wish ? " İsteğim: " + wish : ""),
-    "Önce bana uygun olup olmadığını anlamak için gerekirse kısaca soru sor (deneyim, hedef, ekipman, haftada kaç gün).",
-    "Programı kısaca açıkla (hangi gün ne çalışılır, nasıl ilerlenir). Sonra programı uygulamaya eklemem için TEK bir bağlantı ver. Bağlantı biçimi:",
-    `${base}#ekle=p=Program+Adi;g=Gun1+Adi:Hareket+Adi/set/tekrar,Hareket+Adi/set/tekrar;g=Gun2+Adi:Hareket+Adi/set/tekrar;w=MO:0,WE:1,FR:0`,
+    "Spor Defteri adlı antrenman uygulamamı kullanıyorum. Bana bir ağırlık antrenmanı programı hazırla ya da haftalık planımı (hangi gün, saat kaçta, ne zamana kadar) ayarla; uygulama planı Google Takvim'ime kendisi yazıyor." + (wish ? " İsteğim: " + wish : ""),
+    (today ? `Bugünün tarihi: ${today}. ` : "") + "Gerekirse önce kısaca soru sor (deneyim, hedef, ekipman, hangi günler, saat).",
+    "Programı kısaca açıkla (hangi gün ne çalışılır, nasıl ilerlenir). Sonra uygulamaya eklemem için TEK bir bağlantı ver. Bağlantı biçimi:",
+    `${base}#ekle=p=Program+Adi;g=Gun1+Adi:Hareket+Adi/set/tekrar,Hareket+Adi/set/tekrar;g=Gun2+Adi:Hareket+Adi/set/tekrar;w=MO:0@18:00,WE:1@18:00,SA:0@10:00;u=2027-01-06`,
     "Örnek: g=Ust+Vucut:Bench+Press/4/6-8,Barbell+Row/4/8-10,Plank/3/45",
     "Kurallar: boşluk yerine + kullan; her gün için ayrı bir ;g= yaz; hareketleri virgülle ayır; hareket/set/tekrar (tekrar 8 ya da 8-12 gibi; plank gibi süreli hareketlerde saniye).",
+    "w haftalık plandır: gün kodu (MO TU WE TH FR SA SU) : programın gün sırası (0'dan başlar) @ saat (SS:DD). Saat bilinmiyorsa @ kısmını yazma.",
+    "u planın bitiş tarihidir (YYYY-AA-GG); \"6 Ocak'a kadar\" gibi bir istekte yaz, süresizse yazma.",
+    `Yeni program istemeyip yalnız günleri, saatleri ya da bitiş tarihini değiştirmek istersem p ve g olmadan yalnız planı ver; günlere mevcut programlarım konur: ${base}#ekle=w=MO@18:00,WE@18:00,SA@10:00;u=2027-01-06`,
     "Bağlantıda yıldız (*), dikey çizgi (|), parantez, boşluk ve Türkçe harf kullanma; telefonda bağlantı yarıda kesiliyor.",
     "Hareket adlarını yaygın İngilizce adlarıyla yaz (Back Squat, Bench Press, Romanian Deadlift, Lat Pulldown, Seated Cable Row, Overhead Press, Leg Press, Plank…).",
-    "w isteğe bağlı haftalık plandır: gün kodu (MO TU WE TH FR SA SU) : gün sırası (0'dan başlar).",
     "Bağlantıyı tıklanabilir olarak, kod bloğu içine koymadan yaz.",
   ].join("\n");
 }

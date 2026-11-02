@@ -133,11 +133,13 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 **Google Takvim (2026-11-01):**
 - Kapsam `calendar.app.created`: uygulama kendi "Spor Defteri" takvimini oluşturur ve yalnız ona yazar; kullanıcının diğer takvimlerini ve etkinliklerini göremez.
 - **Biten antrenmanlar:** gerçek başlangıç/bitiş saatiyle, set özeti ve toplam hacimle etkinlik olur. Yazılan oturuma `cal: 1` işareti konur ve Drive ile eşitlenir; takvim izni tek cihazda olsa da bütün cihazların antrenmanları o cihazdan yazılır. Açılınca son 30 gün geriye yazılır (çalıştırma başına en fazla 20).
-- **Haftalık plan:** her gün için haftalık tekrarlayan (RRULE), plandaki hatırlatma süresiyle bildirimli etkinlik. Plan, süre, hatırlatma ya da programlar değişince 4 sn sonra yeniden yazılır; plandan çıkan günler silinir. Bu, PWA'nın kendisinde olmayan telefon bildirimini de sağlar.
+- **Haftalık plan (2026-11-02'den beri tarihli):** her tarih ayrı, plandaki hatırlatma süresiyle bildirimli bir etkinlik. Bugünden planın bitiş tarihine (`plan.until`, Antrenman → Haftalık plan → Bitiş tarihi) kadar, bitiş yoksa 56 gün ilerisine kadar yazılır; her açılışta ileri kayar. Yazılan tarihler `gcal.dates`'te. Plan değişince 4 sn sonra plandan çıkan gelecek tarihler silinir, kalanlar yeniden yazılır; geçmişe dokunulmaz. Çalıştırma başına en fazla 60 etkinlik. Bu, PWA'nın kendisinde olmayan telefon bildirimini de sağlar.
+- **✅ Tamamlandı:** o gün biten ilk antrenman, o tarihin plan etkinliğiyle aynı kimlikle (`sdgun`+tarih) "✅ Antrenman: …" olarak gerçek saatiyle yazılır; plandaki etkinlik tamamlandıya döner, ikinci etkinlik açılmaz. Aynı gün ikinci antrenman kendi kimliğiyle ayrı etkinlik olur.
+- Eski sürümün tekrarlayan etkinlikleri (`sdplan`+gün) ilk açılışta silinir; eski sürümde kalmış bir cihaz onları geri yazarsa (imzası `d1:` önekisiz) yeniden silinir.
 - Etkinlik kimlikleri kayıttan türetilir (base32hex): iki cihaz aynı oturumu yazsa da tek etkinlik olur. Önce güncellenir (PUT), yoksa oluşturulur; takvim Google'da silinmişse yeniden oluşturulur.
-- Ayarlar `state.gcal` (log, plan, takvim kimliği, planSig) Drive ile eşitlenir. Drive ve Takvim işleri tek sırada çalışır.
+- Ayarlar `state.gcal` (log, plan, takvim kimliği, planSig, dates, dated) Drive ile eşitlenir. Drive ve Takvim işleri tek sırada çalışır.
 - Kurulum: Cloud projesinde **Google Calendar API** etkin olmalı.
-- Testler: `tests/calendar.test.ts` (27 test).
+- Testler: `tests/calendar.test.ts`.
 
 **Sıradaki (isteğe bağlı):** Takvimde elle taşınan/eklenen antrenmanları uygulamada göstermek (takvimden okuma).
 
@@ -155,7 +157,8 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 
 Claude (ya da bir arkadaş) programı tek bir bağlantı olarak verir; dokununca uygulama "Bu programı ekleyeyim mi?" önizlemesini açar.
 
-- Biçim (okunabilir, base64 değil): `…/spor-defteri.html#ekle=p=Ad;g=Gün1:Hareket/set/tekrar,…;g=Gün2:…;w=MO:0,WE:1`. Boşluk yerine `+`.
+- Biçim (okunabilir, base64 değil): `…/spor-defteri.html#ekle=p=Ad;g=Gün1:Hareket/set/tekrar,…;g=Gün2:…;w=MO:0@18:00,WE:1;u=2027-01-06`. Boşluk yerine `+`. `@saat` ve `u` (bitiş tarihi) isteğe bağlı; sıra yazılmazsa günler sırayla dağılır.
+- **Yalnız plan:** `#ekle=w=MO@18:00,WE,SA;u=2027-01-06` programsız gelir; önizlemede her güne mevcut programlardan biri seçilir (varsayılan: o gün plandaki, yoksa plandakiler sırayla) ve haftalık planın yerine geçer. Plan Google Takvim'e kendiliğinden yazılır. Haftalık plan ekranında "Claude ile planla" düğmesi var; Claude'a bugünün tarihi de verilir.
 - Bağlantıda `*`, `|`, `_`, `~` kullanılmaz: Claude'un telefon uygulaması `*4*`'ü italik sanıp bağlantıyı ilk hareketten sonra kesiyordu (2026-11-02, v13'te düzeldi); Android'in bağlantı tanıyıcısı da `|` işaretinde duruyor. Eski biçim (`|`, `*`) hâlâ okunur.
 - Hareket adları esnek eşleşir (Türkçe harfler, tire, kısmi ad); bulunamayan "yeni hareket" olarak eklenir.
 - **Claude ile program yap** (Antrenman → Programlar): Claude'u biçimi anlatan hazır bir istekle açar (`claude.ai/new?q=…`, istek panoya da kopyalanır). Bağlantı açılmazsa Claude'un cevabı yapıştırılır.

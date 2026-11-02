@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  eventId, sessionEventId, planEventId, planEvents, planSignature, pendingSessions, sessionEvent, runCalendar,
-  CalendarMissing, BACKFILL_DAYS, MAX_PER_RUN, type CalendarClient, type CalendarState, type Session,
+  eventId, sessionEventId, planEventId, dayEventId, plannedDates, plannedEvent, planSignature, pendingSessions, sessionEvent, runCalendar,
+  CalendarMissing, BACKFILL_DAYS, MAX_PER_RUN, MAX_PLAN_PER_RUN, HORIZON_DAYS, type CalendarClient, type CalendarState, type Session,
 } from "../src/core/calendar.ts";
 import { calendarClient } from "../src/sync/calendar.ts";
 import { AuthError } from "../src/sync/drive.ts";
@@ -13,7 +13,10 @@ const progs = [
   { id: "p1", name: "Push", items: [{ ex: "Bench Press (Barbell)", sets: 3, reps: "6-8" }] },
   { id: "p2", name: "Pull", items: [{ ex: "Barbell Row", sets: 3, reps: "8" }] },
 ];
-const plan = () => ({ days: { MO: { prog: "p1", time: "18:30" }, TH: { prog: "p2" } } as Record<string, { prog: string; time?: string }>, dur: 75, remind: 30 });
+const plan = () => ({ days: { MO: { prog: "p1", time: "18:30" }, TH: { prog: "p2" } } as Record<string, { prog: string; time?: string }>, dur: 75, remind: 30, until: "" });
+// NOW'dan sonraki 56 günün pazartesi ve perşembeleri (2 Kasım – 24 Aralık)
+const MO_TH = Array.from({ length: HORIZON_DAYS + 1 }, (_, i) => new Date(2026, 10, 1 + i)).filter(d => d.getDay() === 1 || d.getDay() === 4)
+  .map(d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
 const ses = (id: string, endAgoH: number, extra: Partial<Session> = {}): Session => ({ id, date: "2026-10-31", start: NOW - endAgoH * H - H, end: NOW - endAgoH * H, ...extra });
 const helpers = { describeProgram: (p: any) => "• " + p.items[0].ex, describeSession: (s: Session) => ({ title: "Antrenman " + s.id, details: "ayrıntı" }), timeZone: "Europe/Istanbul", now: NOW };
 
@@ -35,7 +38,7 @@ const calState = (over: Partial<CalendarState["gcal"]> = {}, sessions: Session[]
 
 describe("etkinlik kimlikleri", () => {
   it("yalnız Google'ın izin verdiği base32hex karakterleri ve 5+ uzunluk", () => {
-    for (const id of [sessionEventId("mvxvpkn1z6fw"), sessionEventId("ğüş-çö"), planEventId("SU"), eventId("sdses", "a")]) {
+    for (const id of [sessionEventId("mvxvpkn1z6fw"), sessionEventId("ğüş-çö"), planEventId("SU"), dayEventId("2026-11-02"), eventId("sdses", "a")]) {
       expect(id).toMatch(/^[0-9a-v]{5,1024}$/);
     }
   });
@@ -43,38 +46,53 @@ describe("etkinlik kimlikleri", () => {
     expect(sessionEventId("abc")).toBe(sessionEventId("abc"));
     expect(sessionEventId("abc")).not.toBe(sessionEventId("abd"));
     expect(planEventId("MO")).not.toBe(sessionEventId("MO"));
+    expect(dayEventId("2026-11-02")).not.toBe(sessionEventId("2026-11-02"));
   });
 });
 
 describe("haftalık plan etkinlikleri", () => {
-  const evs = planEvents(plan(), progs, { today: new Date(NOW), timeZone: "Europe/Istanbul", describe: helpers.describeProgram });
-  it("yedi gün; programsız günler silinecek (body null)", () => {
-    expect(evs).toHaveLength(7);
-    expect(evs.filter(e => e.body).map(e => e.id)).toEqual([planEventId("MO"), planEventId("TH")]);
+  const today = new Date(NOW), opts = { timeZone: "Europe/Istanbul", describe: helpers.describeProgram };
+  it(`bitiş tarihi yoksa bugünden ${HORIZON_DAYS} gün ilerisine kadar plandaki günler`, () => {
+    const days = plannedDates(plan(), progs, today);
+    expect(days.map(d => d.date)).toEqual(MO_TH);
+    expect(days[0]).toMatchObject({ date: "2026-11-02", code: "MO", time: "18:30" });
+    // saat girilmemişse 19:00
+    expect(days[1]).toMatchObject({ date: "2026-11-05", code: "TH", time: "19:00" });
   });
-  it("sonraki ilk günden başlayan, haftalık tekrarlayan, hatırlatmalı etkinlik", () => {
-    const mo = evs.find(e => e.id === planEventId("MO"))!.body!;
-    expect(mo).toMatchObject({
-      summary: "Antrenman: Push",
+  it("bitiş tarihi o gün dahil; geçmişte kalmışsa hiç gün yok; bugün plandaysa bugün de", () => {
+    expect(plannedDates({ ...plan(), until: "2026-11-12" }, progs, today).map(d => d.date)).toEqual(["2026-11-02", "2026-11-05", "2026-11-09", "2026-11-12"]);
+    expect(plannedDates({ ...plan(), until: "2026-10-01" }, progs, today)).toEqual([]);
+    const su = plan(); su.days.SU = { prog: "p1" };
+    expect(plannedDates(su, progs, today)[0].date).toBe("2026-11-01");
+  });
+  it("6 Ocak'a kadar pazartesi, çarşamba, cumartesi", () => {
+    const p = { ...plan(), days: { MO: { prog: "p1" }, WE: { prog: "p2" }, SA: { prog: "p1" } }, until: "2027-01-06" };
+    const days = plannedDates(p, progs, today).map(d => d.date);
+    expect(days[0]).toBe("2026-11-02");
+    expect(days.at(-1)).toBe("2027-01-06");
+    expect(days).toHaveLength(29);
+  });
+  it("programı silinmiş gün atlanır", () => {
+    expect(plannedDates(plan(), [progs[0]], today).every(d => d.code === "MO")).toBe(true);
+  });
+  it("tek seferlik, saat dilimli, hatırlatmalı etkinlik; hatırlatma 0 ise hatırlatma yok", () => {
+    const [mo] = plannedDates(plan(), progs, today);
+    expect(plannedEvent(mo, plan(), opts)).toEqual({
+      summary: "Antrenman: Push", description: "• Bench Press (Barbell)",
       start: { dateTime: "2026-11-02T18:30:00", timeZone: "Europe/Istanbul" },
       end: { dateTime: "2026-11-02T19:45:00", timeZone: "Europe/Istanbul" },
-      recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO"],
       reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 30 }] },
+      status: "confirmed",
     });
-    // saat girilmemişse 19:00
-    expect(evs.find(e => e.id === planEventId("TH"))!.body!.start.dateTime).toBe("2026-11-05T19:00:00");
+    expect(plannedEvent(mo, { ...plan(), remind: 0 }, opts).reminders).toEqual({ useDefault: false });
   });
-  it("hatırlatma 0 ise hatırlatma yok", () => {
-    const p = { ...plan(), remind: 0 };
-    const b = planEvents(p, progs, { today: new Date(NOW), timeZone: "UTC", describe: () => "" }).find(e => e.body)!.body!;
-    expect(b.reminders).toEqual({ useDefault: false });
-  });
-  it("imza tarihle değişmez; saat, süre, program adı ve içeriğiyle değişir", () => {
+  it("imza tarihle değişmez; saat, süre, bitiş, program adı ve içeriğiyle değişir", () => {
     const base = planSignature(plan(), progs);
     expect(planSignature(plan(), progs)).toBe(base);
     const p2 = plan(); p2.days.MO.time = "19:00";
     expect(planSignature(p2, progs)).not.toBe(base);
     expect(planSignature({ ...plan(), dur: 60 }, progs)).not.toBe(base);
+    expect(planSignature({ ...plan(), until: "2027-01-06" }, progs)).not.toBe(base);
     expect(planSignature(plan(), [{ ...progs[0], name: "Push A" }, progs[1]])).not.toBe(base);
     expect(planSignature(plan(), [{ ...progs[0], items: [] }, progs[1]])).not.toBe(base);
   });
@@ -92,7 +110,7 @@ describe("biten antrenmanlar", () => {
   it("etkinlik gerçek başlangıç ve bitişi taşır; bitişsiz kısa oturum en az 1 dk", () => {
     const s = ses("x", 0);
     expect(sessionEvent(s, { title: "T", details: "D" })).toMatchObject({
-      summary: "T", description: "D", start: { dateTime: new Date(s.start).toISOString() }, end: { dateTime: new Date(s.end).toISOString() },
+      summary: "✅ T", description: "D", start: { dateTime: new Date(s.start).toISOString() }, end: { dateTime: new Date(s.end).toISOString() },
     });
     const z = { ...s, end: s.start };
     expect(sessionEvent(z, { title: "", details: "" }).end.dateTime).toBe(new Date(s.start + 60000).toISOString());
@@ -107,13 +125,15 @@ describe("runCalendar", () => {
   });
 
   it("ilk açılışta takvimi oluşturur, planı ve bekleyen antrenmanları yazar, işaretler", async () => {
+    // a ve b aynı gün: önce başlayan b o günün kimliğini alır, a kendi kimliğiyle yazılır
     const c = fakeCalendar(), st = calState({ log: true, plan: true }, [ses("a", 1), ses("b", 2)]);
     const r = await runCalendar(st, c, helpers);
     expect(r).toMatchObject({ created: true, planUpdated: true, written: 2 });
     expect(st.gcal.id).toBe("cal1");
     expect(st.gcal.planSig).toBe(planSignature(st.plan, st.programs));
+    expect(st.gcal.dates).toEqual(MO_TH);
     expect(st.sessions.every(s => s.cal === 1)).toBe(true);
-    expect([...c.cals.cal1.keys()].sort()).toEqual([planEventId("MO"), planEventId("TH"), sessionEventId("a"), sessionEventId("b")].sort());
+    expect([...c.cals.cal1.keys()].sort()).toEqual([...MO_TH.map(dayEventId), dayEventId("2026-10-31"), sessionEventId("a")].sort());
   });
 
   it("ikinci çalıştırmada değişiklik yoksa istek yapmaz", async () => {
@@ -124,21 +144,100 @@ describe("runCalendar", () => {
     expect(c.log).toEqual([]);
   });
 
+  it("günler geçtikçe yalnız yeni tarihler eklenir, geçmişe dokunulmaz", async () => {
+    const c = fakeCalendar(), st = calState({ plan: true });
+    await runCalendar(st, c, helpers);
+    c.log.length = 0;
+    await runCalendar(st, c, { ...helpers, now: NOW + 7 * 24 * H });
+    expect(c.log).toEqual(["upsert " + dayEventId("2026-12-28"), "upsert " + dayEventId("2026-12-31")]);
+    expect(st.gcal.dates![0]).toBe("2026-11-09");
+    expect(c.cals.cal1.has(dayEventId("2026-11-02"))).toBe(true);
+  });
+
   it("plan değişince yeniden yazar, plandan çıkan gün silinir", async () => {
     const c = fakeCalendar(), st = calState({ plan: true });
     await runCalendar(st, c, helpers);
     delete st.plan.days.TH; st.plan.days.SA = { prog: "p2", time: "10:00" };
     await runCalendar(st, c, helpers);
-    expect([...c.cals.cal1.keys()].sort()).toEqual([planEventId("MO"), planEventId("SA")].sort());
+    const keys = [...c.cals.cal1.keys()];
+    expect(keys).not.toContain(dayEventId("2026-11-05"));
+    expect(c.cals.cal1.get(dayEventId("2026-11-07")).start.dateTime).toBe("2026-11-07T10:00:00");
+    expect(keys).toHaveLength(st.gcal.dates!.length);
   });
 
-  it("plan kapatılınca takvimdeki plan silinir, imza boşalır", async () => {
+  it("bitiş tarihi öne çekilince sonraki tarihler silinir", async () => {
+    const c = fakeCalendar(), st = calState({ plan: true });
+    st.plan.until = "2027-01-06";
+    await runCalendar(st, c, helpers);
+    expect(st.gcal.dates!.at(-1)).toBe("2027-01-04");
+    st.plan.until = "2026-11-10";
+    await runCalendar(st, c, helpers);
+    expect([...c.cals.cal1.keys()].sort()).toEqual(["2026-11-02", "2026-11-05", "2026-11-09"].map(dayEventId).sort());
+  });
+
+  it(`çok uzun plan parça parça yazılır (çalıştırma başına ${MAX_PLAN_PER_RUN})`, async () => {
+    const c = fakeCalendar(), st = calState({ plan: true });
+    for (const d of ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]) st.plan.days[d] = { prog: "p1" };
+    st.plan.until = "2027-03-01";
+    await runCalendar(st, c, helpers);
+    expect(c.cals.cal1.size).toBe(MAX_PLAN_PER_RUN);
+    await runCalendar(st, c, helpers); await runCalendar(st, c, helpers);
+    expect(c.cals.cal1.size).toBe(plannedDates(st.plan, progs, new Date(NOW)).length);
+  });
+
+  it("antrenman bitince o günün plan etkinliği ✅ olur; plan sonra değişse de silinmez", async () => {
+    const c = fakeCalendar(), st = calState({ log: true, plan: true });
+    st.plan.days.SU = { prog: "p1", time: "09:00" };
+    await runCalendar(st, c, helpers);
+    expect(c.cals.cal1.get(dayEventId("2026-11-01")).summary).toBe("Antrenman: Push");
+    st.sessions.push({ id: "bugun", date: "2026-11-01", start: NOW - 2 * H, end: NOW - H });
+    await runCalendar(st, c, helpers);
+    const ev = c.cals.cal1.get(dayEventId("2026-11-01"));
+    expect(ev.summary).toBe("✅ Antrenman bugun");
+    expect(ev.start.dateTime).toBe(new Date(NOW - 2 * H).toISOString());
+    expect(c.cals.cal1.has(sessionEventId("bugun"))).toBe(false);
+    expect(st.gcal.dates).not.toContain("2026-11-01");
+    delete st.plan.days.SU;
+    await runCalendar(st, c, helpers);
+    expect(c.cals.cal1.get(dayEventId("2026-11-01")).summary).toBe("✅ Antrenman bugun");
+  });
+
+  it("eski sürümün tekrarlayan plan etkinlikleri bir kez silinir", async () => {
+    const c = fakeCalendar(), st = calState({ plan: true, id: "cal0", planSig: "eski" });
+    c.cals.cal0 = new Map([[planEventId("MO"), {}], [planEventId("TH"), {}], [sessionEventId("x"), {}]]);
+    await runCalendar(st, c, helpers);
+    expect(st.gcal.dated).toBe(1);
+    expect(c.cals.cal0.has(planEventId("MO"))).toBe(false);
+    expect(c.cals.cal0.has(planEventId("TH"))).toBe(false);
+    expect(c.cals.cal0.has(sessionEventId("x"))).toBe(true);
+    c.log.length = 0;
+    await runCalendar(st, c, helpers);
+    expect(c.log).toEqual([]);
+    // eski sürümdeki bir cihaz tekrarlayan etkinliği geri yazarsa yeniden temizlenir
+    c.cals.cal0.set(planEventId("MO"), {}); st.gcal.planSig = '[75,30,["MO"]]';
+    await runCalendar(st, c, helpers);
+    expect(c.cals.cal0.has(planEventId("MO"))).toBe(false);
+    expect(st.gcal.planSig.startsWith("d1:")).toBe(true);
+  });
+
+  it("plan kapatılınca takvimdeki gelecek plan silinir, imza boşalır", async () => {
     const c = fakeCalendar(), st = calState({ plan: true });
     await runCalendar(st, c, helpers);
     st.gcal.plan = false;
     await runCalendar(st, c, helpers);
     expect(c.cals.cal1.size).toBe(0);
     expect(st.gcal.planSig).toBe("");
+    expect(st.gcal.dates).toEqual([]);
+  });
+
+  it("plan yazımı yarıda kesilirse kalan tarihler sonraki sefere", async () => {
+    const c = fakeCalendar(), st = calState({ plan: true });
+    let calls = 0;
+    const flaky: CalendarClient = { ...c, async upsertEvent(cal, id, body) { if (++calls === 4) throw new Error("ağ yok"); return c.upsertEvent(cal, id, body); } };
+    await expect(runCalendar(st, flaky, helpers)).rejects.toThrow("ağ yok");
+    expect(st.gcal.dates).toEqual(MO_TH.slice(0, 3));
+    await runCalendar(st, c, helpers);
+    expect(st.gcal.dates).toEqual(MO_TH);
   });
 
   it("takvim hiç oluşturulmadan plan kapatılırsa takvim oluşturmaz", async () => {
@@ -152,13 +251,13 @@ describe("runCalendar", () => {
     const c = fakeCalendar(), st = calState({ log: true, plan: true }, [ses("a", 1)]);
     await runCalendar(st, c, helpers);
     delete c.cals.cal1;
-    st.sessions.push(ses("b", 0.5));
+    st.sessions.push(ses("b", 0.5, { date: "2026-11-01" }));
     await runCalendar(st, c, helpers);
     expect(st.gcal.id).toBe("cal2");
-    expect(c.cals.cal2.has(sessionEventId("b"))).toBe(true);
-    // plan imzası sıfırlandığı için bir sonraki çalıştırmada plan yeni takvime yazılır
-    await runCalendar(st, c, helpers);
-    expect(c.cals.cal2.has(planEventId("MO"))).toBe(true);
+    expect(c.cals.cal2.has(dayEventId("2026-11-01"))).toBe(true);
+    // plan imzası sıfırlandığı için plan da yeni takvime yazılır
+    expect(st.gcal.dates).toEqual(MO_TH);
+    expect(c.cals.cal2.has(dayEventId("2026-11-02"))).toBe(true);
   });
 
   it("yarıda hata olursa yazılanlar işaretli kalır, kalanlar sonraki sefere", async () => {
@@ -182,7 +281,7 @@ describe("runCalendar", () => {
 
 describe("takvim ayarları ve Drive birleştirmesi", () => {
   it("eski verilerde takvim ayarı kapalı varsayılır", () => {
-    expect(withDefaults({ v: 2 }).gcal).toEqual({ log: false, plan: false, id: "", planSig: "" });
+    expect(withDefaults({ v: 2 }).gcal).toEqual({ log: false, plan: false, id: "", planSig: "", dates: [], dated: 0 });
     expect(withDefaults({ v: 2, gcal: { log: true } }).gcal).toMatchObject({ log: true, plan: false, id: "" });
   });
   it("takvim kimliği ve 'yazıldı' işareti cihazlar arasında eşitlenir", () => {

@@ -1,4 +1,4 @@
-import { pad, parse, ymd } from "../core/dates.ts";
+import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, musclesOf, setLabel } from "./exercises.js";
@@ -139,9 +139,13 @@ export function describeSession(s){
   return { title: p ? "Antrenman: " + p.name : t.title, details: `Süre: ${durText(s.end - s.start)}\n\n` + t.details };
 }
 
+// "bitiş 6 Oca 2027"
+export const untilText = s => { const d = parse(s); return `bitiş ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
 export function renderPlan(){
   const P = state.plan;
   $("#planDur").value = P.dur; $("#planRemind").value = P.remind;
+  $("#planUntil").value = P.until || ""; $("#planUntil").min = ymd(new Date());
+  $("#planUntilClear").classList.toggle("hidden", !P.until);
   const opts = sel => `<option value="">— Dinlenme —</option>` + state.programs.map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(p.name)}</option>`).join("");
   $("#planRows").innerHTML = WEEKDAYS.map(([code, name]) => {
     const d = P.days[code] || {};
@@ -156,7 +160,7 @@ export function renderPlan(){
   });
   $("#planRows").querySelectorAll("[data-pt]").forEach(t => t.onchange = () => { const d = P.days[t.dataset.pt]; if (d) { d.time = t.value || "19:00"; save(); } });
   const n = Object.keys(P.days).length;
-  $("#planInfo").textContent = (state.programs.length ? (n ? `Haftada ${n} antrenman` : "Henüz gün seçilmedi") : "Önce bir program oluştur")
+  $("#planInfo").textContent = (state.programs.length ? (n ? `Haftada ${n} antrenman` + (P.until ? `, ${untilText(P.until)}` : "") : "Henüz gün seçilmedi") : "Önce bir program oluştur")
     + (state.gcal.plan && n ? " · Google Takvim'de kendiliğinden güncellenir" : "");
   // plan takvime kendiliğinden yazılırken .ics dosyası da eklenirse etkinlikler iki kez görünür
   $("#planIcs").classList.toggle("hidden", !!state.gcal.plan);
@@ -199,6 +203,8 @@ $("#calGo").onclick = () => {
 $("#dayCal").onclick = () => calDay($("#logDate").value);
 $("#planDur").onchange = () => { state.plan.dur = Math.max(10, parseInt($("#planDur").value)||60); save(); renderPlan(); };
 $("#planRemind").onchange = () => { state.plan.remind = Math.max(0, parseInt($("#planRemind").value)||0); save(); renderPlan(); };
+$("#planUntil").onchange = () => { state.plan.until = $("#planUntil").value || ""; save(); renderPlan(); };
+$("#planUntilClear").onclick = () => { state.plan.until = ""; save(); renderPlan(); };
 $("#planIcs").onclick = () => {
   const P = state.plan, now = new Date();
   const stamp = now.toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
@@ -208,7 +214,7 @@ $("#planIcs").onclick = () => {
     const d = P.days[code], p = d && state.programs.find(x => x.id===d.prog); if (!p) return;
     const s = at(ymd(nextDateFor(js)), d.time), e = new Date(s.getTime() + P.dur*60000); n++;
     L.push("BEGIN:VEVENT", `UID:sd-${code}-${p.id}@spor-defteri`, `DTSTAMP:${stamp}`, `DTSTART:${dt(s)}`, `DTEND:${dt(e)}`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${code}`, `SUMMARY:${icsText("Antrenman: " + p.name)}`, `DESCRIPTION:${icsText(progDetails(p))}`);
+      `RRULE:FREQ=WEEKLY;BYDAY=${code}` + (P.until ? `;UNTIL=${P.until.replace(/-/g,"")}T235959` : ""), `SUMMARY:${icsText("Antrenman: " + p.name)}`, `DESCRIPTION:${icsText(progDetails(p))}`);
     if (P.remind > 0) L.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsText(p.name + " antrenmanı")}`,`TRIGGER:-PT${P.remind}M`,"END:VALARM");
     L.push("END:VEVENT");
   });
