@@ -13,7 +13,8 @@
    Görev modu (gcal.mode = "task"): plan etkinlik yerine uygulamanın "Spor Defteri" görev listesine her tarih için
    tikli bir Google görevi olur (Google görevlere saat koydurmaz: takvimde saatsiz görünür). O gün antrenman
    bitince görev tamamlandı olarak işaretlenir. Görev kimliğini Google verir; bu yüzden her çalıştırmada listedeki
-   görevler okunup tarihlerine göre eşlenir (iki cihaz aynı anda yazsa da fazlası silinir). */
+   görevler okunup tarihlerine göre eşlenir (iki cihaz aynı anda yazsa da fazlası silinir). Son BACKFILL_DAYS
+   içinde antrenman yapılmış (oturumu ya da kaydı olan) ama görevi olmayan günler tamamlanmış görev olarak eklenir. */
 import { pad, parse, ymd } from "./dates.ts";
 
 export const CAL_SUMMARY = "Spor Defteri";
@@ -137,6 +138,8 @@ export function pendingSessions(sessions: Session[], now: number): Session[] {
 export interface CalendarState {
   gcal: { log: boolean; plan: boolean; id: string; planSig: string; dates?: string[]; dated?: number; mode?: string; taskList?: string; taskSig?: string };
   plan: Plan; programs: Program[]; sessions: Session[];
+  // görev modunda geçmiş antrenman günleri için (elle ya da Claude'la girilen kayıtların oturumu olmayabilir)
+  entries?: { date: string; sets?: unknown[] }[];
 }
 export interface CalendarHelpers {
   describeProgram: (p: Program) => string;
@@ -232,7 +235,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
     if (!want.length) { g.taskSig = ""; return; }
     g.taskList = await tc.createList(TASK_LIST);
   }
-  const done = new Set(state.sessions.filter(s => s.end).map(s => s.date));
+  const done = new Set([...state.sessions.filter(s => s.end).map(s => s.date), ...(state.entries || []).filter(e => e.sets?.length).map(e => e.date)]);
   const byDate = new Map<string, Task>();
   for (const t of list.filter(t => t.due && String(t.title || "").startsWith(TASK_PREFIX))) {
     const d = t.due!.slice(0, 10), other = byDate.get(d);
@@ -244,6 +247,12 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
     } else byDate.set(d, t);
   }
   for (const [d, t] of byDate) if (done.has(d) && t.status !== "completed") { await tc.patchTask(g.taskList, t.id, { status: "completed" }); t.status = "completed"; out.ticked++; }
+  // planlı olmayan ya da plan kurulmadan önce yapılmış antrenmanlar: tamamlanmış görev olarak eklenir
+  if (want.length) for (const d of [...done].filter(d => d >= since && d <= today && !byDate.has(d)).sort()) {
+    const ses = state.sessions.find(s => s.date === d && s.prog), p = (ses && state.programs.find(x => x.id === ses.prog)) || plannedOn(state.plan, state.programs, d);
+    await tc.insertTask(g.taskList, { title: TASK_PREFIX + (p ? p.name : "serbest"), notes: p ? h.describeProgram(p) : "", due: dueOf(d), status: "completed" });
+    byDate.set(d, { id: "", status: "completed" }); out.ticked++;
+  }
   const wantBy = new Map(want.map(x => [x.date, x]));
   for (const [d, t] of byDate) {
     if (d >= today && t.status !== "completed" && !wantBy.has(d)) { await tc.deleteTask(g.taskList, t.id); byDate.delete(d); out.planUpdated = true; }

@@ -371,6 +371,21 @@ const taskState = (over: Partial<CalendarState["gcal"]> = {}, sessions: Session[
   ({ gcal: { log: false, plan: true, id: "", planSig: "", mode: "task", taskList: "", taskSig: "", ...over }, plan: plan(), programs: progs, sessions });
 
 describe("görev modu", () => {
+  it("plan kurulmadan önce yapılmış antrenman tamamlanmış görev olarak eklenir; ikinci kez eklenmez", async () => {
+    // 30 Ekim cuma: oturumu yok, yalnız kayıt var (elle ya da Claude'la girilmiş); 1 Eylül 30 günden eski
+    const st: CalendarState = { ...taskState(), entries: [{ date: "2026-10-30", sets: [{ w: 100, r: 5 }] }, { date: "2026-11-01", sets: [{}] }, { date: "2026-09-01", sets: [{}] }] };
+    st.plan.days.FR = { prog: "p2" };
+    const tc = fakeTasks();
+    await runCalendar(st, fakeCalendar(), helpers, tc);
+    const past = tc.lists[st.gcal.taskList!].filter(t => t.due! < "2026-11-01");
+    expect(past).toEqual([expect.objectContaining({ due: "2026-10-30T00:00:00.000Z", status: "completed", title: "Antrenman: Pull" })]);
+    // bugün plan dışı yapılan antrenman da tiklenmiş görev olur
+    expect(tc.lists[st.gcal.taskList!].find(t => t.due!.startsWith("2026-11-01"))).toMatchObject({ status: "completed", title: "Antrenman: serbest" });
+    tc.log.length = 0;
+    await runCalendar(st, fakeCalendar(), helpers, tc);
+    expect(tc.log).toEqual([]);
+  });
+
   it("plan tarihleri görev olur, takvime etkinlik yazılmaz; ikinci çalıştırma bir şey değiştirmez", async () => {
     const st = taskState(), cal = fakeCalendar(), tc = fakeTasks();
     const r = await runCalendar(st, cal, helpers, tc);
