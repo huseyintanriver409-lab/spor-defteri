@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { addProgram, deleteProgram, findProgram, history, overview, setPlan, updateProgram } from "../src/core/assistant.ts";
+import { addProgram, deleteLog, deleteProgram, findProgram, history, logWorkouts, overview, setPlan, updateProgram } from "../src/core/assistant.ts";
 import { DEFAULTS, mergeStates, stampChanges, takeSnapshot, withDefaults } from "../src/core/schema.ts";
 import { toPayload } from "../src/core/sync.ts";
 
@@ -108,6 +108,56 @@ describe("okuma", () => {
     expect(h.best!.heaviest).toEqual({ date: "2026-10-20", w: 85, r: 3 });
     expect(h.best!.estimated1RM!).toMatchObject({ date: "2026-10-27", kg: 96.3 });
     expect(history(logged(), "Bench Press", 30, TODAY).found).toBe(false);
+  });
+});
+
+describe("antrenman kaydetme", () => {
+  it("başka uygulamadan gelen geçmiş antrenmanları uygulamanın set biçimine çevirir", () => {
+    const s = fresh();
+    const r = logWorkouts(s, [
+      { date: "2026-10-01", exercises: [
+        { exercise: "squat", sets: [{ kg: 20, reps: 10, warmup: true }, { kg: 80, reps: 5, rir: 2 }, { kg: 80, reps: 5 }] },
+        { exercise: "Plank", sets: [{ seconds: 60 }] },
+        { exercise: "Koşu (Bant)", sets: [{ minutes: 25, km: 4.2 }] },
+        { exercise: "Barfiks", sets: [{ reps: 8 }], note: "kolay" },
+      ] },
+      { date: "3.10.2026", exercises: [{ exercise: "Garip Hareket", sets: [{ kg: 10, reps: 12 }] }] },
+    ], TODAY, uid);
+    expect(r).toMatchObject({ days: 2, exercises: 5, sets: 7, alreadyLogged: 0 });
+    const by = (ex: string) => s.entries.find(e => e.ex === ex)!;
+    expect(s.entries[0]).toMatchObject({ date: "2026-10-01", sets: [{ w: 20, r: 10, t: "w" }, { w: 80, r: 5, rir: 2 }, { w: 80, r: 5 }] });
+    expect(s.entries[0].ex).toMatch(/Squat/);
+    expect(by("Plank").sets).toEqual([{ w: 0, r: 0, sec: 60 }]);
+    expect(by("Koşu (Bant)").sets).toEqual([{ w: 25, r: 4.2 }]);
+    expect(s.entries[3]).toMatchObject({ note: "kolay", sets: [{ w: 0, r: 8 }] });
+    expect(by("Garip Hareket").date).toBe("2026-10-03");
+    expect(s.custom.map(c => c.name)).toEqual(["Garip Hareket"]);
+    // özet tarihlere göre sayar
+    expect(overview(s, TODAY)).toMatchObject({ totalWorkouts: 2, firstWorkout: "2026-10-01" });
+  });
+
+  it("aynı liste iki kez gönderilirse çift kayıt olmaz; aynı güne yeni set eklenir", () => {
+    const s = fresh();
+    const w = [{ date: "2026-10-01", exercises: [{ exercise: "Deadlift", sets: [{ kg: 100, reps: 5 }] }] }];
+    logWorkouts(s, w, TODAY, uid);
+    expect(logWorkouts(s, w, TODAY, uid)).toMatchObject({ exercises: 0, alreadyLogged: 1 });
+    logWorkouts(s, [{ date: "2026-10-01", exercises: [{ exercise: "Deadlift", sets: [{ kg: 110, reps: 3 }] }] }], TODAY, uid);
+    expect(s.entries).toHaveLength(1);
+    expect(s.entries[0].sets).toEqual([{ w: 100, r: 5 }, { w: 110, r: 3 }]);
+  });
+
+  it("gelecek tarih, boş set ve hatalı tarih reddedilir; kayıt silinebilir", () => {
+    const s = fresh();
+    expect(() => logWorkouts(s, [{ date: "2026-11-04", exercises: [{ exercise: "Deadlift", sets: [{ kg: 1, reps: 1 }] }] }], TODAY, uid)).toThrow(/Gelecek/);
+    expect(() => logWorkouts(s, [{ date: "dün", exercises: [{ exercise: "Deadlift", sets: [{ kg: 1, reps: 1 }] }] }], TODAY, uid)).toThrow(/Tarih/);
+    expect(() => logWorkouts(s, [{ date: "2026-11-01", exercises: [{ exercise: "Deadlift", sets: [{}] }] }], TODAY, uid)).toThrow(/değer yok/);
+    logWorkouts(s, [{ date: "2026-11-01", exercises: [{ exercise: "Deadlift", sets: [{ kg: 100, reps: 5 }] }, { exercise: "Plank", sets: [{ seconds: 30 }] }] }], TODAY, uid);
+    s.sessions.push({ id: "s", date: "2026-11-01", start: 1, end: 2 });
+    expect(deleteLog(s, "2026-11-01", "deadlift").deleted).toEqual(["Deadlift"]);
+    expect(s.sessions).toHaveLength(1);
+    expect(deleteLog(s, "1.11.2026").deleted).toEqual(["Plank"]);
+    expect(s.sessions).toHaveLength(0);
+    expect(() => deleteLog(s, "2026-11-01")).toThrow(/bulunamadı/);
   });
 });
 

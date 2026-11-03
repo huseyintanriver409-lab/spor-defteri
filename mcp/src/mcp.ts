@@ -1,6 +1,6 @@
 // MCP sunucusu (Streamable HTTP, durumsuz): Claude JSON-RPC isteğini POST eder, cevap tek JSON olarak döner.
 // Araçlar kullanıcının Drive'daki Spor Defteri dosyasını okur ya da değiştirir; işin kendisi src/core/assistant.ts'te.
-import { addProgram, deleteProgram, history, overview, setPlan, updateProgram } from "../../src/core/assistant.ts";
+import { addProgram, deleteLog, deleteProgram, history, logWorkouts, overview, setPlan, updateProgram } from "../../src/core/assistant.ts";
 import { stampChanges, takeSnapshot, withDefaults, type State } from "../../src/core/schema.ts";
 import { toPayload } from "../../src/core/sync.ts";
 import { AuthError, driveStore } from "../../src/sync/drive.ts";
@@ -11,6 +11,7 @@ const INSTRUCTIONS = `Spor Defteri, kullanıcının antrenman defteri uygulamas�
 - Program eklerken hareket adlarını yaygın İngilizce adlarıyla yaz (Bench Press, Back Squat, Lat Pulldown…); uygulamanın listesine eşlenir.
 - Çok günlü program her gün için ayrı program olur ("Ad · Gün").
 - plan_kur haftalık planı baştan kurar; "6 Ocak'a kadar" gibi bitiş tarihi verilirse plan Google Takvim'e o güne kadar yazılır.
+- Kullanıcı yaptığı antrenmanları (başka uygulamadan geçerken eski kayıtlarını da) anlatırsa antrenman_kaydet ile deftere yaz. Uzun geçmişi parçalara bölüp birkaç çağrıda gönder; aynı setler iki kez yazılmaz.
 - Değişiklikler telefondaki uygulamaya bir sonraki eşitlemede (uygulama açılınca) gelir; takvimi de telefon günceller.
 - Kullanıcıyla Türkçe konuş.`;
 
@@ -46,6 +47,49 @@ const TOOLS = [
     },
     annotations: { readOnlyHint: true },
     run: (s: State, a: any, c: Ctx) => history(s, a.exercise, a.days || 30, c.today()),
+  },
+  {
+    name: "antrenman_kaydet", title: "Antrenman kaydet",
+    description: "Yapılmış antrenmanları (geçmiş tarihli de olabilir) deftere yazar: başka uygulamadan geçen kullanıcının eski kayıtları ya da bugün yaptıkları. Her set için ağırlıklı harekette kg + reps; vücut ağırlığında yalnız reps; süreli harekette (plank) seconds; kardiyoda minutes ve km. Isınma setlerinde warmup: true. Aynı gün aynı hareketin aynı setleri zaten kayıtlıysa tekrar yazılmaz. Bir çağrıda en fazla 100 antrenman.",
+    inputSchema: {
+      type: "object", required: ["workouts"], additionalProperties: false,
+      properties: {
+        workouts: { type: "array", minItems: 1, maxItems: 100, items: {
+          type: "object", required: ["date", "exercises"], additionalProperties: false,
+          properties: {
+            date: { type: "string", description: "Antrenman tarihi YYYY-AA-GG (bugün ya da geçmiş)" },
+            exercises: { type: "array", minItems: 1, items: {
+              type: "object", required: ["exercise", "sets"], additionalProperties: false,
+              properties: {
+                exercise: { type: "string", description: "Hareket adı, ör. \"Back Squat\"" },
+                note: { type: "string" },
+                sets: { type: "array", minItems: 1, maxItems: 50, items: {
+                  type: "object", additionalProperties: false,
+                  properties: {
+                    kg: { type: "number", minimum: 0 }, reps: { type: "number", minimum: 0 },
+                    seconds: { type: "number", minimum: 0 }, minutes: { type: "number", minimum: 0 }, km: { type: "number", minimum: 0 },
+                    warmup: { type: "boolean" }, rir: { type: "number", minimum: 0, maximum: 10, description: "Yedekte kalan tekrar (isteğe bağlı)" },
+                  },
+                } },
+              },
+            } },
+          },
+        } },
+      },
+    },
+    write: true,
+    run: (s: State, a: any, c: Ctx) => logWorkouts(s, a.workouts, c.today(), c.uid),
+  },
+  {
+    name: "kayit_sil", title: "Antrenman kaydını sil",
+    description: "Bir günün antrenman kayıtlarını ya da o gün tek bir hareketin kaydını siler (yanlış girilen kaydı düzeltmek için; sonra antrenman_kaydet ile doğrusu yazılabilir). Kullanıcı açıkça istemedikçe kullanma.",
+    inputSchema: {
+      type: "object", required: ["date"], additionalProperties: false,
+      properties: { date: { type: "string", description: "YYYY-AA-GG" }, exercise: { type: "string", description: "Yalnız bu hareket (boşsa günün bütün kayıtları)" } },
+    },
+    annotations: { destructiveHint: true },
+    write: true,
+    run: (s: State, a: any) => deleteLog(s, a.date, a.exercise),
   },
   {
     name: "program_ekle", title: "Program ekle",

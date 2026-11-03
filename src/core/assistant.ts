@@ -4,7 +4,7 @@
    damgalayıp dosyayı geri yazar, telefon da bir sonraki eşitlemede mergeStates ile alır.
    Program ekleme ve plan kurma, bağlantıyla eklemedeki (app/importer.js) kurallarla aynıdır.
    Tarayıcıya bağlı değildir; testleri tests/assistant.test.ts. */
-import { LIB } from "./library.ts";
+import { CARDIO, LIB } from "./library.ts";
 import { dayCode, matchExercise, normalize, parseDate, parseTime } from "./importer.ts";
 import { e1rm, work, volume } from "./training.ts";
 import { parse, ymd } from "./dates.ts";
@@ -14,6 +14,7 @@ import type { State, Stamped } from "./schema.ts";
 export const WEEK = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const DAY_NAMES: Record<string, string> = { MO: "Pazartesi", TU: "Salı", WE: "Çarşamba", TH: "Perşembe", FR: "Cuma", SA: "Cumartesi", SU: "Pazar" };
 export const MAX_ITEMS = 30;
+export const MAX_WORKOUTS = 100;
 
 // Kullanıcının bildiği bütün hareketler: kütüphane + kendi eklediği
 export const knownExercises = (s: State): string[] => [...Object.values(LIB).flat(), ...s.custom.map(c => c.name)];
@@ -150,17 +151,21 @@ const setsText = (sets: any[]) => work(sets).map(x => x.sec != null ? `${x.sec}s
 
 // Genel durum: programlar, plan, son antrenmanlar
 export function overview(s: State, today: Date, recent = 8) {
-  const sessions = [...s.sessions].filter(x => x.end).sort((a, b) => b.start - a.start).slice(0, recent);
+  const dates = [...new Set(s.entries.filter(e => work(e.sets).length).map(e => e.date as string))].sort().reverse();
   return {
     today: ymd(today),
     programs: s.programs.map(p => ({ id: p.id, name: p.name, items: p.items.map((i: any) => ({ exercise: i.ex, sets: i.sets, reps: i.reps || "" })) })),
     plan: planView(s),
     weeklyGoal: s.goal,
-    totalWorkouts: s.sessions.filter(x => x.end).length,
-    recentWorkouts: sessions.map(x => ({
-      date: x.date, program: x.prog ? progName(s, x.prog) : "", minutes: Math.round((x.end - x.start) / 60000),
-      exercises: s.entries.filter(e => e.date === x.date && work(e.sets).length).map(e => ({ exercise: e.ex, sets: setsText(e.sets) })),
-    })),
+    totalWorkouts: dates.length,
+    firstWorkout: dates[dates.length - 1] || null,
+    recentWorkouts: dates.slice(0, recent).map(date => {
+      const ss = s.sessions.filter(x => x.date === date && x.end), prog = ss.find(x => x.prog)?.prog;
+      return {
+        date, program: prog ? progName(s, prog) : "", minutes: ss.length ? Math.round(ss.reduce((a, x) => a + x.end - x.start, 0) / 60000) : null,
+        exercises: s.entries.filter(e => e.date === date && work(e.sets).length).map(e => ({ exercise: e.ex, sets: setsText(e.sets) })),
+      };
+    }),
     profile: { sex: s.profile?.sex, bodyweightKg: +s.profile?.bw || null },
   };
 }
@@ -185,4 +190,73 @@ export function history(s: State, exercise: string | undefined, days: number, to
     best = { heaviest: top, estimated1RM: topE ? { ...topE, kg: Math.round(e1rm(topE.w, topE.r) * 10) / 10 } : null };
   }
   return { exercise: ex || null, since, found: true, entries, best };
+}
+
+export interface SetInput { kg?: number; reps?: number; seconds?: number; minutes?: number; km?: number; warmup?: boolean; rir?: number }
+export interface WorkoutInput { date: string; exercises: { exercise: string; sets: SetInput[]; note?: string }[] }
+
+const num = (v: unknown, max: number) => { const n = +(v as any); return Number.isFinite(n) && n > 0 ? Math.min(n, max) : 0; };
+const isCardioEx = (s: State, ex: string) => LIB[CARDIO].includes(ex) || s.custom.some(c => c.name === ex && c.group === CARDIO);
+const isTimedEx = (s: State, ex: string) => { const p = (s.exPrefs?.[ex] || {}).timed; return p != null ? !!p : /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer/i.test(ex); };
+
+// Uygulamanın set biçimine çevirir: ağırlık w/tekrar r; süreli harekette sec; kardiyoda w = dakika, r = km; ısınma t: "w"
+function toSet(s: State, ex: string, x: SetInput) {
+  if (isCardioEx(s, ex)) return { w: num(x.minutes ?? (x.seconds ? x.seconds / 60 : 0), 1440), r: num(x.km, 1000) };
+  const o: any = { w: num(x.kg, 1000), r: num(x.reps, 1000) };
+  if (x.warmup) o.t = "w";
+  if (x.seconds || (isTimedEx(s, ex) && !x.reps)) { o.sec = num(x.seconds, 36000); o.r = 0; }
+  else if (x.rir != null && Number.isFinite(+x.rir)) o.rir = Math.max(0, Math.min(10, Math.round(+x.rir)));
+  return o;
+}
+
+// Geçmiş (ya da bugünkü) antrenmanları deftere yazar; başka uygulamadan geçenler eski kayıtlarını böyle aktarır.
+// Uygulamadaki elle kayıt gibi: aynı gün aynı harekete eklenen setler aynı kayda girer. Aynı setler zaten
+// kayıtlıysa tekrar yazılmaz, böylece aynı liste iki kez gönderilse de çift kayıt olmaz.
+export function logWorkouts(s: State, workouts: WorkoutInput[], today: Date, uid: () => string) {
+  if (!Array.isArray(workouts) || !workouts.length) throw new Error("En az bir antrenman gerekli.");
+  if (workouts.length > MAX_WORKOUTS) throw new Error(`Bir seferde en fazla ${MAX_WORKOUTS} antrenman yazılabilir; kalanını ayrı çağrıda gönder.`);
+  const notes: string[] = [], todayS = ymd(today);
+  let added = 0, sets = 0, skipped = 0;
+  const days = new Set<string>();
+  for (const w of workouts) {
+    const date = parseDate(String(w.date || ""));
+    if (!date) throw new Error(`Tarih anlaşılamadı: ${w.date}`);
+    if (date > todayS) throw new Error(`Gelecekteki bir tarihe antrenman yazılamaz: ${date}`);
+    if (date < "1990-01-01") throw new Error(`Tarih çok eski: ${date}`);
+    if (!Array.isArray(w.exercises) || !w.exercises.length) throw new Error(`${date}: hareket yok.`);
+    for (const e of w.exercises) {
+      const raw = String(e.exercise || "").trim().slice(0, 80);
+      if (!raw) throw new Error(`${date}: hareket adı boş.`);
+      let ex = matchExercise(raw, knownExercises(s));
+      if (!ex) { ex = raw; s.custom.push({ name: raw, group: "Diğer" }); notes.push(`"${raw}" listede yoktu, yeni hareket olarak eklendi.`); }
+      else if (ex !== raw && !notes.includes(`"${raw}" → "${ex}"`)) notes.push(`"${raw}" → "${ex}"`);
+      if (!Array.isArray(e.sets) || e.sets.length > 50) throw new Error(`${date} ${ex}: 1-50 set olmalı.`);
+      const list = e.sets.map(x => toSet(s, ex!, x || {})).filter(x => x.w || x.r || x.sec);
+      if (!list.length) throw new Error(`${date} ${ex}: setlerde değer yok (kg/tekrar, saniye ya da dakika/km).`);
+      const note = String(e.note || "").trim().slice(0, 300);
+      const same = s.entries.find(x => x.ex === ex && x.date === date);
+      if (same && JSON.stringify(same.sets).includes(JSON.stringify(list).slice(1, -1))) { skipped++; continue; }
+      if (same) { same.sets.push(...list); if (note) same.note = same.note ? same.note + " · " + note : note; }
+      else s.entries.push({ id: uid(), ts: Date.now(), date, ex, sets: list, ...(note ? { note } : {}) });
+      added++; sets += list.length; days.add(date);
+    }
+  }
+  if (added) s.onboarded = true;
+  return { days: days.size, exercises: added, sets, alreadyLogged: skipped, notes };
+}
+
+// Bir günün kayıtlarını (ya da o gün tek bir hareketi) siler
+export function deleteLog(s: State, date: string, exercise?: string) {
+  const d = parseDate(String(date || ""));
+  if (!d) throw new Error(`Tarih anlaşılamadı: ${date}`);
+  let list = s.entries.filter(e => e.date === d);
+  if (exercise) {
+    const ex = matchExercise(exercise, [...new Set(list.map(e => e.ex as string))]);
+    list = ex ? list.filter(e => e.ex === ex) : [];
+  }
+  if (!list.length) throw new Error(`${d} için ${exercise ? `"${exercise}" ` : ""}kayıt bulunamadı.`);
+  s.entries = s.entries.filter(e => !list.includes(e));
+  // o günden hiç kayıt kalmadıysa antrenman oturumu da gider
+  if (!s.entries.some(e => e.date === d)) s.sessions = s.sessions.filter(x => x.date !== d);
+  return { date: d, deleted: list.map(e => e.ex) };
 }

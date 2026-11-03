@@ -14,6 +14,8 @@ Claude'un kullanabildiği araçlar:
 | --- | --- |
 | `ozet` | Programlar, haftalık plan ve son antrenmanlar |
 | `gecmis` | Bir hareketin setleri, en ağır seti ve tahmini 1RM'i |
+| `antrenman_kaydet` | Yapılan antrenmanları (başka uygulamadan eski kayıtlar dahil) deftere yazar |
+| `kayit_sil` | Yanlış girilen bir günün ya da hareketin kaydını siler |
 | `program_ekle` | Program ekler |
 | `program_guncelle` | Programın adını ya da hareketlerini değiştirir |
 | `program_sil` | Program siler |

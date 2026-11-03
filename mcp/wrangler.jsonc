@@ -1,18 +1,25 @@
 // Spor Defteri Claude bağlayıcısı (Cloudflare Worker). Kurulum: KURULUM.md
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "spor-defteri-mcp",
-  "main": "src/index.ts",
-  "compatibility_date": "2026-10-01",
-  // OAuth kayıtları (Claude'a verilen erişim anahtarları, şifreli). Kimlik yazılmadı: ilk yüklemede wrangler kendisi oluşturur.
-  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
-  "vars": {
-    // uygulamanın kullandığı Google istemcisi (gizli değil; ../.env ile aynı). Gizli anahtarı: wrangler secret put GOOGLE_CLIENT_SECRET
-    "GOOGLE_CLIENT_ID": "680474357315-tc6glk62rcpg0662397lnbjjmuccsa35.apps.googleusercontent.com",
-    // "bugün" ve plan tarihleri bu saat dilimine göre
-    "TIME_ZONE": "Europe/Istanbul"
-  },
-  // gizli değerler (depoda durmaz): GOOGLE_CLIENT_SECRET ve isteğe bağlı ALLOWED_EMAILS
-  // (virgülle ayrılmış e-postalar; yoksa Google girişi yapabilen herkes yalnız kendi verisine bağlanabilir)
-  "observability": { "enabled": true }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "spor-defteri-mcp",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	// OAuth kayıtları (Claude'a verilen erişim anahtarları, şifreli). Kimliği ilk yüklemede wrangler oluşturdu.
+	"kv_namespaces": [
+		{
+			"binding": "OAUTH_KV",
+			"id": "03e29b1cb0a04736adf3ac27c0f3b9b2"
+		}
+	],
+	"vars": {
+		// uygulamanın kullandığı Google istemcisi (gizli değil; ../.env ile aynı). Gizli anahtarı: wrangler secret put GOOGLE_CLIENT_SECRET
+		"GOOGLE_CLIENT_ID": "680474357315-tc6glk62rcpg0662397lnbjjmuccsa35.apps.googleusercontent.com",
+		// "bugün" ve plan tarihleri bu saat dilimine göre
+		"TIME_ZONE": "Europe/Istanbul"
+	},
+	// gizli değerler (depoda durmaz): GOOGLE_CLIENT_SECRET ve isteğe bağlı ALLOWED_EMAILS
+	// (virgülle ayrılmış e-postalar; yoksa Google girişi yapabilen herkes yalnız kendi verisine bağlanabilir)
+	"observability": {
+		"enabled": true
+	}
 }

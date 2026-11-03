@@ -36,7 +36,7 @@ describe("MCP sunucusu", () => {
     expect(init.capabilities.tools).toBeDefined();
     expect(await call("notifications/initialized", undefined, true)).toBeNull();
     const tools = (await call("tools/list")).result.tools;
-    expect(tools.map((t: any) => t.name)).toEqual(["ozet", "gecmis", "program_ekle", "program_guncelle", "program_sil", "plan_kur"]);
+    expect(tools.map((t: any) => t.name)).toEqual(["ozet", "gecmis", "antrenman_kaydet", "kayit_sil", "program_ekle", "program_guncelle", "program_sil", "plan_kur"]);
     expect(tools.every((t: any) => t.inputSchema.type === "object" && !("run" in t))).toBe(true);
     expect((await call("nope")).error.code).toBe(-32601);
   });
