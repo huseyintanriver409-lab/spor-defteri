@@ -441,6 +441,7 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 /* Seri (Duolingo tarzı) ve hesap */
 .streak{display:inline-flex;align-items:center;gap:4px;padding:5px 11px 5px 8px;border-radius:999px;background:rgba(255,122,26,.14);color:#ff7a1a;font-weight:800;font-variant-numeric:tabular-nums}
 .streak .ic{width:18px;height:18px;fill:#ff7a1a;stroke:#ff7a1a}
+.streak small{font-size:.62em;font-weight:700;margin-left:1px;opacity:.85}
 .streak.off{background:var(--card2);color:var(--muted)}
 .streak.off .ic{fill:none;stroke:var(--muted)}
 .streak.lg{padding:10px 16px 10px 12px;font-size:22px}

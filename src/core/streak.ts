@@ -5,6 +5,9 @@
    - Planı olmayan: haftalık hedefin tutturulmadığı her hafta (pazartesi-pazar) seriyi bozar; zincirin başladığı hafta sayılmaz.
    - Dondurma: takvim ayı başına FREEZES_PER_MONTH kez, kaçırılan gün/hafta seriyi bozmaz (kendiliğinden kullanılır).
    - Bugün henüz yapılmadıysa seri bozulmaz; seri dünkü haliyle görünür, bugün planlı günse "risk" işaretlenir.
+   Haftalık seri (computeWeekStreak) hafta sayar: haftalık hedefin tutturulduğu her hafta seriyi 1 artırır,
+   günlerin önemi yoktur; ayda WEEK_FREEZES_PER_MONTH eksik hafta seriyi bozmaz. Hangisinin kullanılacağını
+   kullanıcı seçer (state.streakMode: "auto" plan varsa günlük yoksa haftalık, "week", "off").
    Hepsi kayıtlardan hesaplanır, saklanmaz: bütün cihazlarda aynı sonucu verir. Eski günler için de bugünkü
    plan geçerli sayılır. Tarayıcıya bağlı değildir; testleri tests/streak.test.ts. */
 import { mondayOf, parse, ymd } from "./dates.ts";
@@ -77,5 +80,46 @@ export function computeStreak(workoutDates: Iterable<string>, planDays: string[]
 }
 
 // Kazanılan rozetler (en uzun seriye göre) ve sıradaki eşik
-export const earnedBadges = (best: number) => BADGES.filter(b => best >= b);
-export const nextBadge = (days: number) => BADGES.find(b => b > days) || null;
+export const earnedBadges = (best: number, list = BADGES) => list.filter(b => best >= b);
+export const nextBadge = (days: number, list = BADGES) => list.find(b => b > days) || null;
+
+export const WEEK_BADGES = [4, 8, 12, 26, 52];
+export const WEEK_FREEZES_PER_MONTH = 1;
+
+export interface WeekStreakResult {
+  weeks: number;         // şu anki seri (hafta); bu hafta hedef tuttuysa bu hafta da sayılır
+  best: number;
+  start: string;         // zincirin ilk haftasının pazartesisi ("" = seri yok)
+  thisWeek: number;      // bu hafta antrenman yapılan gün sayısı
+  goalMet: boolean;      // bu haftanın hedefi tuttu
+  atRisk: boolean;       // hedefe yetişmek için bugün de gerekli
+  frozen: string[];      // dondurmayla kurtarılan haftaların pazartesisi
+  freezesLeft: number;   // bu ay kalan dondurma
+}
+
+// Haftalık seri: pazartesi-pazar haftalarında antrenman yapılan gün sayısı hedefe (goal) ulaştı mı.
+// Bu hafta henüz bitmediği için hedef tutmadıysa seri bozulmaz, yalnız sayılmaz.
+export function computeWeekStreak(workoutDates: Iterable<string>, goal: number, now: Date): WeekStreakResult {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), todayS = ymd(today);
+  const thisMon = ymd(mondayOf(today)), count: Record<string, number> = {};
+  const days = [...new Set(workoutDates)].filter(d => d <= todayS).sort();
+  for (const d of days) { const m = ymd(mondayOf(parse(d))); count[m] = (count[m] || 0) + 1; }
+  const used: Record<string, number> = {}, frozen: string[] = [];
+  let start = "", run = 0, best = 0;
+  if (days.length) for (let m = mondayOf(parse(days[0])); ymd(m) < thisMon; m = addDays(m, 7)) {
+    const k = ymd(m);
+    if ((count[k] || 0) >= goal) { if (!start) start = k; run++; continue; }
+    if (!start) continue;
+    // eksik hafta: dondurma varsa seri sürer ama artmaz
+    if ((used[k.slice(0, 7)] || 0) < WEEK_FREEZES_PER_MONTH) { used[k.slice(0, 7)] = (used[k.slice(0, 7)] || 0) + 1; frozen.push(k); continue; }
+    best = Math.max(best, run); start = ""; run = 0;
+  }
+  const thisWeek = count[thisMon] || 0, goalMet = thisWeek >= goal;
+  const weeks = run + (goalMet ? 1 : 0);
+  if (goalMet && !start) start = thisMon;
+  best = Math.max(best, weeks);
+  const left = 7 - between(thisMon, todayS);
+  const atRisk = !goalMet && !days.includes(todayS) && goal - thisWeek >= left;
+  return { weeks, best, start: weeks ? start : "", thisWeek, goalMet, atRisk, frozen,
+    freezesLeft: Math.max(0, WEEK_FREEZES_PER_MONTH - (used[todayS.slice(0, 7)] || 0)) };
+}

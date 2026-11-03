@@ -1,5 +1,5 @@
 import { $, fmt, ic, save, state, toast } from "./store.js";
-import { buzz, keepAwake } from "./ui.js";
+import { buzz, keepAwake, refreshAll } from "./ui.js";
 import { openRecommender } from "./presets.js";
 import { mmss, setTDur } from "./tools.js";
 
@@ -10,6 +10,7 @@ export function renderSettings(){
   $("#themeChips").querySelectorAll("button").forEach(b => b.onclick = () => setTheme(b.dataset.k));
   $("#setRest").innerHTML = [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
   $("#setGoal").innerHTML = [1,2,3,4,5,6,7].map(v => `<option value="${v}"${v===state.goal?" selected":""}>${v} gün</option>`).join("");
+  $("#setStreak").value = state.streakMode || "auto";
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
   $("#plateChips").innerHTML = ALL_PLATES.map(p => { const on = state.plates.includes(p); return `<button class="fchip${on?" on":""}" data-p="${p}" aria-pressed="${on}">${fmt(p)} kg</button>`; }).join("");
   $("#plateChips").querySelectorAll("button").forEach(b => b.onclick = () => {
@@ -55,6 +56,7 @@ export function labelIcons(root){
 export function setup(){
 $("#setRest").onchange = () => { state.rest = setTDur(+$("#setRest").value); save(); };
 $("#setGoal").onchange = () => { state.goal = +$("#setGoal").value; save(); };
+$("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; save(); refreshAll(); };
 $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(); };
 $("#prefWake").onchange = () => { state.prefs.wake = $("#prefWake").checked; save(); if (!state.prefs.wake) keepAwake(false); };
 $("#prefHaptic").onchange = () => { state.prefs.haptics = $("#prefHaptic").checked; save(); buzz(30); };

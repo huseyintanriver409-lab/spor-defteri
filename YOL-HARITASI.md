@@ -176,6 +176,7 @@ Başka uygulamadan geçen ya da defter tutmadan çalışmış kullanıcı, her h
 ## Seri ve profil (2026-11-03)
 
 - **Seri (Duolingo tarzı, `src/core/streak.ts`):** Gün sayar. Haftalık plan varsa planlı günü kaçırmak seriyi bozar, dinlenme günleri bozmaz; plan yoksa haftalık hedefin tutmadığı hafta bozar. Ayda 2 dondurma kendiliğinden kullanılır. Kayıtlardan hesaplanır, saklanmaz (bütün cihazlarda aynı). Ana sayfada alev ve "bugün antrenman günü: serini koru" satırı, İlerleme'de gün serisi ve en uzun seri, antrenman bitince seri arttıysa kutlama (`src/app/streak.js`); 7/14/30/60/100/180/365 gün rozetleri Profil'de.
+- **Seri türü (Profil → Ayarlar → Seri, `state.streakMode`, eşitlenir):** "auto" plan varsa günlük, yoksa haftalık; "week" her zaman haftalık; "off" seri hiç görünmez. Haftalık seri (`computeWeekStreak`) hafta sayar: haftalık hedefin tuttuğu her hafta 1 artar, gün önemli değil; ayda 1 eksik hafta dondurulur; rozetler 4/8/12/26/52 hafta. Yoğun, gün atamayı sevmeyen kullanıcılar için.
 - **Hesap:** Profil'in üstünde bu cihazın Drive'a bağlı Google hesabı (ad, e-posta, fotoğraf). Drive `about` uç noktasından okunur, yeni izin gerekmez; cihaza özel `sporDefteri.sync` içinde tutulur, günde bir yenilenir.
 
 ## Yapay zekâ: Claude'a özel değil (2026-11-03)

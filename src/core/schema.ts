@@ -29,14 +29,16 @@ export const DEFAULTS = (): State => ({ v: SCHEMA, deviceId: "", entries: [], cu
   exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
   exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true }, favs: [], onboarded: false, gcal: DEFAULT_GCAL(),
   // başlangıç noktası: hareket → şu anki kilo/tekrar (core/baseline.ts)
-  baseline: {} });
+  baseline: {},
+  // seri: "auto" plan varsa günlük yoksa haftalık, "week" haftalık, "off" kapalı (core/streak.ts)
+  streakMode: "auto" });
 
 export const COLLECTIONS: Record<"entries" | "programs" | "sessions" | "body" | "custom", (x: Stamped) => string> = {
   entries: x => x.id, programs: x => x.id, sessions: x => x.id, body: x => x.date, custom: x => x.name,
 };
 type Coll = keyof typeof COLLECTIONS;
 const collNames = Object.keys(COLLECTIONS) as Coll[];
-export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal", "baseline"];
+export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal", "baseline", "streakMode"];
 
 // eksik alanları varsayılanlarla tamamlar ve eski şemaları yükseltir (eski kayıtlar ve yedekler için)
 export function withDefaults(s: any): State {

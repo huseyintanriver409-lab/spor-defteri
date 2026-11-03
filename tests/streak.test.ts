@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeStreak, earnedBadges, nextBadge } from "../src/core/streak.ts";
+import { computeStreak, computeWeekStreak, earnedBadges, nextBadge } from "../src/core/streak.ts";
 
 const TUE = new Date(2026, 10, 3, 15, 30); // 3 Kasım 2026 salı, öğleden sonra
 const PLAN = ["MO", "WE", "FR"];
@@ -67,5 +67,33 @@ describe("rozetler", () => {
     expect(earnedBadges(31)).toEqual([7, 14, 30]);
     expect(nextBadge(31)).toBe(60);
     expect(nextBadge(400)).toBeNull();
+  });
+});
+
+describe("haftalık seri (hafta sayar)", () => {
+  // TUE = 3 Kasım 2026 salı; haftalar pazartesi başlar: 12, 19, 26 Ekim ve 2 Kasım
+  it("hedefin tuttuğu her hafta 1 artar; gün önemli değil; bu hafta tuttuysa sayılır", () => {
+    const r = computeWeekStreak(["2026-10-12", "2026-10-14", "2026-10-18", "2026-10-20", "2026-10-21", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28", "2026-11-02", "2026-11-03"], 3, TUE);
+    expect(r).toMatchObject({ weeks: 3, best: 3, start: "2026-10-12", thisWeek: 2, goalMet: false, frozen: [] });
+    const done = computeWeekStreak(["2026-10-26", "2026-10-27", "2026-10-28", "2026-11-01", "2026-11-02", "2026-11-03", "2026-10-31"], 3, TUE);
+    expect(done).toMatchObject({ weeks: 1, goalMet: false });
+    expect(computeWeekStreak(["2026-11-02", "2026-11-03"], 2, TUE)).toMatchObject({ weeks: 1, goalMet: true, start: "2026-11-02" });
+  });
+
+  it("eksik hafta ayda bir kez dondurulur; ikincisinde seri kırılır, en uzun saklanır", () => {
+    const wk = (mon: number, m = 9) => [0, 1, 2].map(i => `2026-${String(m + 1).padStart(2, "0")}-${String(mon + i).padStart(2, "0")}`);
+    // Eylül: 7, 14 tuttu; 21 eksik (dondurma); 28 eksik → Eylül'ün ikinci eksiği, kırılır
+    const r = computeWeekStreak([...wk(7, 8), ...wk(14, 8), ...wk(5), ...wk(12), ...wk(19), ...wk(26)], 3, TUE);
+    expect(r.frozen).toEqual(["2026-09-21"]);
+    expect(r.start).toBe("2026-10-05");
+    expect(r.weeks).toBe(4);
+    expect(r.best).toBe(4);
+    expect(r.freezesLeft).toBe(1);
+  });
+
+  it("hedefe yetişmek için kalan günlerin hepsi gerekiyorsa risk", () => {
+    const sat = new Date(2026, 10, 7, 10);
+    expect(computeWeekStreak(["2026-11-02"], 3, sat).atRisk).toBe(true);
+    expect(computeWeekStreak(["2026-11-02", "2026-11-03"], 3, sat).atRisk).toBe(false);
   });
 });

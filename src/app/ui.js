@@ -11,7 +11,7 @@ import { renderTools } from "./tools.js";
 import { renderBackup, renderBackupBanner } from "./backup.js";
 import { renderSettings } from "./settings.js";
 import { renderAccount } from "./cloud.js";
-import { streakCardHTML, streakNow } from "./streak.js";
+import { streakCardHTML, streakNow, streakOn } from "./streak.js";
 
 /* ---------- Helpers: haptics, wake lock, undo, bottom sheet ---------- */
 export function buzz(p){ if (state.prefs.haptics) try { navigator.vibrate && navigator.vibrate(p); } catch(e){} }
@@ -113,7 +113,7 @@ export function renderTab(t){
   if (t === "train") renderSeg("train");
   if (t === "history") renderHistory();
   if (t === "progress") renderSeg("stats");
-  if (t === "profile") { renderAccount(); $("#streakCard").innerHTML = streakCardHTML(streakNow()); renderSeg("profile"); }
+  if (t === "profile") { renderAccount(); $("#streakCard").classList.toggle("hidden", !streakOn()); if (streakOn()) $("#streakCard").innerHTML = streakCardHTML(streakNow()); renderSeg("profile"); }
 }
 export function refreshAll(){ renderTab(curTab); renderLiveBar(); renderBackupBanner(); }
 export const segState = { stats: "week", train: "prog", profile: "settings" };

@@ -5,7 +5,7 @@ import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, isCardio, isTimed, musclesOf } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
-import { streakNow } from "./streak.js";
+import { streakNow, streakOn } from "./streak.js";
 
 /* ---------- Week ---------- */
 export let weekStart = mondayOf(new Date());
@@ -76,10 +76,11 @@ export function renderConsistency(){
   const daysIn = mon => { let n = 0; for (let i=0;i<7;i++){ const d = new Date(mon); d.setDate(d.getDate()+i); if (load[ymd(d)]) n++; } return n; };
   const thisN = daysIn(thisMon);
   $("#gWeek").textContent = `${thisN}/${state.goal}`;
-  // seri plana göre gün sayar (core/streak.ts)
-  const st = streakNow();
-  $("#gStreak").textContent = st.days;
-  $("#gBest").textContent = st.best;
+  // seri kullanıcının seçtiği türe göre gün ya da hafta sayar (app/streak.js)
+  const st = streakNow(), on = streakOn();
+  $("#gStreakBox").classList.toggle("hidden", !on); $("#gBestBox").classList.toggle("hidden", !on);
+  $("#gStreak").textContent = st.count; $("#gBest").textContent = st.best;
+  $("#gStreakUnit").textContent = `seri (${st.unit})`; $("#gBestUnit").textContent = `en uzun (${st.unit})`;
 }
 export function muscleAdvice(ms){
   const main = ["Göğüs","Lat","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır"];

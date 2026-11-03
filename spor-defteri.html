@@ -158,8 +158,8 @@
         <div class="heat" id="heat"></div>
         <div class="stats" style="margin-top:12px">
           <div class="stat"><b id="gWeek">0/3</b><span>bu hafta</span></div>
-          <div class="stat"><b id="gStreak">0</b><span>seri (gün)</span></div>
-          <div class="stat"><b id="gBest">0</b><span>en uzun (gün)</span></div>
+          <div class="stat" id="gStreakBox"><b id="gStreak">0</b><span id="gStreakUnit">seri (gün)</span></div>
+          <div class="stat" id="gBestBox"><b id="gBest">0</b><span id="gBestUnit">en uzun (gün)</span></div>
         </div>
       </div>
       <div class="card">
@@ -328,6 +328,10 @@
         <div class="grid2">
           <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
           <div><label for="setGoal">Haftalık hedef</label><select id="setGoal"></select></div>
+          <div style="grid-column:1/-1"><label for="setStreak">Seri</label><select id="setStreak">
+            <option value="auto">Plana göre günlük (plan yoksa haftalık)</option>
+            <option value="week">Haftalık (haftalık hedefe göre, gün önemli değil)</option>
+            <option value="off">Kapalı</option></select></div>
         </div>
         <div style="display:grid;gap:14px;margin-top:16px">
           <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
