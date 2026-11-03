@@ -49,7 +49,7 @@ export function renderProg(){
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn primary" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="Bağlantıyla paylaş">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
-    </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, Claude ile oluştur ya da aşağıdan kendin kur.")}</div>`;
+    </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, yapay zekâyla oluştur ya da aşağıdan kendin kur.")}</div>`;
   const find = id => state.programs.find(p => p.id===id);
   $("#pList").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
   $("#pList").querySelectorAll("[data-pcal]").forEach(b => b.onclick = () => openCalModal(find(b.dataset.pcal)));

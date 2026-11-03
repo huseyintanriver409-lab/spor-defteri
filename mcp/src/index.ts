@@ -1,6 +1,6 @@
-/* ---------- Spor Defteri Claude bağlayıcısı (uzak MCP sunucusu) ----------
-   Claude bu sunucuya OAuth ile bağlanır: /authorize sayfası izin ister, kullanıcıyı Google girişine gönderir,
-   Google /callback'e döner ve Claude'a bu sunucunun kendi erişim anahtarı verilir. Google'ın yenileme anahtarı
+/* ---------- Spor Defteri yapay zekâ bağlayıcısı (uzak MCP sunucusu) ----------
+   MCP destekleyen yapay zekâ uygulamaları (Claude, ChatGPT, Gemini CLI, Antigravity…) bu sunucuya OAuth ile bağlanır: /authorize sayfası izin ister, kullanıcıyı Google girişine gönderir,
+   Google /callback'e döner ve yapay zekâ uygulamasına bu sunucunun kendi erişim anahtarı verilir. Google'ın yenileme anahtarı
    o anahtara bağlı, şifreli olarak (props) saklanır; her araç çağrısında Drive için kısa ömürlü anahtar alınır.
    OAuth uç noktaları, istemci kaydı ve anahtar saklama @cloudflare/workers-oauth-provider'da. */
 import { OAuthProvider, AuthorizationError, authorizationErrorRedirect, type OAuthHelpers } from "@cloudflare/workers-oauth-provider";
@@ -79,7 +79,7 @@ const defaultHandler = {
         }
         const g = await exchangeCode(env, code, callback, data.verifier);
         if (!g.scopes.includes(DRIVE_SCOPE) || !g.refresh)
-          return page("Drive izni gerekli", `<p>Google girişinde "Spor Defteri verilerini görme ve yönetme" (Drive) izni işaretlenmedi. Claude'a dönüp yeniden bağlan ve bu izni de ver.</p>`, 400, headers);
+          return page("Drive izni gerekli", `<p>Google girişinde "Spor Defteri verilerini görme ve yönetme" (Drive) izni işaretlenmedi. Yapay zekâ uygulamana dönüp yeniden bağlan ve bu izni de ver.</p>`, 400, headers);
         const allowed = (env.ALLOWED_EMAILS || "").split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
         if (allowed.length && !allowed.includes(g.email.toLowerCase()))
           return page("Bu hesap izinli değil", `<p>${esc(g.email)} bu bağlayıcıyı kullanamaz.</p>`, 403, headers);
@@ -88,12 +88,12 @@ const defaultHandler = {
         headers.set("Location", redirectTo);
         return new Response(null, { status: 302, headers });
       }
-      if (url.pathname === "/") return page("Spor Defteri bağlayıcısı", `<p>Bu adres Claude içindir. Claude'da Ayarlar → Bağlayıcılar → Özel bağlayıcı ekle'ye şunu yaz:</p><p><code>${esc(url.origin)}/mcp</code></p>`);
+      if (url.pathname === "/") return page("Spor Defteri bağlayıcısı", `<p>Bu adres yapay zekâ uygulamaları içindir (Claude, ChatGPT, Gemini CLI…). Uygulamanın bağlayıcı ya da MCP sunucusu ekleme ayarına şunu yaz:</p><p><code>${esc(url.origin)}/mcp</code></p><p class="muted">Adımlar Spor Defteri'nde: Profil → Ayarlar → Yapay zekâ bağlantısı.</p>`);
       return new Response("Bulunamadı", { status: 404 });
     } catch (e) {
       if (e instanceof AuthorizationError) {
         if (e.redirectTo) return Response.redirect(e.redirectTo, 302);
-        return page("Giriş tamamlanamadı", `<p>${esc(e.description || e.message)}</p><p class="muted">Claude'a dönüp bağlanmayı yeniden başlat.</p>`, 400);
+        return page("Giriş tamamlanamadı", `<p>${esc(e.description || e.message)}</p><p class="muted">Yapay zekâ uygulamana dönüp bağlanmayı yeniden başlat.</p>`, 400);
       }
       throw e;
     }
@@ -112,7 +112,7 @@ const make = (origin: string) => new OAuthProvider<Env>({
   scopesSupported: ["spor"],
   resourceMetadata: { resource: `${origin}/mcp`, authorization_servers: [origin] },
   accessTokenTTL: 3600,
-  // Claude kullandıkça bağlantı açık kalır; 90 gün hiç kullanılmazsa yeniden bağlanmak gerekir
+  // Yapay zekâ kullandıkça bağlantı açık kalır; 90 gün hiç kullanılmazsa yeniden bağlanmak gerekir
   refreshTokenIdleTTL: 90 * 86400,
 });
 

@@ -44,11 +44,11 @@
       <div id="pList"></div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Hazır programlar</h2>
-        <p class="muted" style="margin-top:-4px">5×5, 3×5, GZCLP, tam vücut, ev ve ekipmansız programlar: kime uygun oldukları ve nasıl ilerleneceğiyle. Ya da Claude'a anlat, sana özel program bağlantısı versin.</p>
+        <p class="muted" style="margin-top:-4px">5×5, 3×5, GZCLP, tam vücut, ev ve ekipmansız programlar: kime uygun oldukları ve nasıl ilerleneceğiyle. Ya da yapay zekâya anlat, sana özel program bağlantısı versin.</p>
         <div class="row">
           <button class="btn primary" id="recOpen"><svg class="ic" aria-hidden="true"><use href="#i-lightbulb"/></svg>Bana program öner</button>
           <button class="btn" id="libOpen"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Bütün programlar</button>
-          <button class="btn" id="claudeOpen"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Claude ile program yap</button>
+          <button class="btn" id="aiOpen"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile program yap</button>
         </div>
       </div>
       <div class="card" id="pEditor">
@@ -109,7 +109,7 @@
         </div>
         <label for="planUntil" style="margin-top:12px">Bitiş tarihi (boşsa süresiz)</label>
         <div class="row" style="flex-wrap:nowrap"><input type="date" id="planUntil" class="grow"><button class="btn quiet" id="planUntilClear">Süresiz</button></div>
-        <button class="btn" id="planClaude" style="margin-top:12px;width:100%;justify-content:center"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Claude ile planla</button>
+        <button class="btn" id="planAi" style="margin-top:12px;width:100%;justify-content:center"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile planla</button>
         <div class="row" style="margin-top:12px"><span class="grow muted small" id="planInfo"></span><button class="btn primary" id="planIcs"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Takvim dosyası</button></div>
         <details style="margin-top:12px">
           <summary class="small">Google Takvim'e nasıl yüklerim?</summary>
@@ -298,6 +298,30 @@
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sun-moon"/></svg></span>Görünüm</h2>
         <div class="fchips" id="themeChips"></div>
+      </div>
+      <div class="card" id="aiCard">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2>
+        <p class="muted" style="margin-top:-4px">Claude, ChatGPT ya da Gemini gibi bir yapay zekâ Spor Defteri'ne bağlanabilir: program kurar, planını ayarlar, antrenmanlarını kaydeder, geçmişine bakar. Bağlanırken kendi Google hesabınla giriş yaparsın; yapay zekâ yalnız senin verini görür. Değişiklikler telefona bir sonraki eşitlemede gelir (Google Drive bağlı olmalı).</p>
+        <label for="mcpUrl">Bağlayıcı adresi</label>
+        <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="mcpUrl" readonly class="grow" style="min-width:0"><button class="btn" id="mcpCopy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Kopyala</button></div>
+        <div class="ai-steps" style="margin-top:12px">
+          <details><summary>Claude</summary><ol>
+            <li>claude.ai'de (bilgisayardan) Ayarlar → Bağlayıcılar → <b>Özel bağlayıcı ekle</b>.</li>
+            <li>Ad: Spor Defteri, adres: yukarıdaki adres. Ekle, sonra <b>Bağlan</b>.</li>
+            <li>Açılan sayfada izin ver ve Google hesabınla giriş yap. Telefondaki Claude'da da görünür.</li></ol></details>
+          <details><summary>ChatGPT</summary><ol>
+            <li>chatgpt.com'da Ayarlar → Uygulamalar ve bağlayıcılar → Gelişmiş ayarlar → <b>Geliştirici modu</b>nu aç.</li>
+            <li>Yeni bağlayıcı oluştur: ad Spor Defteri, adres yukarıdaki, kimlik doğrulama OAuth.</li>
+            <li>Açılan sayfada izin ver ve Google hesabınla giriş yap.</li></ol></details>
+          <details><summary>Gemini CLI ve Antigravity</summary><ol>
+            <li>Gemini CLI: <code>~/.gemini/settings.json</code> dosyasına ekle:<pre id="mcpGemini"></pre></li>
+            <li>Gemini CLI'da <code>/mcp auth spor-defteri</code> yaz, açılan sayfada giriş yap.</li>
+            <li>Antigravity: MCP sunucuları ayarında aynı adresi ekle.</li></ol></details>
+          <details><summary>Bağlayıcı desteklemeyenler (Gemini uygulaması…)</summary>
+            <p class="muted small">Bu yapay zekâlar verine doğrudan ulaşamaz, ama program ve plan hazırlayabilir: hazır isteği gönder, verdiği bağlantıya dokun.</p>
+            <button class="btn sm" id="aiSheetOpen"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile program yap</button></details>
+        </div>
+        <p class="muted small" style="margin:10px 0 0">Menü adları uygulamaların sürümüne göre biraz değişebilir.</p>
       </div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman</h2>

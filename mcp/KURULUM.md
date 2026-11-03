@@ -2,7 +2,7 @@
 
 Bu klasör, Claude'un Spor Defteri'ne doğrudan bağlandığı küçük sunucudur (Cloudflare Workers üzerinde, ücretsiz).
 Claude'a "pazartesi, çarşamba, cumartesi 18:00, 6 Ocak'a kadar" dediğinde plan bağlantıya gerek kalmadan uygulamana yazılır.
-Bu bağlayıcı claude.ai'da, bilgisayardaki Claude uygulamasında ve telefondaki Claude uygulamasında çalışır.
+Bu bağlayıcı claude.ai'da, bilgisayardaki ve telefondaki Claude uygulamasında çalışır. Açık MCP standardını kullandığı için ChatGPT (geliştirici modu), Gemini CLI ve Antigravity gibi MCP destekleyen başka yapay zekâ uygulamaları da bağlanabilir; kullanıcıya gösterilen adımlar uygulamada Profil → Ayarlar → Yapay zekâ bağlantısı'nda.
 
 **Nasıl çalışır?** Claude araçları çağırır, sunucu da senin Google hesabınla Drive'daki gizli Spor Defteri dosyasını okuyup değiştirir.
 Telefondaki uygulama açılınca bu değişiklikleri Drive'dan alır ve Google Takvim'i kendisi günceller.

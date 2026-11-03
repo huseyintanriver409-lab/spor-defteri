@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalize, matchExercise, extractPayload, parseProgram, buildLink, claudePrompt } from "../src/core/importer.ts";
+import { normalize, matchExercise, extractPayload, parseProgram, buildLink, aiPrompt } from "../src/core/importer.ts";
 import { LIB } from "../src/core/library.ts";
 
 const known = Object.values(LIB).flat();
@@ -148,8 +148,8 @@ describe("paylaşım bağlantısı", () => {
     expect(r.plan).toEqual([["MO", 0], ["TH", 1]]);
   });
 
-  it("Claude isteği biçimi ve adresi içerir", () => {
-    const p = claudePrompt(BASE, "evde 3 gün", "2026-11-02");
+  it("yapay zekâ isteği biçimi ve adresi içerir", () => {
+    const p = aiPrompt(BASE, "evde 3 gün", "2026-11-02");
     expect(p).toContain(BASE + "#ekle=");
     expect(p).toContain("evde 3 gün");
     expect(p).toContain("2026-11-02");

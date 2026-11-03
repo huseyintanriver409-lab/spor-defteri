@@ -179,8 +179,8 @@ export function buildLink(base: string, name: string, days: { name: string; item
   return `${base}#${LINK_KEY}=p=${enc(name)}${g}${w}`;
 }
 
-// Claude'a verilecek hazır istek: biçimi ve kuralları anlatır. today: "YYYY-AA-GG" ("6 Ocak'a kadar" doğru yıla çözülsün)
-export function claudePrompt(base: string, wish: string, today = ""): string {
+// Yapay zekâya (Claude, ChatGPT, Gemini…) verilecek hazır istek: biçimi ve kuralları anlatır. today: "YYYY-AA-GG" ("6 Ocak'a kadar" doğru yıla çözülsün)
+export function aiPrompt(base: string, wish: string, today = ""): string {
   return [
     "Spor Defteri adlı antrenman uygulamamı kullanıyorum. Bana bir ağırlık antrenmanı programı hazırla ya da haftalık planımı (hangi gün, saat kaçta, ne zamana kadar) ayarla; uygulama planı Google Takvim'ime kendisi yazıyor." + (wish ? " İsteğim: " + wish : ""),
     (today ? `Bugünün tarihi: ${today}. ` : "") + "Gerekirse önce kısaca soru sor (deneyim, hedef, ekipman, hangi günler, saat).",

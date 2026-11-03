@@ -1,11 +1,12 @@
-// Bağlantıyla program ekleme ve paylaşma; "Claude ile program yap". Biçim ve ayrıştırma core/importer.ts'te.
-import { LINK_KEY, parseProgram, buildLink, claudePrompt } from "../core/importer.ts";
+// Bağlantıyla program ekleme ve paylaşma; "Yapay zekâ ile program yap". Biçim ve ayrıştırma core/importer.ts'te.
+import { LINK_KEY, parseProgram, buildLink, aiPrompt } from "../core/importer.ts";
 import { PLAN_DAYS } from "../core/programs.ts";
 import { $, esc, ic, save, state, toast, uid } from "./store.js";
 import { allEx } from "./exercises.js";
 import { buzz, closeSheet, openSheet, sheetHead, refreshAll } from "./ui.js";
 import { renderProg, renderPlan, WEEKDAYS, openUrl, untilText } from "./programs.js";
 import { ymd } from "../core/dates.ts";
+import { MCP_URL } from "../config.ts";
 import { refreshDatalist } from "./log.js";
 
 const LIVE = "https://huseyintanriver409-lab.github.io/spor-defteri/spor-defteri.html";
@@ -112,26 +113,46 @@ export async function shareProgram(p){
   catch(e){ openSheet(sheetHead("Paylaşım bağlantısı"), `<p class="muted">Kopyalayıp gönder:</p><textarea readonly style="width:100%;min-height:120px">${esc(link)}</textarea>`); }
 }
 
-// "Claude ile program yap": Claude'u hazır istekle açar; dönen bağlantı dokununca açılır, açılmazsa buraya yapıştırılır
-export function openClaudeSheet(){
-  openSheet(sheetHead("Claude ile program yap"),
-    `<p class="muted" style="margin:0">Claude'a ne istediğini anlat; sana bir program ya da haftalık plan ve uygulamaya ekleme bağlantısı versin. Plan Google Takvim'e de yazılır.</p>
+// Yapay zekâlar: istek adreste taşınabiliyorsa (q=) doğrudan yazılı açılır, taşınamıyorsa panoya kopyalanıp açılır
+const AIS = [
+  ["Claude", q => "https://claude.ai/new?q=" + encodeURIComponent(q)],
+  ["ChatGPT", q => "https://chatgpt.com/?q=" + encodeURIComponent(q)],
+  ["Gemini", () => "https://gemini.google.com/app"],
+];
+
+// "Yapay zekâ ile program yap": hazır isteği telefondaki yapay zekâya gönderir (paylaş menüsü ya da seçilen site);
+// dönen bağlantı dokununca açılır, açılmazsa buraya yapıştırılır
+export function openAiSheet(){
+  const canShare = !!navigator.share;
+  openSheet(sheetHead("Yapay zekâ ile program yap"),
+    `<p class="muted" style="margin:0">Kullandığın yapay zekâya (Claude, ChatGPT, Gemini…) ne istediğini anlat; sana bir program ya da haftalık plan ve uygulamaya ekleme bağlantısı versin. Plan Google Takvim'e de yazılır.</p>
      <div class="pk-head">1 · İsteğin (isteğe bağlı)</div>
      <input id="clWish" placeholder="ör. pazartesi, çarşamba, cumartesi 18:00, 6 Ocak'a kadar">
-     <button class="btn primary" id="clOpen" style="margin-top:10px;width:100%;justify-content:center">${ic("sparkles")}Claude'u aç</button>
-     <p class="muted small" style="margin:6px 0 0">İstek panoya da kopyalanır; Claude boş açılırsa yapıştırıp gönder.</p>
-     <div class="pk-head">2 · Claude'un verdiği bağlantı</div>
-     <p class="muted small" style="margin:4px 0 6px">Bağlantıya dokununca uygulama açılır. Açılmazsa bağlantıyı (ya da Claude'un cevabının tamamını) kopyalayıp buraya yapıştır.</p>
+     ${canShare ? `<button class="btn primary" id="clShare" style="margin-top:10px;width:100%;justify-content:center">${ic("share-2")}Yapay zekâ uygulamana gönder</button>
+     <p class="muted small" style="margin:6px 0 0">Açılan menüden telefonundaki yapay zekâyı seç.</p>` : ""}
+     <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${AIS.map(([n], i) => `<button class="btn sm${canShare ? "" : " primary"}" data-ai="${i}">${ic("sparkles")}${n}</button>`).join("")}
+       <button class="btn sm quiet" id="clCopy">${ic("copy")}Kopyala</button></div>
+     <p class="muted small" style="margin:6px 0 0">İstek panoya da kopyalanır; yapay zekâ boş açılırsa yapıştırıp gönder. Başka bir yapay zekâ kullanıyorsan kopyalayıp ona yapıştır.</p>
+     <div class="pk-head">2 · Yapay zekânın verdiği bağlantı</div>
+     <p class="muted small" style="margin:4px 0 6px">Bağlantıya dokununca uygulama açılır. Açılmazsa bağlantıyı (ya da cevabın tamamını) kopyalayıp buraya yapıştır.</p>
      <textarea id="clPaste" placeholder="https://…#ekle=p=…" style="width:100%;min-height:90px"></textarea>
      <div class="row" style="margin-top:8px">
        <button class="btn" id="clClip">${ic("clipboard-list")}Panodan yapıştır</button><span class="grow"></span>
        <button class="btn primary" id="clAdd">${ic("plus")}Ekle</button>
      </div>`);
-  $("#clOpen").onclick = async () => {
-    const prompt = claudePrompt(base(), $("#clWish").value.trim(), ymd(new Date()));
-    try { await navigator.clipboard.writeText(prompt); } catch(e){}
-    openUrl("https://claude.ai/new?q=" + encodeURIComponent(prompt));
+  const prompt = () => aiPrompt(base(), $("#clWish").value.trim(), ymd(new Date()));
+  const copy = async () => { try { await navigator.clipboard.writeText(prompt()); return true; } catch(e){ return false; } };
+  if (canShare) $("#clShare").onclick = async () => {
+    try { await navigator.share({ text: prompt() }); }
+    catch(e){ if (!e || e.name !== "AbortError") { await copy(); toast("Paylaşılamadı; istek kopyalandı, yapay zekâna yapıştır"); } }
   };
+  document.querySelectorAll("[data-ai]").forEach(b => b.onclick = async () => {
+    const [name, url] = AIS[+b.dataset.ai], ok = await copy();
+    // Gemini adresle istek almıyor: yapıştırmak gerekir
+    if (name === "Gemini") toast(ok ? "İstek kopyalandı; Gemini'de yapıştırıp gönder" : "İsteği kopyalayıp Gemini'ye yapıştır", "copy");
+    openUrl(url(prompt()));
+  });
+  $("#clCopy").onclick = async () => toast(await copy() ? "İstek kopyalandı" : "Panoya erişilemedi", "copy");
   $("#clClip").onclick = async () => {
     try { $("#clPaste").value = await navigator.clipboard.readText(); }
     catch(e){ toast("Panoya erişilemedi; uzun basıp yapıştır"); }
@@ -144,7 +165,11 @@ export function openClaudeSheet(){
 }
 
 export function setup(){
-  $("#claudeOpen").onclick = $("#planClaude").onclick = openClaudeSheet;
+  $("#aiOpen").onclick = $("#planAi").onclick = $("#aiSheetOpen").onclick = openAiSheet;
+  // Profil → Yapay zekâ bağlantısı: bağlayıcı adresi ve Gemini CLI ayarı
+  $("#mcpUrl").value = MCP_URL;
+  $("#mcpGemini").textContent = JSON.stringify({ mcpServers: { "spor-defteri": { httpUrl: MCP_URL } } }, null, 2);
+  $("#mcpCopy").onclick = async () => { try { await navigator.clipboard.writeText(MCP_URL); toast("Adres kopyalandı", "copy"); } catch(e){ $("#mcpUrl").select(); toast("Seçili adresi kopyala"); } };
   // uygulama açıkken başka bir bağlantıyla gelinirse
   window.addEventListener("hashchange", handleImportLink);
 }

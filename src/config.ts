@@ -4,3 +4,6 @@
 // Google'ın yalnızca "Yetkili JavaScript kaynakları" listesindeki adreslerden gelen girişlere izin vermesi sağlar.
 // Boşken Google Drive senkronizasyonu "kurulum bekleniyor" olarak görünür, uygulamanın geri kalanı etkilenmez.
 export const GOOGLE_CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+// Yapay zekâ bağlayıcısının (uzak MCP sunucusu, mcp/ klasörü) adresi: Profil → Yapay zekâ bağlantısı'nda gösterilir
+export const MCP_URL = "https://spor-defteri-mcp.spor-defteri.workers.dev/mcp";

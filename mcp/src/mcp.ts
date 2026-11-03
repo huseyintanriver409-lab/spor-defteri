@@ -1,4 +1,4 @@
-// MCP sunucusu (Streamable HTTP, durumsuz): Claude JSON-RPC isteğini POST eder, cevap tek JSON olarak döner.
+// MCP sunucusu (Streamable HTTP, durumsuz): Yapay zekâ uygulaması JSON-RPC isteğini POST eder, cevap tek JSON olarak döner.
 // Araçlar kullanıcının Drive'daki Spor Defteri dosyasını okur ya da değiştirir; işin kendisi src/core/assistant.ts'te.
 import { addProgram, deleteLog, deleteProgram, history, logWorkouts, overview, setBaseline, setPlan, updateProgram } from "../../src/core/assistant.ts";
 import { stampChanges, takeSnapshot, withDefaults, type State } from "../../src/core/schema.ts";
@@ -215,7 +215,7 @@ async function handle(msg: any, c: Ctx) {
         return rpc(id, { content: [{ type: "text", text: JSON.stringify(out, null, 1) }] });
       } catch (e: any) {
         const text = e instanceof UserError ? e.message
-          : e instanceof AuthError || e?.name === "GoogleRevoked" ? "Google izni geçersiz ya da geri alınmış. Claude ayarlarında Spor Defteri bağlayıcısının bağlantısını kesip yeniden bağlan."
+          : e instanceof AuthError || e?.name === "GoogleRevoked" ? "Google izni geçersiz ya da geri alınmış. Yapay zekâ uygulamanın ayarlarında Spor Defteri bağlayıcısının bağlantısını kesip yeniden bağlan."
           : `Beklenmeyen hata: ${e?.message || e}`;
         return rpc(id, { content: [{ type: "text", text }], isError: true });
       }
