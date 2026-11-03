@@ -5,6 +5,7 @@ import { $, esc, fmt, ic, load, save, setState, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, isCardio, isTimed, musclesOf } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
+import { streakNow } from "./streak.js";
 
 /* ---------- Week ---------- */
 export let weekStart = mondayOf(new Date());
@@ -73,18 +74,12 @@ export function renderConsistency(){
   $("#heat").scrollLeft = $("#heat").scrollWidth;
   // haftalık hedef serisi: bu hafta henüz tamamlanmadıysa seri bozulmuş sayılmaz
   const daysIn = mon => { let n = 0; for (let i=0;i<7;i++){ const d = new Date(mon); d.setDate(d.getDate()+i); if (load[ymd(d)]) n++; } return n; };
-  const firstDate = state.entries.reduce((m,e) => e.date < m ? e.date : m, "9999");
   const thisN = daysIn(thisMon);
   $("#gWeek").textContent = `${thisN}/${state.goal}`;
-  let streak = thisN >= state.goal ? 1 : 0;
-  for (const mon = new Date(thisMon); ; ) { mon.setDate(mon.getDate()-7); if (daysIn(mon) >= state.goal) streak++; else break; }
-  // en uzun seri: ilk kayıttan bu haftaya kadar tara
-  let best = 0, run = 0;
-  for (const mon = mondayOf(firstDate === "9999" ? today : parse(firstDate)); mon <= thisMon; mon.setDate(mon.getDate()+7)) {
-    run = daysIn(mon) >= state.goal ? run+1 : 0; best = Math.max(best, run);
-  }
-  $("#gStreak").textContent = streak;
-  $("#gBest").textContent = best;
+  // seri plana göre gün sayar (core/streak.ts)
+  const st = streakNow();
+  $("#gStreak").textContent = st.days;
+  $("#gBest").textContent = st.best;
 }
 export function muscleAdvice(ms){
   const main = ["Göğüs","Lat","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır"];

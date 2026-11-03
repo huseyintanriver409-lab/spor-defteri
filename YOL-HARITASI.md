@@ -172,6 +172,11 @@ Claude (ya da bir arkadaş) programı tek bir bağlantı olarak verir; dokununca
 
 Başka uygulamadan geçen ya da defter tutmadan çalışmış kullanıcı, her hareket için şu anki kilosunu ve tekrarını bir kez girer (`state.baseline`, ayarlarla eşitlenir; hesap `src/core/baseline.ts`, ekran `src/app/baseline.js`). Antrenman sayılmaz: geçmişe, takvime, istatistiklere girmez. O hareketin kaydı yokken öneri ve "son kez" ipucu başlangıç verisinden gelir, rekor karşılaştırması onu da sayar; "Başlangıç → şimdi" satırı başlangıç tarihinden sonraki en son antrenmanın en iyi setini gösterir. İlk açılışta program seçilince programın hareketleriyle sorulur ("Atla" ile geçilir), ilk açılış ekranında "Başka uygulamadan geliyorum" düğmesi ve Profil → Ayarlar → "Mevcut verilerim" de açar. Eski sürümdeki bir cihazın dosyasında `baseline` yoksa birleştirme yereldekini korur.
 
+## Seri ve profil (2026-11-03)
+
+- **Seri (Duolingo tarzı, `src/core/streak.ts`):** Gün sayar. Haftalık plan varsa planlı günü kaçırmak seriyi bozar, dinlenme günleri bozmaz; plan yoksa haftalık hedefin tutmadığı hafta bozar. Ayda 2 dondurma kendiliğinden kullanılır. Kayıtlardan hesaplanır, saklanmaz (bütün cihazlarda aynı). Ana sayfada alev ve "bugün antrenman günü: serini koru" satırı, İlerleme'de gün serisi ve en uzun seri, antrenman bitince seri arttıysa kutlama (`src/app/streak.js`); 7/14/30/60/100/180/365 gün rozetleri Profil'de.
+- **Hesap:** Profil'in üstünde bu cihazın Drive'a bağlı Google hesabı (ad, e-posta, fotoğraf). Drive `about` uç noktasından okunur, yeni izin gerekmez; cihaza özel `sporDefteri.sync` içinde tutulur, günde bir yenilenir.
+
 ## Faz 5 — Mağazalar (isteğe bağlı)
 
 - **Google Play:** Bubblewrap/TWA ile PWA paketlenir. Geliştirici hesabı bir kerelik 25 dolar.

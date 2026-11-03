@@ -42,3 +42,13 @@ export function driveStore(token: string, fetchFn: typeof fetch = fetch): Remote
     },
   };
 }
+
+// Drive'a bağlı Google hesabı (ad, e-posta, fotoğraf). Yeni izin istemez: drive.appdata kapsamı about'u okuyabilir.
+export interface Account { name: string; email: string; photo: string }
+export async function driveAccount(token: string, fetchFn: typeof fetch = fetch): Promise<Account> {
+  const res = await fetchFn(`https://www.googleapis.com/drive/v3/about?fields=user(displayName,emailAddress,photoLink)`, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 401 || res.status === 403) throw new AuthError(`Drive erişimi reddedildi (${res.status})`);
+  if (!res.ok) throw new Error(`Drive hatası (${res.status})`);
+  const u = ((await res.json()) as any).user || {};
+  return { name: String(u.displayName || ""), email: String(u.emailAddress || ""), photo: String(u.photoLink || "") };
+}

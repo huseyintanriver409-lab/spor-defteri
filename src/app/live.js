@@ -8,6 +8,7 @@ import { barFor, bestOf, bestSecOf } from "./log.js";
 import { at, defaultInc, defaultStep, exPref, overloadStep, restFor, ssLabels, stepFor } from "./programs.js";
 import { PLATES, audio, beep, mmss, pfmt, plateText, platesFor, renderFocusRest, setAudio, startTimer, stopTimer } from "./tools.js";
 import { runCal, runSync } from "./cloud.js";
+import { celebrateStreak } from "./streak.js";
 
 /* ---------- Live workout: tam ekran antrenman modu ----------
    Her "Seti tamamla" seti hemen kayda yazar; sayfa kapansa da hiçbir set kaybolmaz.
@@ -352,6 +353,8 @@ export async function finishWorkout(){
   setTimeout(() => toast(n ? `Antrenman bitti · ${durText(end - start)} · ${n} set · ${fmt(vol)} kg` : "Antrenman kapatıldı", n ? "biceps-flexed" : "check"), 50);
   // toast'ın ardından, ekranı meşgul etmeden
   setTimeout(() => { runSync(false); runCal(false); }, 2500);
+  // seri arttıysa kutla (bitiş bildiriminden sonra)
+  if (state.entries.some(e => e.date === date)) setTimeout(celebrateStreak, 1600);
 }
 export function renderLiveBar(){
   const show = !!state.live && $("#focus").classList.contains("hidden");

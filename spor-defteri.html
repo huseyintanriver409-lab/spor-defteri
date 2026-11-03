@@ -25,7 +25,8 @@
     <div class="card hidden" id="backupBanner" style="border-color:var(--warn)">
       <div class="row"><span class="grow small" id="backupMsg"></span><button class="ghost" id="backupLater">Sonra</button><button class="btn primary sm" id="backupNow"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Yedek al</button></div>
     </div>
-    <div class="hero"><div class="eyebrow" id="homeDate"></div><h2 id="homeTitle"></h2><p id="homeSub"></p></div>
+    <div class="hero"><div class="row" style="align-items:center"><div class="eyebrow grow" id="homeDate"></div><span id="homeStreak"></span></div><h2 id="homeTitle"></h2><p id="homeSub"></p>
+      <p class="streak-note hidden" id="homeStreakNote"></p></div>
     <div id="homeMain"></div>
     <div class="section-title">Bu hafta<span class="grow"></span></div>
     <div class="card"><div class="stats" id="homeWeek"></div><div id="homeGoal" style="margin-top:12px"></div></div>
@@ -156,8 +157,8 @@
         <div class="heat" id="heat"></div>
         <div class="stats" style="margin-top:12px">
           <div class="stat"><b id="gWeek">0/3</b><span>bu hafta</span></div>
-          <div class="stat"><b id="gStreak">0</b><span>seri (hafta)</span></div>
-          <div class="stat"><b id="gBest">0</b><span>en uzun</span></div>
+          <div class="stat"><b id="gStreak">0</b><span>seri (gün)</span></div>
+          <div class="stat"><b id="gBest">0</b><span>en uzun (gün)</span></div>
         </div>
       </div>
       <div class="card">
@@ -287,7 +288,9 @@
 
   <!-- ==================== PROFİL ==================== -->
   <section id="tab-profile" class="hidden">
-    <div class="hero"><div class="eyebrow">Profil</div><h2>Ayarlar ve araçlar</h2></div>
+    <div class="hero"><div class="eyebrow">Profil</div><h2>Profilin</h2></div>
+    <div class="card" id="acctCard"></div>
+    <div class="card" id="streakCard"></div>
     <div class="seg" data-seg="profile"><button data-v="settings" class="on">Ayarlar</button><button data-v="lib">Hareketler</button><button data-v="tools">Araçlar</button><button data-v="backup">Yedek</button></div>
 
     <div id="profile-settings">

@@ -8,6 +8,7 @@ import { elapsedText, liveItems, openFocus, startWorkout } from "./live.js";
 import { calMonth, selDay, setCalMonth, setSelDay } from "./history.js";
 import { dayLoad, recoveryMap } from "./stats.js";
 import { renderBackupBanner } from "./backup.js";
+import { flameHTML, streakNote, streakNow } from "./streak.js";
 
 /* ---------- Home: Bugün ---------- */
 export const MONTHS_LONG = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
@@ -46,6 +47,11 @@ export function renderHome(){
     sub = !state.programs.length ? "İlk programını oluştur ya da boş bir antrenmanla başla." : "Haftalık planında bugün için program yok.";
   }
   $("#homeTitle").textContent = title; $("#homeSub").textContent = sub;
+  const st = streakNow(), note = streakNote(st);
+  $("#homeStreak").innerHTML = flameHTML(st.days);
+  $("#homeStreakNote").textContent = note;
+  $("#homeStreakNote").classList.toggle("hidden", !note);
+  $("#homeStreakNote").classList.toggle("risk", st.atRisk);
   const quick = `<div class="quick" style="margin-bottom:12px">
     <button id="qEmpty">${ic("play")}Boş antrenman</button>
     <button id="qProg">${ic("clipboard-list")}Programlar</button>
@@ -61,7 +67,7 @@ export function renderHome(){
   // bu hafta
   const w = weekProgress();
   $("#homeWeek").innerHTML = `<div class="stat"><b>${w.days}<span style="font-size:15px;color:var(--muted);text-transform:none;letter-spacing:0">/${state.goal}</span></b><span>gün</span></div>
-    <div class="stat"><b>${w.streak}</b><span>hafta seri</span></div><div class="stat"><b>${w.sets}</b><span>set</span></div>`;
+    <div class="stat"><b>${st.days}</b><span>gün seri</span></div><div class="stat"><b>${w.sets}</b><span>set</span></div>`;
   $("#homeGoal").innerHTML = `<div class="f-prog" style="margin:0" aria-label="Haftalık hedef: ${w.days}/${state.goal} gün">${Array.from({ length: state.goal }, (_, i) => `<i class="${i < w.days ? "on" : ""}"></i>`).join("")}</div>
     <div class="muted small" style="margin-top:8px">${w.days >= state.goal ? "Haftalık hedefini tamamladın." : `Hedefe ${state.goal - w.days} gün kaldı.`} Bu hafta ${fmt(w.vol)} kg hacim.</div>`;
   // toparlanma
