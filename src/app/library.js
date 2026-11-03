@@ -1,5 +1,5 @@
 import { shortDate, ymd } from "../core/dates.ts";
-import { $, LIB, ask, esc, fmt, ic, save, setState, state, toast } from "./store.js";
+import { $, LIB, ask, esc, fmt, ic, save, state, toast } from "./store.js";
 import { EQUIPS, HOME, allEx, equipOf, musclesOf } from "./exercises.js";
 import { emptyHTML, segState, showTab, undoable } from "./ui.js";
 import { refreshDatalist, resetEditor } from "./log.js";

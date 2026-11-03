@@ -1,11 +1,11 @@
 import { DAYS, mondayOf, niceDate, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
-import { $, esc, fmt, ic, load, setState, state } from "./store.js";
+import { $, esc, fmt, ic, state } from "./store.js";
 import { durText, isCardio, musclesOf } from "./exercises.js";
 import { segState, showTab } from "./ui.js";
 import { WEEKDAYS, ssLabels } from "./programs.js";
 import { elapsedText, liveItems, openFocus, startWorkout } from "./live.js";
-import { calMonth, selDay, setCalMonth, setSelDay } from "./history.js";
+import { setCalMonth, setSelDay } from "./history.js";
 import { dayLoad, recoveryMap } from "./stats.js";
 import { renderBackupBanner } from "./backup.js";
 import { flameHTML, streakNote, streakNow } from "./streak.js";
@@ -18,13 +18,10 @@ export function todayPlan(){
 }
 export function weekProgress(){
   const load = dayLoad(), mon = mondayOf(new Date());
-  const daysIn = m => { let n = 0; for (let i = 0; i < 7; i++) { const d = new Date(m); d.setDate(d.getDate() + i); if (load[ymd(d)]) n++; } return n; };
-  const thisN = daysIn(mon);
-  let streak = thisN >= state.goal ? 1 : 0;
-  for (const m = new Date(mon); ; ) { m.setDate(m.getDate() - 7); if (daysIn(m) >= state.goal) streak++; else break; }
+  let days = 0; for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(d.getDate() + i); if (load[ymd(d)]) days++; }
   const a = ymd(mon), e = new Date(mon); e.setDate(e.getDate() + 6); const b = ymd(e);
   const lifts = state.entries.filter(x => x.date >= a && x.date <= b && !isCardio(x.ex));
-  return { days: thisN, streak, sets: lifts.reduce((s, x) => s + work(x.sets).length, 0), vol: lifts.reduce((s, x) => s + volume(x.sets), 0) };
+  return { days, sets: lifts.reduce((s, x) => s + work(x.sets).length, 0), vol: lifts.reduce((s, x) => s + volume(x.sets), 0) };
 }
 export function renderHome(){
   const now = new Date(), today = ymd(now), p = todayPlan(), trainedToday = state.entries.some(e => e.date === today);

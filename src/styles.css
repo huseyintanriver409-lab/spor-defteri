@@ -438,7 +438,6 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 .streak.xl .ic{width:52px;height:52px}
 .streak-note{margin:8px 0 0;font-weight:700;color:#ff7a1a}
 .streak-note.risk::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff7a1a;margin-right:8px;vertical-align:1px;animation:pulse 1.4s ease-in-out infinite}
-@keyframes pulse{50%{opacity:.25}}
 .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:999px;font-size:13px;font-weight:800;background:var(--card2);color:var(--muted);opacity:.6}
 .badge .ic{width:13px;height:13px}

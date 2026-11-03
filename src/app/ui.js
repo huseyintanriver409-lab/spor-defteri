@@ -1,4 +1,4 @@
-import { $, esc, ic, save, setState, state, toast } from "./store.js";
+import { $, esc, ic, save, state, toast } from "./store.js";
 import { allEx, equipOf, groupOf, musclesOf } from "./exercises.js";
 import { refreshDatalist, renderDay, updateHint } from "./log.js";
 import { renderPlan, renderProg } from "./programs.js";
@@ -27,7 +27,7 @@ export async function keepAwake(on){
   } catch(e){}
 }
 
-// silme işlemleri onay sormaz; bunun yerine birkaç saniye "Geri al" sunulur
+// silme işleminden sonra birkaç saniye "Geri al" çubuğu sunulur
 export let undoTimer = null;
 export function undoable(msg, undo){
   const s = $("#snack");

@@ -1,7 +1,7 @@
-import { $, fmt, ic, save, setState, state, toast } from "./store.js";
+import { $, fmt, ic, save, state, toast } from "./store.js";
 import { buzz, keepAwake } from "./ui.js";
 import { openRecommender } from "./presets.js";
-import { mmss, setTDur, tDur } from "./tools.js";
+import { mmss, setTDur } from "./tools.js";
 
 /* ---------- Settings ---------- */
 export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];

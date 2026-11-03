@@ -1,6 +1,6 @@
 import { e1rm, platesFor as platesForCore, warmupSets } from "../core/training.ts";
 import { pad } from "../core/dates.ts";
-import { $, fmt, ic, save, setState, state, toast } from "./store.js";
+import { $, fmt, ic, save, state, toast } from "./store.js";
 
 export function renderTools(){ renderRM(); renderPlates(); renderWarmCalc(); }
 export function renderRM(){

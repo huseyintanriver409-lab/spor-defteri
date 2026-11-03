@@ -1,4 +1,4 @@
-import { CARDIO, LIB, fmt, setState, state } from "./store.js";
+import { CARDIO, LIB, fmt, state } from "./store.js";
 
 /* ---------- Exercise metadata ---------- */
 export function allEx(){

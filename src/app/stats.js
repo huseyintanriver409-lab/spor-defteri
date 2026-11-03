@@ -1,7 +1,7 @@
-import { MONTHS, mondayOf, niceDate, pad, parse, shortDate, ymd } from "../core/dates.ts";
+import { MONTHS, mondayOf, niceDate, parse, shortDate, ymd } from "../core/dates.ts";
 import { e1rm, liftScore, volume, work } from "../core/training.ts";
 import { recoveryMap as recoveryMapCore } from "../core/recovery.ts";
-import { $, esc, fmt, ic, load, save, setState, state } from "./store.js";
+import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, isCardio, isTimed, musclesOf } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";

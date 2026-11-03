@@ -364,6 +364,7 @@ export function renderLiveBar(){
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
+$("#startEmpty").onclick = () => startWorkout(null);
 $("#fMin").onclick = closeFocus;
 $("#liveBar").onclick = openFocus;
 $("#fPrev").onclick = () => gotoItem(state.live.idx - 1);

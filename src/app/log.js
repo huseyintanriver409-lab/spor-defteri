@@ -1,7 +1,7 @@
 import { e1rm, volume, warmupSets, work } from "../core/training.ts";
 import { niceDate, ymd } from "../core/dates.ts";
 import { baseBest, baseSet } from "../core/baseline.ts";
-import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
+import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
 import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
 import { autoLogged } from "./programs.js";
@@ -51,8 +51,13 @@ export function rowData(d){
 export const readRows = () => [...$("#setRows").children].map(rowData).filter(s => s.w || s.r || s.sec);
 // yarım kalan girişler sayfa kapansa da kaybolmasın
 export function saveDraft(){
-  state.draft = { ex: $("#logEx").value, date: $("#logDate").value, note: $("#logNote").value, editingId,
-    rows: [...$("#setRows").children].map(d => ({ ...rowData(d), w: d.querySelector(".w").value, r: d.querySelector(".r").value })) };
+  const ex = $("#logEx").value, timed = isTimed(ex);
+  state.draft = { ex, date: $("#logDate").value, note: $("#logNote").value, editingId,
+    rows: [...$("#setRows").children].map(d => {
+      const o = { ...rowData(d), w: d.querySelector(".w").value, r: d.querySelector(".r").value };
+      if (timed) o.sec = o.r;
+      return o;
+    }) };
   save();
 }
 export function restoreDraft(){

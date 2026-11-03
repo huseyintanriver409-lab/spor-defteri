@@ -1,12 +1,12 @@
 import { ymd } from "./core/dates.ts";
 import { preload as preloadGoogle } from "./sync/google.ts";
-import { $, load, save, setState, state } from "./app/store.js";
+import { $, load, save, state } from "./app/store.js";
 import { isTimed } from "./app/exercises.js";
 import { keepAwake, showTab } from "./app/ui.js";
 import { refreshDatalist, resetEditor, restoreDraft } from "./app/log.js";
 import { resetProgEditor } from "./app/programs.js";
 import { renderLiveBar } from "./app/live.js";
-import { setTDur, tDur } from "./app/tools.js";
+import { setTDur } from "./app/tools.js";
 import { calOn, renderCalStatus, renderSyncStatus, runCal, runSync, sync, syncCanRun } from "./app/cloud.js";
 import { maybeOnboard } from "./app/settings.js";
 import { setup as setup_ui } from "./app/ui.js";

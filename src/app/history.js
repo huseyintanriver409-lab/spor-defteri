@@ -1,6 +1,6 @@
 import { mondayOf, niceDate, pad, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
-import { $, ic, load, setState, state } from "./store.js";
+import { $, ic, state } from "./store.js";
 import { durText, isCardio } from "./exercises.js";
 import { emptyHTML, segState, showTab } from "./ui.js";
 import { bindEntryActions, entryHTML, renderDay, resetEditor, saveDraft, updateHint } from "./log.js";

@@ -1,11 +1,10 @@
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
-import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
+import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, musclesOf, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, undoable } from "./ui.js";
 import { refreshDatalist } from "./log.js";
 import { startWorkout } from "./live.js";
-import { groups } from "./library.js";
 import { shareProgram } from "./importer.js";
 
 /* ---------- Programs ---------- */
