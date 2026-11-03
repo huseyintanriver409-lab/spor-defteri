@@ -21,10 +21,13 @@ export interface ImportedProgram {
   name: string; days: ImportDay[]; plan: [string, number][]; times: Record<string, string>; until: string; warnings: string[];
 }
 
-const DAY_CODES: Record<string, string> = {
+export const DAY_CODES: Record<string, string> = {
   mo: "MO", pzt: "MO", pazartesi: "MO", tu: "TU", sal: "TU", sali: "TU", we: "WE", car: "WE", carsamba: "WE",
   th: "TH", per: "TH", persembe: "TH", fr: "FR", cum: "FR", cuma: "FR", sa: "SA", cmt: "SA", cumartesi: "SA", su: "SU", paz: "SU", pazar: "SU",
 };
+
+// "Pazartesi", "pzt", "MO" → "MO"; tanınmazsa ""
+export const dayCode = (s: string): string => DAY_CODES[normalize(s || "").replace(/ /g, "")] || "";
 
 // Karşılaştırma için: küçük harf, Türkçe harfler sadeleşir, harf/rakam dışı her şey boşluk
 export function normalize(s: string): string {
@@ -108,7 +111,7 @@ export function parseProgram(input: string, knownExercises: string[]): ImportedP
   if (parts.w) for (const pair of parts.w.split(",").map(x => x.trim()).filter(Boolean)) {
     const [dayPart, timePart] = pair.split("@");
     const [d, n] = dayPart.split(":").map(x => x.trim());
-    const code = DAY_CODES[normalize(d || "").replace(/ /g, "")];
+    const code = dayCode(d);
     // sıra yazılmamışsa günler programın günlerine sırayla dağıtılır; programsız bağlantıda sıra yok (-1)
     const idx = !days.length ? -1 : n ? parseInt(n) : plan.length % days.length;
     if (!code || plan.some(([c]) => c === code) || (days.length && !(idx >= 0 && idx < days.length))) {

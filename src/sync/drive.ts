@@ -20,7 +20,7 @@ export function driveStore(token: string, fetchFn: typeof fetch = fetch): Remote
   const find = async (): Promise<string | null> => {
     const q = encodeURIComponent(`name='${FILE_NAME}' and trashed=false`);
     const res = await call(`${API}?spaces=appDataFolder&q=${q}&fields=files(id,modifiedTime)&orderBy=modifiedTime desc`);
-    const { files } = await res.json();
+    const { files }: any = await res.json();
     return files && files.length ? files[0].id : null;
   };
   return {
@@ -38,7 +38,7 @@ export function driveStore(token: string, fetchFn: typeof fetch = fetch): Remote
       const meta = JSON.stringify({ name: FILE_NAME, parents: ["appDataFolder"], mimeType: "application/json" });
       const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${boundary}--`;
       const res = await call(`${UPLOAD}?uploadType=multipart&fields=id`, { method: "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body });
-      fileId = (await res.json()).id;
+      fileId = ((await res.json()) as any).id;
     },
   };
 }

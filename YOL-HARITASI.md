@@ -166,7 +166,7 @@ Claude (ya da bir arkadaş) programı tek bir bağlantı olarak verir; dokununca
 - Android'de APK bu adresleri sahiplendiği için (autoVerify + assetlinks) bağlantı doğrudan uygulamayı açar.
 - Testler: `tests/importer.test.ts`.
 
-**Sonraki seçenek (Yol 2):** Claude'un uygulamaya doğrudan yazdığı bir bağlayıcı (uzak MCP sunucusu, Cloudflare Workers + Google girişi; Drive'daki dosyaya `mergeStates` ile yazar). Önce Drive appDataFolder'ın aynı projedeki başka bir OAuth istemcisiyle paylaşılıp paylaşılmadığı test edilmeli; herkese açmak için OAuth uygulamasının "yayında" olması gerekir.
+**Yol 2: Claude bağlayıcısı (kuruldu, `mcp/`).** Uzak MCP sunucusu (Cloudflare Workers + Google girişi, `@cloudflare/workers-oauth-provider`). Claude araçları (`ozet`, `gecmis`, `program_ekle`, `program_guncelle`, `program_sil`, `plan_kur`) Drive'daki eşitleme dosyasını okur/değiştirir; değişiklik `stampChanges` ile damgalanır, telefon bir sonraki eşitlemede `mergeStates` ile alır ve takvimi kendisi günceller. İşlemler `src/core/assistant.ts`te (testler `tests/assistant.test.ts`, `tests/mcp.test.ts`). Sunucu uygulamanın kendi web istemcisini kullanır: Drive appDataFolder istemciye bağlı olduğundan aynı dosyayı ancak böyle görür. Kurulum adımları `mcp/KURULUM.md`. Google uygulaması Test modundayken yenileme anahtarı 7 günde düşer; kalıcı bağlantı için uygulama yayınlanır ve `ALLOWED_EMAILS` gizli değeriyle kullanıcılar sınırlanır.
 
 ## Faz 5 — Mağazalar (isteğe bağlı)
 
