@@ -1,5 +1,6 @@
 import { e1rm, volume, warmupSets, work } from "../core/training.ts";
 import { niceDate, ymd } from "../core/dates.ts";
+import { baseBest, baseSet } from "../core/baseline.ts";
 import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
 import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
@@ -96,17 +97,22 @@ export function prevEntry(ex, beforeOrOn, excludeId){
 export function updateHint(){
   const ex = $("#logEx").value.trim(), h = $("#lastHint");
   const prev = prevEntry(ex, $("#logDate").value, editingId);
+  const c = isCardio(ex), b = state.baseline[ex];
+  if (!prev && b && b.date <= $("#logDate").value){
+    h.innerHTML = `<b>Başlangıç verin</b> (${niceDate(b.date)}): ` + setLabel(baseSet(b), c);
+    h.classList.remove("hidden"); return;
+  }
   if (!prev){ h.classList.add("hidden"); return; }
-  const c = isCardio(ex);
   h.innerHTML = `<b>Son kez</b> (${niceDate(prev.date)}): ` + work(prev.sets).map(s => setLabel(s,c)).join(", ") + (prev.note ? `<br>${ic("notebook-pen")} ${esc(prev.note)}` : "");
   h.classList.remove("hidden");
 }
 export function bestOf(ex, excludeId){
-  let w = 0, e = 0, n = 0;
+  // başlangıç verisi de sayılır: ilk antrenmanda onu geçmek rekordur
+  let { w, e } = baseBest(state.baseline[ex]), n = state.baseline[ex] ? 1 : 0;
   state.entries.forEach(x => { if (x.ex===ex && x.id!==excludeId) work(x.sets).forEach(s => { n++; w = Math.max(w, +s.w||0); if (s.r<=12) e = Math.max(e, e1rm(+s.w||0, +s.r||0)); }); });
   return { w, e, n };
 }
-export const bestSecOf = (ex, excludeId) => Math.max(0, ...state.entries.filter(x => x.ex===ex && x.id!==excludeId).flatMap(x => work(x.sets)).map(s => +s.sec||0));
+export const bestSecOf = (ex, excludeId) => Math.max(+(state.baseline[ex] || {}).sec || 0, ...state.entries.filter(x => x.ex===ex && x.id!==excludeId).flatMap(x => work(x.sets)).map(s => +s.sec||0));
 export function saveEditor(){
   const ex = $("#logEx").value.trim(), date = $("#logDate").value, sets = readRows(), note = $("#logNote").value.trim();
   if (!ex) { toast("Önce bir hareket seç"); return false; }

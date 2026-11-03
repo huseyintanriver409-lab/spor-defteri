@@ -417,3 +417,12 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 .libitem{display:block;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;color:var(--text);font:inherit;cursor:pointer}
 .libitem:hover{border-color:var(--line2)}
 .libitem .chip{background:var(--card3)}
+
+/* Mevcut verilerim (başlangıç noktası) */
+.bl-row{display:grid;grid-template-columns:minmax(0,1fr) 74px 74px 32px;gap:6px;align-items:center}
+.bl-row input{min-height:46px;padding:8px 10px}
+.bl-num{position:relative;margin:0}
+.bl-num input{width:100%;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;padding-bottom:16px}
+.bl-num span{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:10px;color:var(--muted);pointer-events:none}
+.bl-prog{display:grid;gap:2px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.bl-prog .ic{width:14px;height:14px;vertical-align:-2px}

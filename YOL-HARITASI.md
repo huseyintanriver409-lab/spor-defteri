@@ -168,6 +168,10 @@ Claude (ya da bir arkadaş) programı tek bir bağlantı olarak verir; dokununca
 
 **Yol 2: Claude bağlayıcısı (kuruldu, `mcp/`).** Uzak MCP sunucusu (Cloudflare Workers + Google girişi, `@cloudflare/workers-oauth-provider`). Claude araçları (`ozet`, `gecmis`, `antrenman_kaydet`, `kayit_sil`, `program_ekle`, `program_guncelle`, `program_sil`, `plan_kur`) Drive'daki eşitleme dosyasını okur/değiştirir; değişiklik `stampChanges` ile damgalanır, telefon bir sonraki eşitlemede `mergeStates` ile alır ve takvimi kendisi günceller. İşlemler `src/core/assistant.ts`te (testler `tests/assistant.test.ts`, `tests/mcp.test.ts`). Sunucu uygulamanın kendi web istemcisini kullanır: Drive appDataFolder istemciye bağlı olduğundan aynı dosyayı ancak böyle görür. Kurulum adımları `mcp/KURULUM.md`. Google uygulaması Test modundayken yenileme anahtarı 7 günde düşer; kalıcı bağlantı için uygulama yayınlanır ve `ALLOWED_EMAILS` gizli değeriyle kullanıcılar sınırlanır.
 
+## Başlangıç noktası: mevcut verilerim (2026-11-03)
+
+Başka uygulamadan geçen ya da defter tutmadan çalışmış kullanıcı, her hareket için şu anki kilosunu ve tekrarını bir kez girer (`state.baseline`, ayarlarla eşitlenir; hesap `src/core/baseline.ts`, ekran `src/app/baseline.js`). Antrenman sayılmaz: geçmişe, takvime, istatistiklere girmez. O hareketin kaydı yokken öneri ve "son kez" ipucu başlangıç verisinden gelir, rekor karşılaştırması onu da sayar; "Başlangıç → şimdi" satırı başlangıç tarihinden sonraki en son antrenmanın en iyi setini gösterir. İlk açılışta program seçilince programın hareketleriyle sorulur ("Atla" ile geçilir), ilk açılış ekranında "Başka uygulamadan geliyorum" düğmesi ve Profil → Ayarlar → "Mevcut verilerim" de açar. Eski sürümdeki bir cihazın dosyasında `baseline` yoksa birleştirme yereldekini korur.
+
 ## Faz 5 — Mağazalar (isteğe bağlı)
 
 - **Google Play:** Bubblewrap/TWA ile PWA paketlenir. Geliştirici hesabı bir kerelik 25 dolar.

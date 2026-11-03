@@ -1,5 +1,6 @@
 import { pad, shortDate, ymd } from "../core/dates.ts";
 import { e1rm, overloadDecision, repRange, volume, warmupSets, work } from "../core/training.ts";
+import { baseSet } from "../core/baseline.ts";
 import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
 import { TIMED_RE, TYPE_LETTER, allEx, durText, fmtSec, groupOf, isCardio, isTimed, musclesOf, setLabel } from "./exercises.js";
 import { buzz, closeSheet, keepAwake, openPicker, openSheet, refreshAll, sheetHead, showTab, undoable } from "./ui.js";
@@ -41,7 +42,11 @@ export function closeFocus(){ document.body.classList.remove("focus-open"); $("#
 export function suggestFor(it){
   // önceki seansa göre kilo/tekrar önerisi ve kademeli yüklenme
   const today = state.live ? state.live.date : ymd(new Date()), c = isCardio(it.ex);
-  const prev = state.entries.filter(e => e.ex===it.ex && e.date < today).sort((a,b) => b.date.localeCompare(a.date))[0];
+  let prev = state.entries.filter(e => e.ex===it.ex && e.date < today).sort((a,b) => b.date.localeCompare(a.date))[0];
+  // hiç kaydı yoksa başlangıç verisi "son kez" yerine geçer (tek set: kilo artırma kararı verilmez)
+  const b = !prev && state.baseline[it.ex], fromBase = !!b;
+  if (b) prev = { date: b.date, sets: [baseSet(b)] };
+  const last = fromBase ? "Başlangıç verin" : "Son kez";
   const range = repRange(it.reps), { lo } = range, sets = it.sets || 3;
   const ws = prev ? work(prev.sets) : [];
   const { hitTop, easy, hard, increase } = overloadDecision(ws, sets, range, c);
@@ -50,11 +55,11 @@ export function suggestFor(it){
   if (isTimed(it.ex)) {
     // süreli: hedef süreyi bütün setlerde tutturduysa +5 sn öner
     const secs = ws.map(x => +x.sec || 0), tgt = lo || 30, hit = prev && secs.length >= sets && secs.slice(0, sets).every(x => x >= tgt);
-    let tmsg = prev ? `Son kez ${shortDate(prev.date)}: <b>${ws.map(x => setLabel(x, c)).join(", ")}</b>` : "";
+    let tmsg = prev ? `${last} ${shortDate(prev.date)}: <b>${ws.map(x => setLabel(x, c)).join(", ")}</b>` : "";
     if (hit) tmsg += `<br><span class="up">${ic("trending-up")} Hedefi tutturdun, bugün +5 sn</span>`;
     return { w: base && +base.w ? +base.w : "", r: hit ? Math.max(...secs.slice(0, sets)) + 5 : (lo || (base && base.sec) || 30), msg: tmsg };
   }
-  let msg = prev ? `Son kez ${shortDate(prev.date)}: <b>${ws.map(s => setLabel(s, c)).join(", ")}</b>` : "";
+  let msg = prev ? `${last} ${shortDate(prev.date)}: <b>${ws.map(s => setLabel(s, c)).join(", ")}</b>` : "";
   if (hitTop) msg += `<br><span class="up">${ic("trending-up")} Hedefi tutturdun, bugün +${fmt(inc)} kg</span>`;
   else if (easy) msg += `<br><span class="up">${ic("trending-up")} Rahat geçti (RIR 3+), bugün +${fmt(inc)} kg</span>`;
   else if (hard) msg += `<br>${ic("target")} Aynı kiloyla devam, önce tekrarları tamamla`;

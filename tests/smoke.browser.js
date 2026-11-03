@@ -16,6 +16,7 @@
   };
 
   await step("ilk açılış", () => { q("#obGo").click(); });
+  await step("başlangıç verilerini atla", () => { if (!q("#blSkip")) return "HATA: başlangıç ekranı açılmadı"; q("#blSkip").click(); });
   await step("hızlı başlat", () => { q("#homeMain [data-start]").click(); return q("#focus").classList.contains("hidden") ? "odak açılmadı" : undefined; });
   // stepper basılı tutmayı desteklemek için click değil pointerdown dinler
   await step("kilo +3", () => {

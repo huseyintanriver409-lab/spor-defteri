@@ -26,14 +26,16 @@ export const DEFAULT_PLAN = () => ({ days: {}, dur: 60, remind: 30, until: "" })
 export const DEFAULT_GCAL = () => ({ log: false, plan: false, id: "", planSig: "", dates: [] as string[], dated: 0 });
 export const DEFAULTS = (): State => ({ v: SCHEMA, deviceId: "", entries: [], custom: [], programs: [], active: null, body: [], profile: { sex: "m", bw: "" }, rest: 90, plan: DEFAULT_PLAN(),
   exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
-  exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true }, favs: [], onboarded: false, gcal: DEFAULT_GCAL() });
+  exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true }, favs: [], onboarded: false, gcal: DEFAULT_GCAL(),
+  // başlangıç noktası: hareket → şu anki kilo/tekrar (core/baseline.ts)
+  baseline: {} });
 
 export const COLLECTIONS: Record<"entries" | "programs" | "sessions" | "body" | "custom", (x: Stamped) => string> = {
   entries: x => x.id, programs: x => x.id, sessions: x => x.id, body: x => x.date, custom: x => x.name,
 };
 type Coll = keyof typeof COLLECTIONS;
 const collNames = Object.keys(COLLECTIONS) as Coll[];
-export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal"];
+export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal", "baseline"];
 
 // eksik alanları varsayılanlarla tamamlar ve eski şemaları yükseltir (eski kayıtlar ve yedekler için)
 export function withDefaults(s: any): State {
@@ -108,7 +110,11 @@ export function mergeStates(local: State, remoteRaw: any): { state: State; stats
       return !dead;
     });
   }
-  if ((remote.settingsU || 0) > (local.settingsU || 0)) { SETTINGS.forEach(k => out[k] = remote[k]); out.settingsU = remote.settingsU; }
+  if ((remote.settingsU || 0) > (local.settingsU || 0)) {
+    SETTINGS.forEach(k => out[k] = remote[k]); out.settingsU = remote.settingsU;
+    // eski sürümdeki bir cihaz başlangıç verisini bilmez; dosyada hiç yoksa yereldeki silinmesin
+    if (remoteRaw && !("baseline" in remoteRaw)) out.baseline = local.baseline;
+  }
   out.deleted = [...tomb.values()];
   // aktif program, canlı antrenman ve taslak bu cihaza özeldir
   out.active = local.active; out.live = local.live; out.draft = local.draft; out.deviceId = local.deviceId;

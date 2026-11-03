@@ -4,6 +4,7 @@ import { $, esc, ic, save, state, toast, uid } from "./store.js";
 import { buzz, closeSheet, openSheet, sheetHead, refreshAll } from "./ui.js";
 import { renderProg, WEEKDAYS } from "./programs.js";
 import { syncCanRun, connectDrive } from "./cloud.js";
+import { openBaseline } from "./baseline.js";
 
 const LEVEL = { yeni: "Yeni başlayan", orta: "Orta seviye", ileri: "İleri seviye" };
 const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç" };
@@ -86,6 +87,7 @@ export function openRecommender({ onboarding = false } = {}){
     + q("equip", "Nerede çalışacaksın", [["salon", "Spor salonu"], ["ev", "Evde, dumbbell var"], ["yok", "Ekipmansız"]])
     + q("days", "Haftada kaç gün", [2, 3, 4, 5, 6].map(n => [n, n + " gün"]))
     + `<div id="recOut" style="margin-top:16px"></div>`
+    + (onboarding ? `<button class="ghost" id="obBase" style="width:100%;justify-content:center;margin-top:8px">${ic("trending-up")}Başka uygulamadan geliyorum: mevcut kilolarımı gir</button>` : "")
     + (onboarding && syncCanRun() ? `<button class="ghost" id="obDrive" style="width:100%;justify-content:center;margin-top:8px">${ic("cloud")}Başka cihazda kullanıyorum: Drive'dan getir</button>` : ""),
     markDone);
 
@@ -102,7 +104,11 @@ export function openRecommender({ onboarding = false } = {}){
         </div>
         ${r.alternatives.length ? `<div class="pk-head">Alternatif</div>${r.alternatives.map(x => `<button class="libitem" data-alt="${x.program.id}" data-days="${x.days}" style="margin:6px 0 0"><b>${esc(x.program.name)}</b><span class="muted small" style="display:block">${esc(x.why)}</span></button>`).join("")}` : ""}
       </div>`;
-    $("#recOut").querySelector(onboarding ? "#obGo" : "#recGo").onclick = () => { applyProgram(p, r.days, true); closeSheet(); };
+    $("#recOut").querySelector(onboarding ? "#obGo" : "#recGo").onclick = () => {
+      applyProgram(p, r.days, true); closeSheet();
+      // ilk açılışta: programdaki hareketler için şu anki kilolar sorulur
+      if (onboarding) openBaseline({ onboarding: true, exercises: [...new Set(p.sessions.flatMap(x => x.items.map(([ex]) => ex)))] });
+    };
     $("#recMore").onclick = () => openProgramDetail(p, r.days, markDone);
     $("#recOut").querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openProgramDetail(programById(b.dataset.alt), +b.dataset.days, markDone));
   };
@@ -112,6 +118,7 @@ export function openRecommender({ onboarding = false } = {}){
   }));
   if (onboarding) {
     $("#obSkip").onclick = closeSheet;
+    $("#obBase").onclick = () => { closeSheet(); openBaseline({ onboarding: true }); };
     // başlangıç programı oluşturmadan bağlanır; yoksa programlar iki cihazda farklı kimlikle iki kez oluşur
     if ($("#obDrive")) $("#obDrive").onclick = () => { closeSheet(); connectDrive(); };
   }
