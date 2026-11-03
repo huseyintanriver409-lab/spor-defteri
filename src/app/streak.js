@@ -47,8 +47,7 @@ export function streakCardHTML(r){
   const freeze = r.kind === "week" ? "eksik kalan hafta" : "kaçırılan gün";
   return `<div class="row" style="gap:14px;align-items:center">${flameHTML(r, "lg")}
       <div class="grow"><b style="font-size:18px">${r.count} ${r.adj} seri</b><div class="muted small">En uzun: ${r.best} ${u}${next ? ` · sıradaki rozet ${next} ${u}` : ""}</div></div></div>
-    <div class="muted small" style="margin-top:10px">${rule} Ayda ${r.freezes} kez ${freeze} seriyi bozmaz (dondurma): bu ay <b>${r.freezesLeft}</b> hakkın kaldı. </div>
-    <button class="btn sm quiet" data-streakset style="margin-top:8px">${ic("settings")}Seri türünü değiştir ya da kapat</button>
+    <div class="muted small" style="margin-top:10px">${rule} Ayda ${r.freezes} kez ${freeze} seriyi bozmaz (dondurma): bu ay <b>${r.freezesLeft}</b> hakkın kaldı.</div>
     <div class="badges">${r.badges.map(b => `<span class="badge${got.has(b) ? " on" : ""}" title="${b} ${r.adj} seri">${ic("flame")}${b}</span>`).join("")}</div>`;
 }
 

@@ -65,6 +65,15 @@
           <button class="btn primary" id="pSave"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>Kaydet</button>
         </div>
       </div>
+      <details class="card fold">
+        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman ayarları</h2><span class="muted small">Dinlenme süresi, ekran, titreşim</span></summary>
+        <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
+        <div style="display:grid;gap:14px;margin-top:16px">
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
+        </div>
+      </details>
     </div>
 
     <div id="train-log" class="hidden">
@@ -333,15 +342,6 @@
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sun-moon"/></svg></span>Görünüm</h2>
         <div class="fchips" id="themeChips"></div>
-      </div>
-      <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman</h2>
-        <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
-        <div style="display:grid;gap:14px;margin-top:16px">
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
-        </div>
       </div>
       <details class="card fold" id="aiCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2><span class="muted small">Claude, ChatGPT, Gemini… bağla</span></summary>

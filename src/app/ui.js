@@ -9,7 +9,7 @@ import { renderHistSelect, renderPower, renderRecords, renderRecovery, renderWee
 import { groups, renderBody, renderLib } from "./library.js";
 import { renderTools } from "./tools.js";
 import { renderBackup, renderBackupBanner } from "./backup.js";
-import { renderSettings } from "./settings.js";
+import { renderSettings, renderTrainPrefs } from "./settings.js";
 import { renderAccount } from "./cloud.js";
 import { streakCardHTML, streakNow, streakOn } from "./streak.js";
 
@@ -110,17 +110,16 @@ export function showTab(t){
 }
 export function renderTab(t){
   if (t === "home") renderHome();
-  if (t === "train") renderSeg("train");
+  if (t === "train") { renderSeg("train"); renderTrainPrefs(); }
   if (t === "history") { renderHistory(); renderStreakCard(); }
   if (t === "progress") renderSeg("stats");
   if (t === "profile") { renderAccount(); renderSeg("profile"); }
 }
-// Takvim'in üstündeki seri kartı; "Seri türünü değiştir" Profil → Ayarlar'daki seçime götürür
+// Takvim'in üstündeki seri kartı: yalnız bilgi; türü Profil → Ayarlar'dan seçilir
 function renderStreakCard(){
   $("#streakCard").classList.toggle("hidden", !streakOn());
   if (!streakOn()) return;
   $("#streakCard").innerHTML = streakCardHTML(streakNow());
-  $("#streakCard [data-streakset]").onclick = () => { segState.profile = "settings"; showTab("profile"); $("#setStreak").scrollIntoView({ behavior: "smooth", block: "center" }); $("#setStreak").focus({ preventScroll: true }); };
 }
 export function refreshAll(){ renderTab(curTab); renderLiveBar(); renderBackupBanner(); }
 export const segState = { stats: "week", train: "prog", profile: "settings" };
