@@ -111,11 +111,16 @@ export function showTab(t){
 export function renderTab(t){
   if (t === "home") renderHome();
   if (t === "train") renderSeg("train");
-  if (t === "history") renderHistory();
+  if (t === "history") { renderHistory(); renderStreakCard(); }
   if (t === "progress") renderSeg("stats");
-  if (t === "profile") { renderAccount(); $("#streakCard").classList.toggle("hidden", !streakOn()); if (streakOn()) $("#streakCard").innerHTML = streakCardHTML(streakNow()); renderSeg("profile");
-    const sb = $("#streakCard [data-streakset]");
-    if (sb) sb.onclick = () => { segState.profile = "settings"; renderSeg("profile"); $("#setStreak").scrollIntoView({ behavior: "smooth", block: "center" }); $("#setStreak").focus({ preventScroll: true }); }; }
+  if (t === "profile") { renderAccount(); renderSeg("profile"); }
+}
+// Takvim'in üstündeki seri kartı; "Seri türünü değiştir" Profil → Ayarlar'daki seçime götürür
+function renderStreakCard(){
+  $("#streakCard").classList.toggle("hidden", !streakOn());
+  if (!streakOn()) return;
+  $("#streakCard").innerHTML = streakCardHTML(streakNow());
+  $("#streakCard [data-streakset]").onclick = () => { segState.profile = "settings"; showTab("profile"); $("#setStreak").scrollIntoView({ behavior: "smooth", block: "center" }); $("#setStreak").focus({ preventScroll: true }); };
 }
 export function refreshAll(){ renderTab(curTab); renderLiveBar(); renderBackupBanner(); }
 export const segState = { stats: "week", train: "prog", profile: "settings" };

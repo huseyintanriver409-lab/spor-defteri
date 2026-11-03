@@ -37,7 +37,7 @@
   <!-- ==================== ANTRENMAN ==================== -->
   <section id="tab-train" class="hidden">
     <div class="hero"><div class="eyebrow">Antrenman</div><h2>Ne çalışıyoruz?</h2></div>
-    <div class="seg" data-seg="train"><button data-v="prog" class="on">Programlar</button><button data-v="log">Elle kayıt</button><button data-v="plan">Haftalık plan</button></div>
+    <div class="seg" data-seg="train"><button data-v="prog" class="on">Programlar</button><button data-v="log">Elle kayıt</button><button data-v="plan">Plan</button><button data-v="lib">Hareketler</button></div>
 
     <div id="train-prog">
       <button class="btn primary xl" id="startEmpty" style="margin-bottom:12px"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Boş antrenman başlat</button>
@@ -123,11 +123,31 @@
         </details>
       </div>
     </div>
+
+    <div id="train-lib" class="hidden">
+      <div class="card">
+        <div class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" placeholder="Hareket veya kas ara (örn. arka omuz)" aria-label="Hareket ara"></div>
+        <div class="row" style="margin-top:10px">
+          <div class="grow"><select id="libEquip" aria-label="Ekipman"></select></div>
+          <label class="check row" style="margin:0;gap:6px"><input type="checkbox" id="libHome"> Evde yapılabilir</label>
+        </div>
+      </div>
+      <div class="card" id="libList"></div>
+      <div class="card">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></span>Kendi hareketini ekle</h2>
+        <div class="row">
+          <div class="grow"><input id="cName" placeholder="Hareket adı" aria-label="Hareket adı"></div>
+          <div style="flex:0 0 150px"><select id="cGroup" aria-label="Kas grubu"></select></div>
+          <button class="btn primary" id="cAdd"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Ekle</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- ==================== GEÇMİŞ ==================== -->
   <section id="tab-history" class="hidden">
     <div class="hero"><div class="eyebrow">Takvim</div><h2 id="calTitle"></h2><p id="calSub"></p></div>
+    <div class="card" id="streakCard"></div>
     <div class="card">
       <div class="weeknav" style="margin-bottom:10px">
         <button class="iconbtn" id="calPrev" title="Önceki ay"><svg class="ic" aria-hidden="true"><use href="#i-chevron-left"/></svg></button>
@@ -212,6 +232,11 @@
         <div id="hForecast" class="hint hidden"></div>
       </div>
       <div class="card">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg></span>Başlangıç noktan</h2>
+        <p class="muted small" style="margin-top:-6px">Uygulamadan önce hangi kiloları kaldırıyordun? Girersen ilerlemen oradan ölçülür.</p>
+        <button class="btn" id="baseOpen"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg>Mevcut verilerim</button>
+      </div>
+      <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg></span>Seanslar</h2>
         <div id="histList"></div>
       </div>
@@ -291,8 +316,7 @@
   <section id="tab-profile" class="hidden">
     <div class="hero"><div class="eyebrow">Profil</div><h2>Profilin</h2></div>
     <div class="card" id="acctCard"></div>
-    <div class="card" id="streakCard"></div>
-    <div class="seg" data-seg="profile"><button data-v="settings" class="on">Ayarlar</button><button data-v="lib">Hareketler</button><button data-v="tools">Araçlar</button><button data-v="backup">Yedek</button></div>
+    <div class="seg" data-seg="profile"><button data-v="settings" class="on">Ayarlar</button><button data-v="tools">Araçlar</button><button data-v="backup">Yedek</button></div>
 
     <div id="profile-settings">
       <div class="card">
@@ -318,14 +342,7 @@
           <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
           <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
         </div>
-        <button class="btn" id="baseOpen" style="margin-top:16px"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg>Mevcut verilerim (başlangıç noktası)</button>
       </div>
-      <details class="card fold">
-        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-disc"/></svg></span>Bar plakaları</h2><span class="muted small">Barı nasıl yükleyeceğini gösterir</span></summary>
-        <p class="muted small" style="margin-top:4px">Antrenmanda barlı bir harekette kilo girince, barın <b>her iki tarafına</b> hangi plakaları takacağını gösterir. Örneğin 20 kg'lık barla 60 kg için "her tarafa 20 kg". Isınma setleri de bu plakalarla hesaplanır.</p>
-        <p class="muted small">Salonunda olmayan plakaların işaretini kaldır; hesap yalnız işaretlilerle yapılır.</p>
-        <div class="fchips" id="plateChips" style="flex-wrap:wrap"></div>
-      </details>
       <details class="card fold" id="aiCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2><span class="muted small">Claude, ChatGPT, Gemini… bağla</span></summary>
         <p class="muted" style="margin-top:-4px">Claude, ChatGPT ya da Gemini gibi bir yapay zekâ Spor Defteri'ne bağlanabilir: program kurar, planını ayarlar, antrenmanlarını kaydeder, geçmişine bakar. Bağlanırken kendi Google hesabınla giriş yaparsın; yapay zekâ yalnız senin verini görür. Değişiklikler telefona bir sonraki eşitlemede gelir (Google Drive bağlı olmalı).</p>
@@ -351,25 +368,6 @@
         <p class="muted small" style="margin:10px 0 0">Menü adları uygulamaların sürümüne göre biraz değişebilir.</p>
       </details>
     </div>
-    <div id="profile-lib" class="hidden">
-      <div class="card">
-        <div class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" placeholder="Hareket veya kas ara (örn. arka omuz)" aria-label="Hareket ara"></div>
-        <div class="row" style="margin-top:10px">
-          <div class="grow"><select id="libEquip" aria-label="Ekipman"></select></div>
-          <label class="check row" style="margin:0;gap:6px"><input type="checkbox" id="libHome"> Evde yapılabilir</label>
-        </div>
-      </div>
-      <div class="card" id="libList"></div>
-      <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></span>Kendi hareketini ekle</h2>
-        <div class="row">
-          <div class="grow"><input id="cName" placeholder="Hareket adı" aria-label="Hareket adı"></div>
-          <div style="flex:0 0 150px"><select id="cGroup" aria-label="Kas grubu"></select></div>
-          <button class="btn primary" id="cAdd"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Ekle</button>
-        </div>
-      </div>
-    </div>
-
     <div id="profile-tools" class="hidden">
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-calculator"/></svg></span>1RM hesaplayıcı</h2>
@@ -387,6 +385,9 @@
         </div>
         <div class="plates" id="plVis"></div>
         <p id="plTxt" style="text-align:center;margin-bottom:0"></p>
+        <h3 style="margin:16px 0 4px;font-size:15px">Salonundaki plakalar</h3>
+        <p class="muted small" style="margin:0 0 8px">Antrenmanda barlı bir harekette kilo girince, barın <b>her iki tarafına</b> hangi plakaları takacağın da bu hesapla gösterilir; ısınma setleri de öyle. Salonunda olmayanların işaretini kaldır.</p>
+        <div class="fchips" id="plateChips" style="flex-wrap:wrap"></div>
       </div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span>Isınma setleri</h2>

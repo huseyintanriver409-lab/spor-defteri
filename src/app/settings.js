@@ -4,7 +4,6 @@ import { openRecommender } from "./presets.js";
 import { mmss, setTDur } from "./tools.js";
 
 /* ---------- Settings ---------- */
-export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
 export function renderSettings(){
   $("#themeChips").innerHTML = [["dark","Koyu","moon"],["light","Açık","sun"],["system","Cihaz ayarı","monitor"]].map(([k,l,i]) => `<button class="fchip${theme===k?" on":""}" data-k="${k}" aria-pressed="${theme===k}">${ic(i)}${l}</button>`).join("");
   $("#themeChips").querySelectorAll("button").forEach(b => b.onclick = () => setTheme(b.dataset.k));
@@ -15,12 +14,6 @@ export function renderSettings(){
     week: "Haftalık hedefini tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.",
     off: "Seri ve rozetler hiçbir yerde görünmez." }[$("#setStreak").value];
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
-  $("#plateChips").innerHTML = ALL_PLATES.map(p => { const on = state.plates.includes(p); return `<button class="fchip${on?" on":""}" data-p="${p}" aria-pressed="${on}">${fmt(p)} kg</button>`; }).join("");
-  $("#plateChips").querySelectorAll("button").forEach(b => b.onclick = () => {
-    const p = +b.dataset.p;
-    state.plates = state.plates.includes(p) ? state.plates.filter(x => x !== p) : [...state.plates, p].sort((a,b) => b-a);
-    save(); renderSettings();
-  });
 }
 
 /* ---------- Theme ----------

@@ -7,7 +7,7 @@ import { refreshDatalist } from "./log.js";
 
 /* ---------- Mevcut verilerim (başlangıç noktası) ----------
    Hesap core/baseline.ts'te. İlk açılışta (program seçildikten sonra ya da "başka uygulamadan geliyorum")
-   ve Profil → Ayarlar'dan açılır. exercises: başlangıçta boş satır olarak gösterilecek hareketler. */
+   ve İlerleme → Hareket'ten açılır. exercises: başlangıçta boş satır olarak gösterilecek hareketler. */
 const fmtV = v => v ? String(v).replace(".", ",") : "";
 const units = ex => isCardio(ex) ? ["dk", "km"] : isTimed(ex) ? ["ek kg", "sn"] : ["kg", "tekrar"];
 

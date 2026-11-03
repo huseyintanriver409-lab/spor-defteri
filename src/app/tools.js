@@ -2,7 +2,17 @@ import { e1rm, platesFor as platesForCore, warmupSets } from "../core/training.t
 import { pad } from "../core/dates.ts";
 import { $, fmt, ic, save, state, toast } from "./store.js";
 
-export function renderTools(){ renderRM(); renderPlates(); renderWarmCalc(); }
+export function renderTools(){ renderRM(); renderPlateChips(); renderPlates(); renderWarmCalc(); }
+export const ALL_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25];
+// salonda bulunan plakalar: plaka ve ısınma hesapları yalnız işaretlilerle yapılır
+function renderPlateChips(){
+  $("#plateChips").innerHTML = ALL_PLATES.map(p => { const on = state.plates.includes(p); return `<button class="fchip${on?" on":""}" data-p="${p}" aria-pressed="${on}">${pfmt(p)} kg</button>`; }).join("");
+  $("#plateChips").querySelectorAll("button").forEach(b => b.onclick = () => {
+    const p = +b.dataset.p;
+    state.plates = state.plates.includes(p) ? state.plates.filter(x => x !== p) : [...state.plates, p].sort((a,b) => b-a);
+    save(); renderTools();
+  });
+}
 export function renderRM(){
   const w = parseFloat($("#rmW").value)||0, r = parseInt($("#rmR").value)||0;
   if (!w || !r) { $("#rmTable").innerHTML = ""; return; }
