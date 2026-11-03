@@ -313,6 +313,7 @@ body.focus-open{overflow:hidden}
 .f-prog i.cur{background:color-mix(in srgb,var(--accent) 40%,var(--card3));animation:pulse 1.6s infinite}
 .f-setlabel{display:flex;justify-content:space-between;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 .steppers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.steppers.one{grid-template-columns:1fr}
 .stepper{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 6px;min-height:104px}
 .stepper button{width:40px;height:44px;border-radius:12px;border:0;background:var(--card2);color:var(--text);display:grid;place-items:center;cursor:pointer;touch-action:manipulation;user-select:none}
 .stepper button:active{background:var(--card3);transform:scale(.94)}

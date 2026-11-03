@@ -41,7 +41,7 @@ describe("hazır programlar", () => {
 });
 
 describe("program önerisi", () => {
-  const levels: Level[] = ["yeni", "orta", "ileri"], goals: Goal[] = ["genel", "kas", "guc"], equips: Equip[] = ["salon", "ev", "yok"];
+  const levels: Level[] = ["yeni", "orta", "ileri"], goals: Goal[] = ["genel", "kas", "guc", "esneklik"], equips: Equip[] = ["salon", "ev", "yok"];
   const all: Answers[] = levels.flatMap(level => goals.flatMap(goal => equips.flatMap(equip => [2, 3, 4, 5, 6].map(days => ({ level, goal, equip, days })))));
 
   it("her cevap birleşiminde geçerli bir program, desteklenen bir gün sayısı ve en az bir gerekçe verir", () => {
@@ -59,6 +59,7 @@ describe("program önerisi", () => {
   it("ekipmana uyar: ekipmansıza barbell programı, eve salon programı önermez", () => {
     for (const a of all) {
       const r = recommend(a);
+      if (a.goal === "esneklik") { expect(r.program.goals).toContain("esneklik"); continue; }
       if (a.equip === "yok") expect(r.program.equip).toBe("yok");
       if (a.equip === "ev") expect(r.program.equip).toBe("ev");
       if (a.equip === "salon") expect(r.program.equip).toBe("salon");
@@ -86,5 +87,20 @@ describe("program önerisi", () => {
 
   it("her öneri haftalık kardiyo hatırlatması içerir", () => {
     for (const a of all) expect(recommend(a).reasons.some(x => /150 dk/.test(x))).toBe(true);
+  });
+});
+
+describe("yoga", () => {
+  const yoga = new Set(LIB["Yoga & Esneme"]);
+  it("yoga programları yalnız yoga pozları (ve plank) içerir, ekipman istemez", () => {
+    for (const p of PROGRAMS.filter(x => x.goals.includes("esneklik"))) {
+      expect(p.equip, p.id).toBe("yok");
+      for (const s of p.sessions) for (const [ex] of s.items) expect(yoga.has(ex) || ex === "Plank", `${p.id}: ${ex}`).toBe(true);
+    }
+  });
+  it("esneklik hedefinde yeni başlayana başlangıç, deneyimliye akış önerilir; salon seçilse de", () => {
+    expect(recommend({ level: "yeni", goal: "esneklik", equip: "salon", days: 3 }).program.id).toBe("yoga-baslangic");
+    expect(recommend({ level: "orta", goal: "esneklik", equip: "ev", days: 4 }).program.id).toBe("yoga-akis");
+    expect(recommend({ level: "ileri", goal: "esneklik", equip: "yok", days: 6 }).days).toBe(4);
   });
 });

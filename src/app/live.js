@@ -2,7 +2,7 @@ import { pad, shortDate, ymd } from "../core/dates.ts";
 import { e1rm, overloadDecision, repRange, volume, warmupSets, work } from "../core/training.ts";
 import { baseSet } from "../core/baseline.ts";
 import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
-import { TIMED_RE, TYPE_LETTER, allEx, durText, fmtSec, groupOf, isCardio, isTimed, musclesOf, setLabel } from "./exercises.js";
+import { TYPE_LETTER, allEx, durText, fmtSec, groupOf, isCardio, isTimed, isYoga, musclesOf, setLabel, timedByDefault } from "./exercises.js";
 import { buzz, closeSheet, keepAwake, openPicker, openSheet, refreshAll, sheetHead, showTab, undoable } from "./ui.js";
 import { barFor, bestOf, bestSecOf } from "./log.js";
 import { at, defaultInc, defaultStep, exPref, overloadStep, restFor, ssLabels, stepFor } from "./programs.js";
@@ -98,18 +98,18 @@ export function renderFocus(){
   const warmDone = done.filter(x => x.t === "w").length, workW = d.work ? d.work.w : d.w;
   const warmPlan = !c && !tm && !wd && +workW > 0 ? warmupSets(+workW, bar) : [];
   const note = state.exNotes[it.ex], m = musclesOf(it.ex);
-  const goal = it.reps ? `Hedef: <b>${target} × ${esc(it.reps)}</b>` : "";
+  const goal = it.reps ? `Hedef: <b>${target} × ${esc(it.reps)}${tm ? " sn" : ""}</b>` : "";
   let k = 0;
   const doneChips = done.map((s,i) => { const warm = s.t === "w", lbl = warm ? "I" : (s.t ? TYPE_LETTER[s.t] : "") + (++k);
     return `<button class="chip${warm ? " warm" : ""}" data-i="${i}" title="Seti sil">${lbl}) ${setLabel(s,c)}</button>`; }).join("");
   $("#fBody").innerHTML = `
     <div class="eyebrow">${esc(groupOf(it.ex))}${L[idx] ? ` · Süperset ${L[idx]}` : ""}</div>
     <div class="f-title"><h2>${esc(it.ex)}</h2><button class="iconbtn" id="fPrefs" title="Hareket ayarları">${ic("sliders-horizontal")}</button></div>
-    <button class="f-note ghost" id="fNote" style="padding:0">${ic("pin")}<span>${note ? esc(note) : "Not ekle: koltuk ayarı, tutuş…"}</span></button>
+    <button class="f-note ghost" id="fNote" style="padding:0">${ic("pin")}<span>${note ? esc(note) : (isYoga(it.ex) ? "Not ekle: blok, kayış, nasıl hissettin…" : "Not ekle: koltuk ayarı, tutuş…")}</span></button>
     <div class="f-hint">${[sug.msg, goal].filter(Boolean).join("<br>") || "İlk kez yapıyorsun; rahat bir kiloyla başla."}</div>
     <div class="f-prog" aria-hidden="true">${Array.from({ length: Math.max(target, wd) }, (_, j) => `<i class="${j < wd ? "on" : j === wd ? "cur" : ""}"></i>`).join("")}</div>
     <div class="f-setlabel"><span>${wd >= target ? `Ekstra set ${wd + 1}` : `Set ${wd + 1} / ${target}`}</span><span>${esc(m.p.join(", "))}</span></div>
-    <div class="steppers">${tm ? stepperHTML("w", d.w, "ek kg", "Ek ağırlık") + stepperHTML("r", d.r, "saniye", "Süre")
+    <div class="steppers${tm && isYoga(it.ex) ? " one" : ""}">${tm ? (isYoga(it.ex) ? `<div class="hidden">${stepperHTML("w", d.w, "ek kg", "Ek ağırlık")}</div>` : stepperHTML("w", d.w, "ek kg", "Ek ağırlık")) + stepperHTML("r", d.r, "saniye", "Süre")
       : stepperHTML("w", d.w, c ? "dk" : "kg", c ? "Süre" : "Ağırlık") + stepperHTML("r", d.r, c ? "km" : "tekrar", c ? "Mesafe" : "Tekrar")}</div>
     ${bar ? `<div id="fPlates">${platesHTML(d.w, bar)}</div>` : ""}
     ${warmPlan.length ? `<div class="f-warm"><div class="f-setlabel" style="margin:0"><span>Isınma önerisi</span><span>Dokun, yüklensin</span></div><div class="chips">${warmPlan.map((x, j) => `<button class="chip${j < warmDone ? " done" : ""}" data-wi="${j}">${fmt(x.w)} × ${x.r}</button>`).join("")}</div></div>` : ""}
@@ -317,7 +317,7 @@ export function openExPrefs(it){
       <div><label for="xpRest">Dinlenme</label><select id="xpRest">${opts([30,45,60,90,120,150,180,240,300], p.rest, `Varsayılan (${mmss(state.rest)})`, mmss)}</select></div>
       <div><label for="xpStep">Kilo adımı</label><select id="xpStep">${opts([1,1.25,2,2.5,5], p.step, `Otomatik (${fmt(defaultStep(it.ex))} kg)`, v => fmt(v) + " kg")}</select></div>
       <div><label for="xpBar">Bar ağırlığı</label><select id="xpBar"><option value="">Otomatik (${fmt(barFor(it.ex))} kg)</option>${[20,15,10,0].map(v => `<option value="${v}"${p.bar === v ? " selected" : ""}>${v ? fmt(v) + " kg" : "Bar yok"}</option>`).join("")}</select></div>
-      <div><label for="xpTimed">Kayıt türü</label><select id="xpTimed"><option value="">Otomatik (${TIMED_RE.test(it.ex) ? "süreli" : "tekrar"})</option><option value="1"${p.timed === true ? " selected" : ""}>Süreli (saniye)</option><option value="0"${p.timed === false ? " selected" : ""}>Tekrar</option></select></div>
+      <div><label for="xpTimed">Kayıt türü</label><select id="xpTimed"><option value="">Otomatik (${timedByDefault(it.ex) ? "süreli" : "tekrar"})</option><option value="1"${p.timed === true ? " selected" : ""}>Süreli (saniye)</option><option value="0"${p.timed === false ? " selected" : ""}>Tekrar</option></select></div>
       <div style="grid-column:1/-1"><label for="xpInc">Kademeli artış</label><select id="xpInc">${opts([1,1.25,2,2.5,5,10], p.inc, `Otomatik (${fmt(defaultInc(it.ex))} kg)`, v => "+" + fmt(v) + " kg")}</select></div>
     </div>
     <p class="muted small">Dinlenme, kilo adımı ve artış bu hareket için kalıcıdır. Hedefler sadece bu antrenmanda geçerli.</p>

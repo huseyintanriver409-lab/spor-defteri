@@ -1,7 +1,7 @@
 import { DEFAULTS, stampChanges as stampState, takeSnapshot as snapshotOf, withDefaults } from "../core/schema.ts";
 import { calSoon } from "./cloud.js";
 
-export { LIB, CARDIO } from "../core/library.ts";
+export { LIB, CARDIO, YOGA } from "../core/library.ts";
 export const KEY = "sporDefteri.v1";
 export const $ = s => document.querySelector(s);
 export const ic = (n, cls = "") => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;

@@ -8,7 +8,7 @@
    Tarayıcıya bağlı değildir; testleri tests/programs.test.ts içinde. */
 
 export type Level = "yeni" | "orta" | "ileri";
-export type Goal = "genel" | "kas" | "guc";
+export type Goal = "genel" | "kas" | "guc" | "esneklik";
 export type Equip = "salon" | "ev" | "yok";
 
 // [hareket, set, tekrar hedefi] — süreli hareketlerde tekrar hedefi saniyedir
@@ -40,6 +40,16 @@ const COMMON_TIPS = [
   "Haftada en az 150 dk tempolu yürüyüş, bisiklet ya da benzeri kardiyo ekle; ağırlık antrenmanının yerini tutmaz, tamamlar.",
   "Ağrı (eklemde batma, keskin acı) ile yorgunluğu ayır; ağrı varsa o hareketi bırak, gerekirse bir uzmana danış.",
 ];
+
+const YOGA_TIPS = [
+  "Bir mat yeterli; blok ve kayış zorlanılan pozları kolaylaştırır, yoksa kalın bir kitap ve kemer de olur.",
+  "Süreler saniyedir. Antrenmanda Başlat'a bas, poz bitince süre kendiliğinden kaydolur.",
+  "Tek taraflı pozlarda (Savaşçı, Ağaç, Güvercin…) her taraf bir settir: 2 set = sağ ve sol.",
+  "Nefesini tutma; burundan, yavaş ve düzenli nefes al. Pozda nefesin daralıyorsa biraz geri çık.",
+  "Esnemede hafif gerilme normaldir, acı değildir. Eklemde batma ya da uyuşma olursa pozu bırak.",
+  "Hamileysen, bel/boyun fıtığın ya da yüksek tansiyonun varsa ters ve derin geriye eğilme pozlarından önce bir uzmana danış.",
+];
+const YOGA_SOURCE = "ACSM esneklik önerisi (her esneme 10-30 sn ve üstü, haftada en az 2-3 gün); NCCIH (ABD Ulusal Sağlık Enstitüleri) yoga güvenlik notları; yaygın hatha dizilimleri.";
 
 export const PROGRAMS: ProgramDef[] = [
   {
@@ -195,6 +205,70 @@ export const PROGRAMS: ProgramDef[] = [
     tips: COMMON_TIPS,
     source: "Varyasyonla ilerleme ilkesi; CDC/DSÖ kuvvet önerisi.",
   },
+  {
+    id: "yoga-baslangic",
+    name: "Başlangıç Yogası",
+    short: "Hiç yoga yapmamış biri için 25 dakikalık sakin tam vücut akışı: esneklik, denge ve rahatlama.",
+    levels: ["yeni", "orta"], goals: ["esneklik"], equip: "yok", days: [2, 3],
+    sessions: [
+      { name: "Akış", items: [["Kedi-İnek (Cat-Cow)", 1, "60"], ["Çocuk Pozu (Child's Pose)", 1, "45"], ["Aşağı Bakan Köpek (Downward Dog)", 3, "20-30"], ["Alçak Hamle (Low Lunge)", 2, "20-30"], ["Savaşçı 2 (Warrior II)", 2, "20-30"], ["Ağaç (Tree Pose)", 2, "15-30"], ["Kobra (Cobra Pose)", 3, "15-20"], ["Köprü (Bridge Pose)", 3, "20-30"], ["Yatarak Omurga Bükme (Supine Twist)", 2, "30"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
+    ],
+    who: "Yogaya yeni başlayan ya da uzun süre ara vermiş biri için. Pozlar temel ve güvenli; amaç önce doğru duruşu ve nefesi oturtmak.",
+    progression: [
+      "Bir pozun bütün setlerinde üst süreye rahat nefesle ulaşınca bir sonraki seferde 5 sn artır (uygulama bunu önerir).",
+      "Pozlarda 45-60 sn'ye rahat ulaştığında Yoga Akışı programına geç.",
+    ],
+    stall: "Bir pozda ilerleyemiyorsan blok ya da duvar desteği kullan, dizi bük; süreyi kısaltıp kaliteyi koru.",
+    tips: YOGA_TIPS,
+    source: YOGA_SOURCE,
+  },
+  {
+    id: "yoga-akis",
+    name: "Yoga Akışı",
+    short: "İki seans: A güç ve denge, B esneklik ve açılma. Güneşe selamla ısınır, derin rahatlamayla biter.",
+    levels: ["orta", "ileri"], goals: ["esneklik"], equip: "yok", days: [2, 3, 4],
+    sessions: [
+      { name: "A · Güç ve denge", items: [["Güneşe Selam (Sun Salutation)", 3, "60"], ["Sandalye (Chair Pose)", 3, "20-30"], ["Savaşçı 1 (Warrior I)", 2, "30"], ["Savaşçı 2 (Warrior II)", 2, "30"], ["Ters Savaşçı (Reverse Warrior)", 2, "20-30"], ["Yan Uzanma Açısı (Extended Side Angle)", 2, "30"], ["Yarım Ay (Half Moon)", 2, "15-30"], ["Kayık (Boat Pose)", 3, "20-30"], ["Plank", 3, "30-60"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
+      { name: "B · Esneklik", items: [["Güneşe Selam (Sun Salutation)", 3, "60"], ["Üçgen (Triangle Pose)", 2, "30"], ["Ayakta Öne Eğilme (Standing Forward Fold)", 2, "30-45"], ["Güvercin (Pigeon Pose)", 2, "45-60"], ["Deve (Camel Pose)", 2, "20-30"], ["Köprü (Bridge Pose)", 3, "30"], ["Oturarak Öne Eğilme (Seated Forward Fold)", 2, "45-60"], ["Kelebek (Butterfly Pose)", 2, "45-60"], ["Mutlu Bebek (Happy Baby)", 1, "45-60"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
+    ],
+    who: "Temel pozları bilen ve biraz daha güç, denge ve esneklik isteyen için. Kuvvet antrenmanıyla aynı haftada da yapılır.",
+    progression: [
+      "Üst süreye rahat nefesle ulaştığın pozlarda 5-10 sn artır.",
+      "A ve B'yi sırayla yap: A, B, A; bir sonraki hafta B, A, B.",
+      "Dengede zorlanmıyorsan Ağaç ve Yarım Ay'da gözlerini yere değil ileriye, sonra yukarıya dik.",
+    ],
+    stall: "Esneklik yavaş gelişir: haftalarca aynı yerde kalman normal. Düzenli devam et, esnemeleri ılık kaslarla (akışın sonunda) yap.",
+    tips: YOGA_TIPS.slice(1),
+    source: YOGA_SOURCE,
+  },
+  {
+    id: "yoga-sabah",
+    name: "Sabah Akışı",
+    short: "15 dakikalık uyandıran kısa akış: güneşe selam, ayakta pozlar ve denge.",
+    levels: ["yeni", "orta", "ileri"], goals: ["esneklik", "genel"], equip: "yok", days: [3, 4, 5],
+    sessions: [
+      { name: "Sabah", items: [["Dağ Duruşu (Mountain Pose)", 1, "30"], ["Güneşe Selam (Sun Salutation)", 3, "60"], ["Savaşçı 2 (Warrior II)", 2, "20-30"], ["Ağaç (Tree Pose)", 2, "20-30"], ["Aşağı Bakan Köpek (Downward Dog)", 2, "30"], ["Çocuk Pozu (Child's Pose)", 1, "45"]] },
+    ],
+    who: "Güne hareketle başlamak isteyen, az vakti olan herkes için. Kuvvet programının olmadığı günlere de iyi gelir.",
+    progression: ["Güneşe selamı 3 turdan 5 tura çıkar; ayakta pozlarda süreyi 5 sn artır."],
+    stall: "Sabah kaslar daha serttir; zorlanırsan dizlerini bük ve güneşe selamı yavaş yap.",
+    tips: YOGA_TIPS,
+    source: YOGA_SOURCE,
+  },
+  {
+    id: "yoga-aksam",
+    name: "Akşam Esneme ve Rahatlama",
+    short: "Yatmadan önce 20 dakika: kalça, bel ve arka bacak esnemeleri, yavaş nefes.",
+    levels: ["yeni", "orta", "ileri"], goals: ["esneklik", "genel"], equip: "yok", days: [2, 3, 4, 5],
+    sessions: [
+      { name: "Akşam", items: [["Kedi-İnek (Cat-Cow)", 1, "60"], ["Çocuk Pozu (Child's Pose)", 1, "60"], ["Güvercin (Pigeon Pose)", 2, "45-60"], ["Oturarak Öne Eğilme (Seated Forward Fold)", 2, "45-60"], ["Kelebek (Butterfly Pose)", 1, "60"], ["Yatarak Omurga Bükme (Supine Twist)", 2, "45"], ["Duvara Bacak (Legs Up the Wall)", 1, "120-180"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
+    ],
+    who: "Gün boyu oturan, beli ve kalçası tutulan ya da daha rahat uyumak isteyen için. Ağırlık antrenmanından sonra soğuma olarak da yapılır.",
+    progression: ["Esnemelerde süreyi 60 sn'ye kadar çıkar; zorlanmadan daha derine inebiliyorsan in."],
+    stall: "Esneklik yavaş gelişir; birkaç hafta aynı yerde kalman normal. Düzenli yapmak derin zorlamaktan daha etkilidir.",
+    tips: YOGA_TIPS,
+    source: YOGA_SOURCE,
+  },
 ];
 
 export const programById = (id: string) => PROGRAMS.find(p => p.id === id);
@@ -220,7 +294,15 @@ export function recommend(a: Answers): Recommendation {
   const reasons: string[] = [];
   let main: ProgramDef, alts: [string, string][] = [];
 
-  if (a.equip === "yok") {
+  if (a.goal === "esneklik") {
+    // yoga için mat yeterli; ekipman sorusu önemsiz
+    main = a.level === "yeni" ? P("yoga-baslangic") : P("yoga-akis");
+    reasons.push(a.level === "yeni"
+      ? "Yogaya yeni başlıyorsan temel pozlarla, sakin bir akışla başla; doğru duruş ve nefes önce gelir."
+      : "Temel pozları biliyorsan güç ve denge ile esneklik günlerini dönüşümlü yapan bir akış.");
+    reasons.push("Yoga için bir mat yeterli; salon gerekmez.");
+    alts = [["yoga-sabah", "Az vaktin varsa: 15 dakikalık sabah akışı."], ["yoga-aksam", "Esneme ve rahat uyku için akşam rutini."]];
+  } else if (a.equip === "yok") {
     main = P("vucut-agirligi");
     reasons.push("Ekipmanın olmadığı için vücut ağırlığıyla, zorluğu varyasyonla artan bir program.");
     alts = [["ev-dumbbell", "Bir çift dumbbell edinirsen daha hızlı ilerlersin."]];
@@ -267,7 +349,9 @@ export function recommend(a: Answers): Recommendation {
 
   const days = fitDays(main, a.days);
   if (days !== a.days) reasons.push(`${main.name} haftada ${main.days.join(" ya da ")} gün için tasarlandı; planını ${days} güne göre kurdum.`);
-  reasons.push("Haftada en az 150 dk orta tempolu kardiyo da ekle (CDC/DSÖ önerisi).");
+  reasons.push(a.goal === "esneklik"
+    ? "DSÖ haftada en az 2 gün kas güçlendirici hareket ve 150 dk orta tempolu kardiyo önerir; yogayı tempolu yürüyüşle tamamla."
+    : "Haftada en az 150 dk orta tempolu kardiyo da ekle (CDC/DSÖ önerisi).");
   return {
     program: main, days, reasons,
     alternatives: alts.filter(([id]) => id !== main.id).map(([id, why]) => ({ program: P(id), days: fitDays(P(id), a.days), why })),

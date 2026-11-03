@@ -171,6 +171,17 @@ describe("antrenman kaydetme", () => {
     expect(overview(s, TODAY)).toMatchObject({ totalWorkouts: 2, firstWorkout: "2026-10-01" });
   });
 
+  it("yoga pozları İngilizce ya da Türkçe adla bulunur ve süreli kaydedilir", () => {
+    const s = fresh();
+    logWorkouts(s, [{ date: "2026-10-01", exercises: [
+      { exercise: "Downward Dog", sets: [{ seconds: 30 }, { seconds: 45 }] },
+      { exercise: "ağaç", sets: [{ seconds: 20 }] },
+    ] }], TODAY, uid);
+    expect(s.entries.map(e => e.ex)).toEqual(["Aşağı Bakan Köpek (Downward Dog)", "Ağaç (Tree Pose)"]);
+    expect(s.entries[0].sets).toEqual([{ w: 0, r: 0, sec: 30 }, { w: 0, r: 0, sec: 45 }]);
+    expect(s.custom).toEqual([]);
+  });
+
   it("aynı liste iki kez gönderilirse çift kayıt olmaz; aynı güne yeni set eklenir", () => {
     const s = fresh();
     const w = [{ date: "2026-10-01", exercises: [{ exercise: "Deadlift", sets: [{ kg: 100, reps: 5 }] }] }];

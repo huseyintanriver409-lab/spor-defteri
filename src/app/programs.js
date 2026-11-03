@@ -1,7 +1,7 @@
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
-import { allEx, durText, equipOf, groupOf, isCardio, musclesOf, setLabel } from "./exercises.js";
+import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, undoable } from "./ui.js";
 import { refreshDatalist } from "./log.js";
 import { startWorkout } from "./live.js";
@@ -48,7 +48,7 @@ export function renderProg(){
     return `<div class="card progcard">
       <div class="eyebrow">${p.items.length} hareket · ${total} set${top ? " · " + esc(top) : ""}</div>
       <h3>${esc(p.name)}</h3>
-      <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}</span></li>`).join("")}</ol>
+      <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " sn" : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn primary" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="Bağlantıyla paylaş">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
     </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, yapay zekâyla oluştur ya da kendin kur.")}</div>`;

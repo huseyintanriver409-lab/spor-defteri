@@ -1,4 +1,4 @@
-import { CARDIO, LIB, fmt, state } from "./store.js";
+import { CARDIO, LIB, YOGA, fmt, state } from "./store.js";
 
 /* ---------- Exercise metadata ---------- */
 export function allEx(){
@@ -9,6 +9,7 @@ export function allEx(){
 }
 export function groupOf(name){ const e = allEx().find(x => x.name === name); return e ? e.group : "Diğer"; }
 export const isCardio = name => groupOf(name) === CARDIO;
+export const isYoga = name => groupOf(name) === YOGA;
 
 // [desen, ana kaslar, yardımcı kaslar] — ilk eşleşen kural geçerli
 export const MUSCLE_RULES = [
@@ -50,8 +51,8 @@ export function musclesOf(name){
   if (_mCache[name]) return _mCache[name];
   const g = groupOf(name), n = name.toLowerCase();
   const def = GROUP_MUSCLES[g] ? { p: GROUP_MUSCLES[g][0], s: GROUP_MUSCLES[g][1] } : { p: [], s: [] };
-  // kardiyo, karın ve özel ("Diğer") hareketlerde kurallar uygulanmaz
-  const r = [CARDIO, "Diğer", "Karın & Core"].includes(g) ? null : MUSCLE_RULES.find(([re]) => re.test(n));
+  // kardiyo, yoga, karın ve özel ("Diğer") hareketlerde kurallar uygulanmaz
+  const r = [CARDIO, YOGA, "Diğer", "Karın & Core"].includes(g) ? null : MUSCLE_RULES.find(([re]) => re.test(n));
   return _mCache[name] = r ? { p: r[1], s: r[2] } : def;
 }
 export const EQUIPS = ["Barbell","Dumbbell","Kablo","Makine","Smith","Kettlebell","Vücut Ağırlığı","Diğer","Kardiyo"];
@@ -59,6 +60,7 @@ export const HOME = ["Dumbbell","Kettlebell","Vücut Ağırlığı","Kardiyo"];
 export function equipOf(name){
   const n = name.toLowerCase(), g = groupOf(name);
   if (g === CARDIO) return "Kardiyo";
+  if (g === YOGA) return "Vücut Ağırlığı";
   if (/smith/.test(n)) return "Smith";
   if (/kettlebell|turkish/.test(n)) return "Kettlebell";
   if (/cable|pulldown|pushdown|face pull|crossover|pull-through|woodchop|pallof/.test(n)) return "Kablo";
@@ -74,7 +76,9 @@ export const SET_TYPES = { w: "Isınma", d: "Drop", f: "Tükeniş" };
 export const TYPE_LETTER = { w: "I", d: "D", f: "T" };
 // Süreli hareketler (plank, wall sit…): set { w: ek ağırlık, sec: süre, r: 0 }. r=0 olduğu için hacim, 1RM ve tekrar rekorlarına girmez.
 export const TIMED_RE = /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer/i;
-export const isTimed = name => { const p = (state.exPrefs[name] || {}).timed; return p != null ? p : !isCardio(name) && TIMED_RE.test(name); };
+// yoga pozları da süreli; kullanıcı hareket ayarından değiştirebilir (exPrefs.timed)
+export const timedByDefault = name => !isCardio(name) && (isYoga(name) || TIMED_RE.test(name));
+export const isTimed = name => { const p = (state.exPrefs[name] || {}).timed; return p != null ? p : timedByDefault(name); };
 export const fmtSec = s => { s = Math.round(+s || 0); return s < 60 ? `${s} sn` : `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")} dk`; };
 export const setLabel = (s, cardio) => s.sec != null ? `${fmtSec(s.sec)}${+s.w ? ` · +${fmt(+s.w)} kg` : ""}`
   : cardio ? `${fmt(+s.w||0)} dk${+s.r ? " · "+fmt(+s.r)+" km" : ""}`

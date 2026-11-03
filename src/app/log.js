@@ -2,7 +2,7 @@ import { e1rm, volume, warmupSets, work } from "../core/training.ts";
 import { niceDate, ymd } from "../core/dates.ts";
 import { baseBest, baseSet } from "../core/baseline.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
-import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, setLabel } from "./exercises.js";
+import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, isYoga, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
 import { autoLogged } from "./programs.js";
 
@@ -88,6 +88,10 @@ export function relabel(){
   $("#setRows").querySelectorAll(".rir").forEach(i => i.style.visibility = cardio || timed ? "hidden" : "");
   $("#hW").textContent = cardio ? "dk" : timed ? "ek kg" : "kg"; $("#hR").textContent = cardio ? "km" : timed ? "süre (sn)" : "tekrar";
   $("#hRir").style.visibility = cardio || timed ? "hidden" : "";
+  // yoga pozunda ek ağırlık olmaz
+  const yoga = timed && isYoga(ex);
+  $("#setRows").querySelectorAll(".w").forEach(i => i.style.visibility = yoga ? "hidden" : "");
+  $("#hW").style.visibility = yoga ? "hidden" : "";
 }
 export function showExNote(){
   const ex = $("#logEx").value.trim(), ta = $("#exNote");

@@ -4,7 +4,7 @@
    damgalayıp dosyayı geri yazar, telefon da bir sonraki eşitlemede mergeStates ile alır.
    Program ekleme ve plan kurma, bağlantıyla eklemedeki (app/importer.js) kurallarla aynıdır.
    Tarayıcıya bağlı değildir; testleri tests/assistant.test.ts. */
-import { CARDIO, LIB } from "./library.ts";
+import { CARDIO, LIB, YOGA } from "./library.ts";
 import { dayCode, matchExercise, normalize, parseDate, parseTime } from "./importer.ts";
 import { e1rm, work, volume } from "./training.ts";
 import { parse, ymd } from "./dates.ts";
@@ -218,7 +218,8 @@ export interface WorkoutInput { date: string; exercises: { exercise: string; set
 
 const num = (v: unknown, max: number) => { const n = +(v as any); return Number.isFinite(n) && n > 0 ? Math.min(n, max) : 0; };
 const isCardioEx = (s: State, ex: string) => LIB[CARDIO].includes(ex) || s.custom.some(c => c.name === ex && c.group === CARDIO);
-const isTimedEx = (s: State, ex: string) => { const p = (s.exPrefs?.[ex] || {}).timed; return p != null ? !!p : /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer/i.test(ex); };
+const isYogaEx = (s: State, ex: string) => LIB[YOGA].includes(ex) || s.custom.some(c => c.name === ex && c.group === YOGA);
+const isTimedEx = (s: State, ex: string) => { const p = (s.exPrefs?.[ex] || {}).timed; return p != null ? !!p : isYogaEx(s, ex) || /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer/i.test(ex); };
 
 // Uygulamanın set biçimine çevirir: ağırlık w/tekrar r; süreli harekette sec; kardiyoda w = dakika, r = km; ısınma t: "w"
 function toSet(s: State, ex: string, x: SetInput) {

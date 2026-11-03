@@ -7,7 +7,7 @@ import { syncCanRun, connectDrive } from "./cloud.js";
 import { openBaseline } from "./baseline.js";
 
 const LEVEL = { yeni: "Yeni başlayan", orta: "Orta seviye", ileri: "İleri seviye" };
-const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç" };
+const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç", esneklik: "Esneklik, yoga" };
 const EQUIP = { salon: "Spor salonu", ev: "Evde dumbbell", yok: "Ekipmansız" };
 const dayName = code => (WEEKDAYS.find(w => w[0] === code) || [code, code])[1];
 const chips = p => `<div class="row" style="gap:6px;margin:8px 0 4px;flex-wrap:wrap">${[...p.levels.map(l => LEVEL[l]), EQUIP[p.equip], p.days.join(" / ") + " gün/hafta"].map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>`;
@@ -82,8 +82,8 @@ export function openRecommender({ onboarding = false } = {}){
        <p class="muted" style="margin:0 0 4px">Dört soru; önerim hemen aşağıda çıkar. Ne yapacağını biliyorsan atla, programını kendin kur.</p>`
     : sheetHead("Bana program öner");
   openSheet(head,
-    q("level", "Ağırlık çalışma deneyimin", [["yeni", "Hiç / çok az"], ["orta", "6 ay – 2 yıl"], ["ileri", "2 yıldan fazla"]])
-    + q("goal", "Önceliğin", [["genel", "Sağlık, kondisyon"], ["kas", "Kas kazanmak"], ["guc", "Güçlenmek"]])
+    q("level", "Deneyimin", [["yeni", "Hiç / çok az"], ["orta", "6 ay – 2 yıl"], ["ileri", "2 yıldan fazla"]])
+    + q("goal", "Önceliğin", [["genel", "Sağlık, kondisyon"], ["kas", "Kas kazanmak"], ["guc", "Güçlenmek"], ["esneklik", "Esneklik, yoga"]])
     + q("equip", "Nerede çalışacaksın", [["salon", "Spor salonu"], ["ev", "Evde, dumbbell var"], ["yok", "Ekipmansız"]])
     + q("days", "Haftada kaç gün", [2, 3, 4, 5, 6].map(n => [n, n + " gün"]))
     + `<div id="recOut" style="margin-top:16px"></div>`
