@@ -259,3 +259,11 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   }
   g.taskSig = want.length ? planSignature(state.plan, state.programs) : "";
 }
+
+// O tarihte plana göre yapılacak program (planın bitiş tarihinden sonra yok). Uygulamadaki takvim için.
+export function plannedOn(plan: Plan, programs: Program[], date: string): Program | null {
+  if (plan.until && date > plan.until) return null;
+  const code = WEEKDAYS.find(([, js]) => js === parse(date).getDay())![0];
+  const e = plan.days[code];
+  return (e && programs.find(p => p.id === e.prog)) || null;
+}

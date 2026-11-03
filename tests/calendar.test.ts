@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   eventId, sessionEventId, planEventId, dayEventId, plannedDates, plannedEvent, planSignature, pendingSessions, sessionEvent, runCalendar,
-  CalendarMissing, TaskListMissing, type TasksClient, type Task, BACKFILL_DAYS, MAX_PER_RUN, MAX_PLAN_PER_RUN, HORIZON_DAYS, type CalendarClient, type CalendarState, type Session,
+  CalendarMissing, TaskListMissing, plannedOn, type TasksClient, type Task, BACKFILL_DAYS, MAX_PER_RUN, MAX_PLAN_PER_RUN, HORIZON_DAYS, type CalendarClient, type CalendarState, type Session,
 } from "../src/core/calendar.ts";
 import { calendarClient } from "../src/sync/calendar.ts";
 import { tasksClient } from "../src/sync/tasks.ts";
@@ -429,5 +429,15 @@ describe("tasksClient", () => {
     await expect(tasksClient("t", f404 as any).listTasks("l", "2026-11-01")).rejects.toBeInstanceOf(TaskListMissing);
     const f401 = vi.fn(async () => new Response("", { status: 401 }));
     await expect(tasksClient("t", f401 as any).deleteTask("l", "x")).rejects.toBeInstanceOf(AuthError);
+  });
+});
+
+describe("plannedOn (uygulamadaki takvim)", () => {
+  it("gün koduna göre program verir; bitiş tarihinden sonra plan yok", () => {
+    const p = { ...plan(), until: "2026-11-30" };
+    expect(plannedOn(p, progs, "2026-11-02")?.name).toBe("Push");
+    expect(plannedOn(p, progs, "2026-11-05")?.name).toBe("Pull");
+    expect(plannedOn(p, progs, "2026-11-03")).toBeNull();
+    expect(plannedOn(p, progs, "2026-12-07")).toBeNull();
   });
 });
