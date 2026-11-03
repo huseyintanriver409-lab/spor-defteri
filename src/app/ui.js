@@ -113,7 +113,9 @@ export function renderTab(t){
   if (t === "train") renderSeg("train");
   if (t === "history") renderHistory();
   if (t === "progress") renderSeg("stats");
-  if (t === "profile") { renderAccount(); $("#streakCard").classList.toggle("hidden", !streakOn()); if (streakOn()) $("#streakCard").innerHTML = streakCardHTML(streakNow()); renderSeg("profile"); }
+  if (t === "profile") { renderAccount(); $("#streakCard").classList.toggle("hidden", !streakOn()); if (streakOn()) $("#streakCard").innerHTML = streakCardHTML(streakNow()); renderSeg("profile");
+    const sb = $("#streakCard [data-streakset]");
+    if (sb) sb.onclick = () => { segState.profile = "settings"; renderSeg("profile"); $("#setStreak").scrollIntoView({ behavior: "smooth", block: "center" }); $("#setStreak").focus({ preventScroll: true }); }; }
 }
 export function refreshAll(){ renderTab(curTab); renderLiveBar(); renderBackupBanner(); }
 export const segState = { stats: "week", train: "prog", profile: "settings" };

@@ -296,11 +296,38 @@
 
     <div id="profile-settings">
       <div class="card">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span>Hedef ve seri</h2>
+        <div style="display:grid;gap:12px">
+          <div><label for="setGoal">Haftalık hedef</label><select id="setGoal"></select></div>
+          <div><label for="setStreak">Seri</label><select id="setStreak">
+            <option value="auto">Plana göre günlük</option>
+            <option value="week">Haftalık</option>
+            <option value="off">Kapalı</option></select></div>
+        </div>
+        <p class="muted small" id="streakHelp" style="margin:8px 0 0"></p>
+      </div>
+      <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sun-moon"/></svg></span>Görünüm</h2>
         <div class="fchips" id="themeChips"></div>
       </div>
-      <div class="card" id="aiCard">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2>
+      <div class="card">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman</h2>
+        <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
+        <div style="display:grid;gap:14px;margin-top:16px">
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
+        </div>
+        <button class="btn" id="baseOpen" style="margin-top:16px"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg>Mevcut verilerim (başlangıç noktası)</button>
+      </div>
+      <details class="card fold">
+        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-disc"/></svg></span>Bar plakaları</h2><span class="muted small">Barı nasıl yükleyeceğini gösterir</span></summary>
+        <p class="muted small" style="margin-top:4px">Antrenmanda barlı bir harekette kilo girince, barın <b>her iki tarafına</b> hangi plakaları takacağını gösterir. Örneğin 20 kg'lık barla 60 kg için "her tarafa 20 kg". Isınma setleri de bu plakalarla hesaplanır.</p>
+        <p class="muted small">Salonunda olmayan plakaların işaretini kaldır; hesap yalnız işaretlilerle yapılır.</p>
+        <div class="fchips" id="plateChips" style="flex-wrap:wrap"></div>
+      </details>
+      <details class="card fold" id="aiCard">
+        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2><span class="muted small">Claude, ChatGPT, Gemini… bağla</span></summary>
         <p class="muted" style="margin-top:-4px">Claude, ChatGPT ya da Gemini gibi bir yapay zekâ Spor Defteri'ne bağlanabilir: program kurar, planını ayarlar, antrenmanlarını kaydeder, geçmişine bakar. Bağlanırken kendi Google hesabınla giriş yaparsın; yapay zekâ yalnız senin verini görür. Değişiklikler telefona bir sonraki eşitlemede gelir (Google Drive bağlı olmalı).</p>
         <label for="mcpUrl">Bağlayıcı adresi</label>
         <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="mcpUrl" readonly class="grow" style="min-width:0"><button class="btn" id="mcpCopy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Kopyala</button></div>
@@ -322,31 +349,8 @@
             <button class="btn sm" id="aiSheetOpen"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile program yap</button></details>
         </div>
         <p class="muted small" style="margin:10px 0 0">Menü adları uygulamaların sürümüne göre biraz değişebilir.</p>
-      </div>
-      <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman</h2>
-        <div class="grid2">
-          <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
-          <div><label for="setGoal">Haftalık hedef</label><select id="setGoal"></select></div>
-          <div style="grid-column:1/-1"><label for="setStreak">Seri</label><select id="setStreak">
-            <option value="auto">Plana göre günlük (plan yoksa haftalık)</option>
-            <option value="week">Haftalık (haftalık hedefe göre, gün önemli değil)</option>
-            <option value="off">Kapalı</option></select></div>
-        </div>
-        <div style="display:grid;gap:14px;margin-top:16px">
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
-        </div>
-        <button class="btn" id="baseOpen" style="margin-top:16px"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg>Mevcut verilerim (başlangıç noktası)</button>
-      </div>
-      <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-disc"/></svg></span>Salondaki plakalar</h2>
-        <p class="muted small" style="margin-top:-6px">Plaka ve ısınma hesaplayıcıları sadece işaretlediklerini kullanır.</p>
-        <div class="fchips" id="plateChips" style="flex-wrap:wrap"></div>
-      </div>
+      </details>
     </div>
-
     <div id="profile-lib" class="hidden">
       <div class="card">
         <div class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" placeholder="Hareket veya kas ara (örn. arka omuz)" aria-label="Hareket ara"></div>

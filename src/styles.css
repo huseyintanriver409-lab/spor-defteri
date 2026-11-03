@@ -244,6 +244,14 @@ svg text{fill:var(--muted);font-size:10px;font-family:var(--font)}
 .cal-legend i{width:14px;height:14px;border-radius:5px}
 .cal-legend i.has{background:color-mix(in srgb,var(--accent) 44%,var(--card2))}
 .cal-legend i.plan{outline:2px dashed color-mix(in srgb,var(--accent) 75%,transparent);outline-offset:-2px}
+details.card.fold{border-top:0}
+.card.fold>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 8px}
+.card.fold>summary::-webkit-details-marker{display:none}
+.card.fold>summary h2{margin:0}
+.card.fold>summary span{grid-column:1}
+.card.fold>summary::after{content:"";grid-column:2;grid-row:1/3;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 6px 4px;transition:transform .2s}
+.card.fold[open]>summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+.card.fold[open]>summary{margin-bottom:10px}
 .ai-steps summary{cursor:pointer;padding:10px 0;font-weight:650}
 .ai-steps ol{margin:0 0 10px;padding-left:20px;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;font-size:13.5px;color:var(--muted)}
 .ai-steps pre{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--card2);font-size:11.5px;overflow-x:auto;white-space:pre}

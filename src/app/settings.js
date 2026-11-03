@@ -11,6 +11,9 @@ export function renderSettings(){
   $("#setRest").innerHTML = [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
   $("#setGoal").innerHTML = [1,2,3,4,5,6,7].map(v => `<option value="${v}"${v===state.goal?" selected":""}>${v} gün</option>`).join("");
   $("#setStreak").value = state.streakMode || "auto";
+  $("#streakHelp").textContent = { auto: "Haftalık planın varsa planlı günleri kaçırmadıkça seri gün gün artar; plan yoksa haftalık sayılır.",
+    week: "Haftalık hedefini tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.",
+    off: "Seri ve rozetler hiçbir yerde görünmez." }[$("#setStreak").value];
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
   $("#plateChips").innerHTML = ALL_PLATES.map(p => { const on = state.plates.includes(p); return `<button class="fchip${on?" on":""}" data-p="${p}" aria-pressed="${on}">${fmt(p)} kg</button>`; }).join("");
   $("#plateChips").querySelectorAll("button").forEach(b => b.onclick = () => {
@@ -56,7 +59,7 @@ export function labelIcons(root){
 export function setup(){
 $("#setRest").onchange = () => { state.rest = setTDur(+$("#setRest").value); save(); };
 $("#setGoal").onchange = () => { state.goal = +$("#setGoal").value; save(); };
-$("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; save(); refreshAll(); };
+$("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; save(); refreshAll(); renderSettings(); };
 $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(); };
 $("#prefWake").onchange = () => { state.prefs.wake = $("#prefWake").checked; save(); if (!state.prefs.wake) keepAwake(false); };
 $("#prefHaptic").onchange = () => { state.prefs.haptics = $("#prefHaptic").checked; save(); buzz(30); };
