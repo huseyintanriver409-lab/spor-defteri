@@ -19,6 +19,7 @@ Claude'un kullanabildiği araçlar:
 | `program_ekle` | Program ekler |
 | `program_guncelle` | Programın adını ya da hareketlerini değiştirir |
 | `program_sil` | Program siler |
+| `baslangic_kaydet` | Hareketlerdeki mevcut kilo ve tekrarları başlangıç noktası olarak kaydeder (program eklerken verilen kg da buraya yazılır) |
 | `plan_kur` | Gün, saat ve bitiş tarihiyle haftalık plan kurar |
 
 Kurulum bir kez yapılır, yaklaşık 15 dakika sürer. Gizli anahtarları ve girişleri sen yaparsın. Komutları `mcp` klasöründe bir terminalde çalıştır.

@@ -10,6 +10,7 @@ import { e1rm, work, volume } from "./training.ts";
 import { parse, ymd } from "./dates.ts";
 import { MAX_UNTIL_DAYS } from "./calendar.ts";
 import type { State, Stamped } from "./schema.ts";
+import { buildBaseline } from "./baseline.ts";
 
 export const WEEK = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const DAY_NAMES: Record<string, string> = { MO: "Pazartesi", TU: "Salı", WE: "Çarşamba", TH: "Perşembe", FR: "Cuma", SA: "Cumartesi", SU: "Pazar" };
@@ -27,11 +28,11 @@ export function findProgram(s: State, ref: string): Stamped | undefined {
   return s.programs.find(p => p.id === ref) || s.programs.find(p => normalize(p.name) === n);
 }
 
-export interface ItemInput { exercise: string; sets?: number; reps?: string | number }
+export interface ItemInput { exercise: string; sets?: number; reps?: string | number; kg?: number }
 export interface ProgItem { ex: string; sets: number; reps: string }
 
 // Hareket adları kütüphanedeki yazımla eşlenir; bulunamayanlar yeni (özel) hareket olarak eklenir
-function toItems(s: State, items: ItemInput[], notes: string[]): ProgItem[] {
+function toItems(s: State, items: ItemInput[], notes: string[], weights?: { ex: string; w: unknown; r: unknown }[]): ProgItem[] {
   if (!Array.isArray(items) || !items.length) throw new Error("Programda en az bir hareket olmalı.");
   if (items.length > MAX_ITEMS) throw new Error(`Bir günde en fazla ${MAX_ITEMS} hareket olabilir.`);
   return items.map(it => {
@@ -43,6 +44,7 @@ function toItems(s: State, items: ItemInput[], notes: string[]): ProgItem[] {
       notes.push(`"${raw}" listede yoktu, yeni hareket olarak eklendi.`);
     } else if (m !== raw) notes.push(`"${raw}" → "${m}"`);
     const reps = String(it.reps ?? "").trim().match(/\d+(-\d+)?/)?.[0] || "";
+    if (weights && +it.kg! > 0) weights.push({ ex: m || raw, w: it.kg, r: parseInt(reps) || 0 });
     return { ex: m || raw, sets: Math.min(20, Math.max(1, Math.round(+it.sets! || 3))), reps };
   });
 }
@@ -56,22 +58,29 @@ const uniqueName = (s: State, name: string) => {
 export interface DayInput { name?: string; items: ItemInput[] }
 
 // Çok günlü program her gün için ayrı bir program olur ("Ad · Gün"), uygulamadaki gibi
-export function addProgram(s: State, name: string, days: DayInput[], uid: () => string) {
+// Hareketlerde kg verilmişse başlangıç noktasına (Mevcut verilerim) yazılır: program kilo tutmaz, öneri oradan gelir
+function saveWeights(s: State, weights: { ex: string; w: unknown; r: unknown }[], today: Date) {
+  if (!weights.length) return [];
+  s.baseline = { ...s.baseline, ...buildBaseline(weights, s.baseline || {}, ymd(today)) };
+  return weights.map(x => x.ex);
+}
+
+export function addProgram(s: State, name: string, days: DayInput[], uid: () => string, today = new Date()) {
   const base = String(name || "").trim().slice(0, 60) || "Claude'dan program";
   if (!Array.isArray(days) || !days.length) throw new Error("En az bir gün gerekli.");
   if (days.length > 7) throw new Error("En fazla 7 gün olabilir.");
-  const notes: string[] = [];
+  const notes: string[] = [], weights: { ex: string; w: unknown; r: unknown }[] = [];
   const created = days.map((d, i) => {
     const dn = String(d.name || "").trim().slice(0, 30) || String.fromCharCode(65 + i);
-    const prog = { id: uid(), name: uniqueName(s, days.length > 1 ? `${base} · ${dn}` : base), items: toItems(s, d.items, notes) };
+    const prog = { id: uid(), name: uniqueName(s, days.length > 1 ? `${base} · ${dn}` : base), items: toItems(s, d.items, notes, weights) };
     s.programs.push(prog);
     return { id: prog.id, name: prog.name };
   });
   s.onboarded = true;
-  return { created, notes };
+  return { created, notes, startingWeights: saveWeights(s, weights, today) };
 }
 
-export function updateProgram(s: State, ref: string, change: { name?: string; items?: ItemInput[] }) {
+export function updateProgram(s: State, ref: string, change: { name?: string; items?: ItemInput[] }, today = new Date()) {
   const p = findProgram(s, ref);
   if (!p) throw new Error(`Program bulunamadı: ${ref}`);
   const notes: string[] = [];
@@ -79,8 +88,9 @@ export function updateProgram(s: State, ref: string, change: { name?: string; it
     const n = String(change.name).trim().slice(0, 60);
     if (n !== p.name) p.name = uniqueName(s, n);
   }
-  if (change.items) p.items = toItems(s, change.items, notes);
-  return { id: p.id, name: p.name, notes };
+  const weights: { ex: string; w: unknown; r: unknown }[] = [];
+  if (change.items) p.items = toItems(s, change.items, notes, weights);
+  return { id: p.id, name: p.name, notes, startingWeights: saveWeights(s, weights, today) };
 }
 
 // Program silinir; haftalık planda o programa ayrılmış günler boşalır
@@ -157,6 +167,7 @@ export function overview(s: State, today: Date, recent = 8) {
     programs: s.programs.map(p => ({ id: p.id, name: p.name, items: p.items.map((i: any) => ({ exercise: i.ex, sets: i.sets, reps: i.reps || "" })) })),
     plan: planView(s),
     weeklyGoal: s.goal,
+    startingPoint: baselineView(s),
     totalWorkouts: dates.length,
     firstWorkout: dates[dates.length - 1] || null,
     recentWorkouts: dates.slice(0, recent).map(date => {
@@ -260,3 +271,26 @@ export function deleteLog(s: State, date: string, exercise?: string) {
   if (!s.entries.some(e => e.date === d)) s.sessions = s.sessions.filter(x => x.date !== d);
   return { date: d, deleted: list.map(e => e.ex) };
 }
+
+export interface BaseInput { exercise: string; kg?: number; reps?: number; seconds?: number }
+
+// Başlangıç noktası (Mevcut verilerim): hareketlerin şu anki kilosu ve tekrarı. Antrenman sayılmaz;
+// kaydı olmayan harekette öneri buradan gelir. replace: true ise eski liste silinir.
+export function setBaseline(s: State, items: BaseInput[], replace: boolean, today: Date) {
+  if (!Array.isArray(items)) throw new Error("Hareket listesi gerekli.");
+  const notes: string[] = [];
+  const rows = items.map(it => {
+    const raw = String(it.exercise || "").trim().slice(0, 80);
+    if (!raw) throw new Error("Hareket adı boş olamaz.");
+    let ex = matchExercise(raw, knownExercises(s));
+    if (!ex) { ex = raw; s.custom.push({ name: raw, group: "Diğer" }); notes.push(`"${raw}" listede yoktu, yeni hareket olarak eklendi.`); }
+    else if (ex !== raw) notes.push(`"${raw}" → "${ex}"`);
+    return { ex, w: it.kg, r: it.reps, sec: it.seconds };
+  });
+  const next = buildBaseline(rows, s.baseline || {}, ymd(today));
+  s.baseline = replace ? next : { ...s.baseline, ...next };
+  return { startingPoint: baselineView(s), notes };
+}
+
+export const baselineView = (s: State) => Object.entries(s.baseline || {}).map(([ex, b]: [string, any]) =>
+  ({ exercise: ex, ...(b.sec ? { seconds: b.sec, kg: b.w || 0 } : { kg: b.w, reps: b.r }), since: b.date }));

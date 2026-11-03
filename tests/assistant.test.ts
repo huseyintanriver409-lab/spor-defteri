@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { addProgram, deleteLog, deleteProgram, findProgram, history, logWorkouts, overview, setPlan, updateProgram } from "../src/core/assistant.ts";
+import { addProgram, setBaseline, deleteLog, deleteProgram, findProgram, history, logWorkouts, overview, setPlan, updateProgram } from "../src/core/assistant.ts";
 import { DEFAULTS, mergeStates, stampChanges, takeSnapshot, withDefaults } from "../src/core/schema.ts";
 import { toPayload } from "../src/core/sync.ts";
 
@@ -39,6 +39,24 @@ describe("program ekleme", () => {
     expect(deleteProgram(s, "Kol").freedDays).toEqual(["Pazartesi"]);
     expect(Object.keys(s.plan.days)).toEqual(["WE"]);
     expect(() => deleteProgram(s, "yok")).toThrow(/bulunamadı/);
+  });
+});
+
+describe("kilolar başlangıç noktasına", () => {
+  it("programdaki kg başlangıç verisi olur; baslangic_kaydet üzerine ekler ya da değiştirir", () => {
+    const s = fresh();
+    const r = addProgram(s, "Full Body", [{ name: "A", items: [{ exercise: "Back Squat", sets: 3, reps: "5", kg: 115 }, { exercise: "Plank", reps: "45" }] }], uid, TODAY);
+    expect(r.startingWeights).toEqual(["Back Squat"]);
+    expect(s.baseline).toEqual({ "Back Squat": { w: 115, r: 5, date: "2026-11-03" } });
+    const b = setBaseline(s, [{ exercise: "Conventional Deadlift", kg: 140, reps: 5 }, { exercise: "Plank", seconds: 60 }], false, TODAY);
+    expect(b.notes).toContain('"Conventional Deadlift" → "Deadlift"');
+    expect(Object.keys(s.baseline).sort()).toEqual(["Back Squat", "Deadlift", "Plank"]);
+    expect(s.baseline.Plank).toMatchObject({ sec: 60 });
+    expect(overview(s, TODAY).startingPoint).toContainEqual({ exercise: "Deadlift", kg: 140, reps: 5, since: "2026-11-03" });
+    updateProgram(s, "Full Body", { items: [{ exercise: "Back Squat", reps: "5", kg: 120 }] }, TODAY);
+    expect(s.baseline["Back Squat"].w).toBe(120);
+    setBaseline(s, [{ exercise: "Deadlift", kg: 150, reps: 3 }], true, TODAY);
+    expect(Object.keys(s.baseline)).toEqual(["Deadlift"]);
   });
 });
 

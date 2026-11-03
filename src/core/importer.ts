@@ -37,21 +37,43 @@ export function normalize(s: string): string {
     .replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-// Hareket adını uygulamadaki listeyle eşleştirir: birebir → biri diğerini içeriyor → kelime örtüşmesi.
-// Bulunamazsa null (yeni hareket olarak eklenir).
+// Yaygın başka adlar (normalize edilmiş) → kütüphanedeki ad. Claude ve başka uygulamalar böyle yazabiliyor.
+const ALIASES: Record<string, string> = {
+  "conventional deadlift": "Deadlift", "barbell deadlift": "Deadlift",
+  "dumbbell overhead press": "Standing Dumbbell Press", "standing dumbbell overhead press": "Standing Dumbbell Press",
+  "dumbbell shoulder press": "Seated Dumbbell Shoulder Press", "seated dumbbell overhead press": "Seated Dumbbell Shoulder Press",
+  "military press": "Overhead Press (Barbell)", "ohp": "Overhead Press (Barbell)", "barbell overhead press": "Overhead Press (Barbell)",
+  "rdl": "Romanian Deadlift", "barbell romanian deadlift": "Romanian Deadlift",
+  "wood chop": "Cable Woodchopper", "woodchop": "Cable Woodchopper", "cable wood chop": "Cable Woodchopper", "cable chop": "Cable Woodchopper",
+  "cable high to low chop": "Cable Woodchopper", "cable low to high chop": "Cable Woodchopper", "high to low cable chop": "Cable Woodchopper",
+  "pull up": "Barfiks (Pull-up)", "pullup": "Barfiks (Pull-up)", "push up": "Şınav (Push-up)", "pushup": "Şınav (Push-up)",
+};
+// Benzerlik puanında sayılmayan dolgu kelimeleri
+const FILLER = new Set(["to", "the", "a", "with", "and", "conventional", "standard", "regular"]);
+// Hareketin türünü belirleyen kelimeler: iki adda farklıysa (chop ↔ fly) benzer sayılmaz
+const KINDS = ["press", "fly", "flye", "row", "curl", "chop", "woodchopper", "squat", "deadlift", "raise", "extension", "pulldown", "pushdown",
+  "lunge", "dip", "dips", "crunch", "plank", "shrug", "thrust", "bridge", "pullover", "kickback", "carry", "walk", "twist", "rollout", "clean", "snatch", "jerk", "swing"];
+const kindsOf = (words: string[]) => new Set(words.filter(w => KINDS.includes(w)));
+
+// Hareket adını uygulamadaki listeyle eşleştirir: birebir → bilinen başka ad → biri diğerini içeriyor →
+// kelime örtüşmesi (hareket türü aynıysa). Bulunamazsa null (yeni hareket olarak eklenir).
 export function matchExercise(name: string, known: string[]): string | null {
   const n = normalize(name);
   if (!n) return null;
   const norm = known.map(k => [k, normalize(k)] as const);
   const exact = norm.find(([, k]) => k === n);
   if (exact) return exact[0];
+  const alias = ALIASES[n];
+  if (alias && known.includes(alias)) return alias;
   // "bench press" → "Bench Press (Barbell)": verilen ad listedekinin başında/içinde geçiyorsa en kısası
   const contains = norm.filter(([, k]) => (" " + k + " ").includes(" " + n + " ")).sort((a, b) => a[1].length - b[1].length);
   if (contains.length) return contains[0][0];
-  const words = new Set(n.split(" "));
+  const words = n.split(" ").filter(w => !FILLER.has(w)), wset = new Set(words), kinds = kindsOf(words);
   let best: string | null = null, score = 0;
   for (const [k, kn] of norm) {
-    const kw = kn.split(" "), common = kw.filter(w => words.has(w)).length;
+    const kw = kn.split(" ").filter(w => !FILLER.has(w)), kk = kindsOf(kw);
+    if (kinds.size && kk.size && ![...kinds].some(x => kk.has(x))) continue;
+    const common = kw.filter(w => wset.has(w)).length;
     const s = common / new Set([...kw, ...words]).size;
     if (s > score) { score = s; best = k; }
   }

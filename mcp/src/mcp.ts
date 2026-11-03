@@ -1,6 +1,6 @@
 // MCP sunucusu (Streamable HTTP, durumsuz): Claude JSON-RPC isteğini POST eder, cevap tek JSON olarak döner.
 // Araçlar kullanıcının Drive'daki Spor Defteri dosyasını okur ya da değiştirir; işin kendisi src/core/assistant.ts'te.
-import { addProgram, deleteLog, deleteProgram, history, logWorkouts, overview, setPlan, updateProgram } from "../../src/core/assistant.ts";
+import { addProgram, deleteLog, deleteProgram, history, logWorkouts, overview, setBaseline, setPlan, updateProgram } from "../../src/core/assistant.ts";
 import { stampChanges, takeSnapshot, withDefaults, type State } from "../../src/core/schema.ts";
 import { toPayload } from "../../src/core/sync.ts";
 import { AuthError, driveStore } from "../../src/sync/drive.ts";
@@ -8,7 +8,8 @@ import { AuthError, driveStore } from "../../src/sync/drive.ts";
 const VERSIONS = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"];
 const INSTRUCTIONS = `Spor Defteri, kullanıcının antrenman defteri uygulaması. Bu araçlar kullanıcının Google Drive'daki verisini doğrudan okur ve değiştirir.
 - Önce ozet aracıyla programlara, plana ve son antrenmanlara bak.
-- Program eklerken hareket adlarını yaygın İngilizce adlarıyla yaz (Bench Press, Back Squat, Lat Pulldown…); uygulamanın listesine eşlenir.
+- Program eklerken hareket adlarını yaygın İngilizce adlarıyla yaz (Bench Press, Back Squat, Lat Pulldown…); uygulamanın listesine eşlenir. Sonuçtaki notes eşlemeleri gösterir; anlamı değişen ya da emin olmadığın bir eşleme görürsen kullanıcıya sor.
+- Kullanıcı hareketlerde çalıştığı kiloları söylerse programdaki hareketlere kg olarak yaz ya da baslangic_kaydet kullan: bunlar "Mevcut verilerim" olur, uygulama ilk antrenmanda kiloyu oradan önerir. Antrenman kaydı değildir.
 - Çok günlü program her gün için ayrı program olur ("Ad · Gün").
 - plan_kur haftalık planı baştan kurar; "6 Ocak'a kadar" gibi bitiş tarihi verilirse plan Google Takvim'e o güne kadar yazılır.
 - Kullanıcı yaptığı antrenmanları (başka uygulamadan geçerken eski kayıtlarını da) anlatırsa antrenman_kaydet ile deftere yaz. Uzun geçmişi parçalara bölüp birkaç çağrıda gönder; aynı setler iki kez yazılmaz.
@@ -22,6 +23,7 @@ const item = {
   properties: {
     exercise: { type: "string", description: "Hareket adı, ör. \"Bench Press\"" },
     sets: { type: "integer", minimum: 1, maximum: 20, description: "Set sayısı (varsayılan 3)" },
+    kg: { type: "number", minimum: 0, maximum: 1000, description: "Kullanıcının bu harekette şu an çalıştığı kilo (isteğe bağlı; başlangıç noktasına yazılır)" },
     reps: { type: "string", description: "Tekrar hedefi: \"8\" ya da aralık \"6-8\"; süreli harekette saniye (\"45\")" },
   },
 };
@@ -105,7 +107,7 @@ const TOOLS = [
       },
     },
     write: true,
-    run: (s: State, a: any, c: Ctx) => addProgram(s, a.name, a.days, c.uid),
+    run: (s: State, a: any, c: Ctx) => addProgram(s, a.name, a.days, c.uid, c.today()),
   },
   {
     name: "program_guncelle", title: "Programı değiştir",
@@ -115,7 +117,7 @@ const TOOLS = [
       properties: { program: { type: "string", description: "Programın kimliği ya da tam adı" }, name: { type: "string", description: "Yeni ad" }, items },
     },
     write: true,
-    run: (s: State, a: any) => updateProgram(s, a.program, { name: a.name, items: a.items }),
+    run: (s: State, a: any, c: Ctx) => updateProgram(s, a.program, { name: a.name, items: a.items }, c.today()),
   },
   {
     name: "program_sil", title: "Programı sil",
@@ -124,6 +126,27 @@ const TOOLS = [
     annotations: { destructiveHint: true },
     write: true,
     run: (s: State, a: any) => deleteProgram(s, a.program),
+  },
+  {
+    name: "baslangic_kaydet", title: "Mevcut verilerimi kaydet",
+    description: "Kullanıcının hareketlerdeki şu anki kilosunu ve tekrarını başlangıç noktası (Mevcut verilerim) olarak kaydeder. Antrenman kaydı değildir: geçmişe ve istatistiklere girmez; kaydı olmayan harekette uygulama kiloyu buradan önerir, bunu geçmek rekor sayılır. Süreli harekette seconds.",
+    inputSchema: {
+      type: "object", required: ["items"], additionalProperties: false,
+      properties: {
+        items: { type: "array", minItems: 1, maxItems: 100, items: {
+          type: "object", required: ["exercise"], additionalProperties: false,
+          properties: {
+            exercise: { type: "string", description: "Hareket adı" },
+            kg: { type: "number", minimum: 0, maximum: 1000 },
+            reps: { type: "number", minimum: 0, maximum: 1000 },
+            seconds: { type: "number", minimum: 0, description: "Süreli harekette süre (saniye)" },
+          },
+        } },
+        replace: { type: "boolean", description: "true: eski listeyi tamamen bununla değiştir (varsayılan: üzerine ekle)" },
+      },
+    },
+    write: true,
+    run: (s: State, a: any, c: Ctx) => setBaseline(s, a.items, !!a.replace, c.today()),
   },
   {
     name: "plan_kur", title: "Haftalık planı kur",

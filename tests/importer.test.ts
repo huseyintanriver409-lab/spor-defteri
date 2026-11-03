@@ -21,6 +21,14 @@ describe("hareket eşleştirme", () => {
     expect(matchExercise("Overhead Press", known)).toBe("Overhead Press (Barbell)");
   });
 
+  it("yaygın başka adları tanır, hareket türü farklıysa (chop ↔ fly) eşleştirmez", () => {
+    expect(matchExercise("Conventional Deadlift", known)).toBe("Deadlift");
+    expect(matchExercise("Dumbbell Overhead Press", known)).toBe("Standing Dumbbell Press");
+    expect(matchExercise("Cable High to Low Chop", known)).toBe("Cable Woodchopper");
+    expect(String(matchExercise("Cable Low to High Twist", known))).not.toMatch(/Fly/);
+    expect(matchExercise("Barbell Back Squat", known)).toBe("Back Squat");
+  });
+
   it("bilinmeyen hareketi uydurmaz", () => {
     expect(matchExercise("Zercher Good Morning Deluxe", known)).toBeNull();
     expect(matchExercise("", known)).toBeNull();
