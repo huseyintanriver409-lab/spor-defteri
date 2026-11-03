@@ -26,9 +26,11 @@ export function pRow(it = {ex:"", sets:3, reps:"10"}){
   $("#pRows").appendChild(div);
   return div;
 }
+// program formu yalnız "Kendi programını oluştur" ya da Düzenle ile açılır
+function showEditor(on){ $("#pEditor").classList.toggle("hidden", !on); $("#pNew").classList.toggle("hidden", on); }
 export function resetProgEditor(){
   progEditId = null; $("#pTitle").textContent = "Yeni program"; $("#pName").value = "";
-  $("#pRows").innerHTML = ""; pRow(); $("#pCancel").classList.add("hidden");
+  $("#pRows").innerHTML = ""; pRow(); showEditor(false);
 }
 // süperset grupları için A1/A2, B1/B2 etiketleri; tek başına hareketler etiketsiz
 export function ssLabels(items){
@@ -49,14 +51,14 @@ export function renderProg(){
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn primary" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="Bağlantıyla paylaş">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
-    </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, yapay zekâyla oluştur ya da aşağıdan kendin kur.")}</div>`;
+    </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, yapay zekâyla oluştur ya da kendin kur.")}</div>`;
   const find = id => state.programs.find(p => p.id===id);
   $("#pList").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
   $("#pList").querySelectorAll("[data-pcal]").forEach(b => b.onclick = () => openCalModal(find(b.dataset.pcal)));
   $("#pList").querySelectorAll("[data-pedit]").forEach(b => b.onclick = () => {
     const p = find(b.dataset.pedit); progEditId = p.id;
     $("#pTitle").textContent = "Programı düzenle"; $("#pName").value = p.name;
-    $("#pRows").innerHTML = ""; p.items.forEach(i => pRow(i)); $("#pCancel").classList.remove("hidden");
+    $("#pRows").innerHTML = ""; p.items.forEach(i => pRow(i)); showEditor(true);
     $("#pEditor").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   $("#pList").querySelectorAll("[data-pshare]").forEach(b => b.onclick = () => shareProgram(find(b.dataset.pshare)));
@@ -180,6 +182,7 @@ export function fold(line){
 export function setup(){
 $("#pAddRow").onclick = () => pRow().querySelector(".pe").click();
 $("#pCancel").onclick = resetProgEditor;
+$("#pNew").onclick = () => { resetProgEditor(); showEditor(true); $("#pEditor").scrollIntoView({ behavior: "smooth", block: "start" }); $("#pName").focus({ preventScroll: true }); };
 $("#pSave").onclick = () => {
   const name = $("#pName").value.trim();
   const items = [...$("#pRows").children].map(d => ({ ex: d.querySelector(".pe").value.trim(), sets: Math.max(1, parseInt(d.querySelector(".ps").value)||1), reps: d.querySelector(".pr").value.trim(), ss: d.querySelector(".pss").classList.contains("on") }))

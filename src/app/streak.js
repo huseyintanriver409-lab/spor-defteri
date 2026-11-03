@@ -6,7 +6,7 @@ import { buzz, closeSheet, openSheet } from "./ui.js";
 
 /* ---------- Seri (Duolingo tarzı) ----------
    Hesap core/streak.ts'te. Kullanıcı seçer (Profil → Ayarlar → Seri): plan varsa günlük, haftalık ya da kapalı.
-   Ana sayfada alev ve sayı, İlerleme'de seri ve en uzun seri, Takvim'de rozetler; antrenman bitince seri arttıysa kutlama.
+   Ana sayfada alev ve sayı, Takvim'de seri, en uzun seri ve rozetler; antrenman bitince seri arttıysa kutlama.
    streakNow() iki türü tek biçimde verir: count/best/unit ("gün" | "hafta"), done (bugün ya da bu hafta tamam). */
 const workoutDates = (skip = "") => Object.keys(dayLoad()).filter(d => d !== skip);
 export const streakMode = () => ["week", "off"].includes(state.streakMode) ? state.streakMode : "auto";

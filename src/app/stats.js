@@ -5,7 +5,6 @@ import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, isCardio, isTimed, musclesOf } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
-import { streakNow, streakOn } from "./streak.js";
 
 /* ---------- Week ---------- */
 export let weekStart = mondayOf(new Date());
@@ -20,7 +19,6 @@ export function renderWeek(){
   $("#sVol").textContent = fmt(lifts.reduce((n,e) => n+volume(e.sets), 0));
   const ms_ = state.sessions.filter(s => s.date >= a && s.date <= b).reduce((t,s) => t + s.end - s.start, 0);
   $("#sTime").textContent = ms_ ? durText(ms_) : "–";
-  renderConsistency();
 
   // kas analizi
   const ms = {};
@@ -53,34 +51,11 @@ export function renderWeek(){
   }
   $("#wDays").innerHTML = html || `<div class="empty">Bu hafta antrenman yok</div>`;
 }
-/* ---------- Consistency (heatmap, goal, streak) ---------- */
-export const GOAL_WEEKS = 26;
+/* ---------- Günlük yük (Takvim ve seri bunu kullanır) ---------- */
 export function dayLoad(){
   const m = {};
   state.entries.forEach(e => { m[e.date] = (m[e.date]||0) + (isCardio(e.ex) ? 3 : work(e.sets).length); });
   return m;
-}
-export function renderConsistency(){
-  $("#goalSel").value = state.goal;
-  const load = dayLoad(), today = new Date(); today.setHours(0,0,0,0);
-  const thisMon = mondayOf(today), start = new Date(thisMon); start.setDate(start.getDate() - (GOAL_WEEKS-1)*7);
-  let cells = "";
-  for (let d = new Date(start); d <= new Date(thisMon.getTime() + 6*864e5); d.setDate(d.getDate()+1)) {
-    const k = ymd(d), v = load[k] || 0, fut = d > today;
-    const lv = !v ? "" : v < 10 ? "l1" : v < 20 ? "l2" : v < 30 ? "l3" : "l4";
-    cells += `<i class="${lv}${k===ymd(today) ? " today" : ""}${fut ? " fut" : ""}" title="${shortDate(k)}: ${v ? v + " set" : "dinlenme"}"></i>`;
-  }
-  $("#heat").innerHTML = cells;
-  $("#heat").scrollLeft = $("#heat").scrollWidth;
-  // haftalık hedef serisi: bu hafta henüz tamamlanmadıysa seri bozulmuş sayılmaz
-  const daysIn = mon => { let n = 0; for (let i=0;i<7;i++){ const d = new Date(mon); d.setDate(d.getDate()+i); if (load[ymd(d)]) n++; } return n; };
-  const thisN = daysIn(thisMon);
-  $("#gWeek").textContent = `${thisN}/${state.goal}`;
-  // seri kullanıcının seçtiği türe göre gün ya da hafta sayar (app/streak.js)
-  const st = streakNow(), on = streakOn();
-  $("#gStreakBox").classList.toggle("hidden", !on); $("#gBestBox").classList.toggle("hidden", !on);
-  $("#gStreak").textContent = st.count; $("#gBest").textContent = st.best;
-  $("#gStreakUnit").textContent = `seri (${st.unit})`; $("#gBestUnit").textContent = `en uzun (${st.unit})`;
 }
 export function muscleAdvice(ms){
   const main = ["Göğüs","Lat","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır"];
@@ -267,8 +242,6 @@ export function setup(){
 $("#wPrev").onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderWeek(); };
 $("#wNext").onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderWeek(); };
 $("#wToday").onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); };
-$("#goalSel").innerHTML = [1,2,3,4,5,6,7].map(n => `<option value="${n}">${n} gün</option>`).join("");
-$("#goalSel").onchange = () => { state.goal = +$("#goalSel").value; save(); renderConsistency(); };
 $("#histEx").onchange = renderHist;
 document.querySelectorAll('input[name=hMetric]').forEach(r => r.onchange = renderHist);
 $("#pfSex").onchange = () => { state.profile.sex = $("#pfSex").value; save(); renderPower(); };

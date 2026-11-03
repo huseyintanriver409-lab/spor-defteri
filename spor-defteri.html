@@ -51,7 +51,8 @@
           <button class="btn" id="aiOpen"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile program yap</button>
         </div>
       </div>
-      <div class="card" id="pEditor">
+      <button class="btn" id="pNew" style="width:100%;justify-content:center;margin-bottom:12px"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Kendi programını oluştur</button>
+      <div class="card hidden" id="pEditor">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></span><span id="pTitle">Yeni program</span></h2>
         <label for="pName">Program adı</label>
         <input id="pName" placeholder="Push günü">
@@ -61,7 +62,7 @@
         <div class="row" style="margin-top:12px">
           <button class="btn" id="pAddRow"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Hareket</button>
           <span class="grow"></span>
-          <button class="btn quiet hidden" id="pCancel">Vazgeç</button>
+          <button class="btn quiet" id="pCancel">Vazgeç</button>
           <button class="btn primary" id="pSave"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>Kaydet</button>
         </div>
       </div>
@@ -112,16 +113,19 @@
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg></span>Haftalık plan</h2>
         <p class="muted small" style="margin-top:-6px">Hangi gün hangi programı yapacağını seç. Bugün ekranı buna göre açılır; istersen Google Takvim'e de aktarabilirsin.</p>
         <div id="planRows"></div>
-        <div class="grid2" style="margin-top:12px">
-          <div><label for="planDur">Süre (dk)</label><input type="number" inputmode="numeric" min="10" step="5" id="planDur"></div>
-          <div><label for="planRemind">Hatırlatma (dk önce)</label><input type="number" inputmode="numeric" min="0" step="5" id="planRemind"></div>
-        </div>
-        <label for="planUntil" style="margin-top:12px">Bitiş tarihi (boşsa süresiz)</label>
-        <div class="row" style="flex-wrap:nowrap"><input type="date" id="planUntil" class="grow"><button class="btn quiet" id="planUntilClear">Süresiz</button></div>
         <button class="btn" id="planAi" style="margin-top:12px;width:100%;justify-content:center"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile planla</button>
-        <div class="row" style="margin-top:12px"><span class="grow muted small" id="planInfo"></span><button class="btn primary" id="planIcs"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Takvim dosyası</button></div>
-        <details style="margin-top:12px">
-          <summary class="small">Google Takvim'e nasıl yüklerim?</summary>
+        <p class="muted small" id="planInfo" style="margin:12px 0 0"></p>
+        <details class="planmore">
+          <summary>Takvim seçenekleri</summary>
+          <p class="muted small" style="margin:8px 0 0">Google Takvim bağlıysa plan kendiliğinden eklenir (Profil → Yedek). Bağlı değilse takvim dosyası indirip kendin yükleyebilirsin.</p>
+          <div class="grid2" style="margin-top:10px">
+            <div><label for="planDur">Süre (dk)</label><input type="number" inputmode="numeric" min="10" step="5" id="planDur"></div>
+            <div><label for="planRemind">Hatırlatma (dk önce)</label><input type="number" inputmode="numeric" min="0" step="5" id="planRemind"></div>
+          </div>
+          <label for="planUntil" style="margin-top:12px">Bitiş tarihi (boşsa süresiz)</label>
+          <div class="row" style="flex-wrap:nowrap"><input type="date" id="planUntil" class="grow"><button class="btn quiet" id="planUntilClear">Süresiz</button></div>
+          <div class="row" style="margin-top:12px"><span class="grow"></span><button class="btn" id="planIcs"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Takvim dosyası</button></div>
+          <p class="small" style="margin:12px 0 4px"><b>Dosyayı Google Takvim'e nasıl yüklerim?</b></p>
           <ol class="small" style="margin-top:0;padding-left:20px">
             <li>Bilgisayarda calendar.google.com'u aç (içe aktarma telefondaki uygulamada yok).</li>
             <li>Sağ üstte <svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg> Ayarlar, sonra soldan İçe aktar ve dışa aktar.</li>
@@ -156,7 +160,6 @@
   <!-- ==================== GEÇMİŞ ==================== -->
   <section id="tab-history" class="hidden">
     <div class="hero"><div class="eyebrow">Takvim</div><h2 id="calTitle"></h2><p id="calSub"></p></div>
-    <div class="card" id="streakCard"></div>
     <div class="card">
       <div class="weeknav" style="margin-bottom:10px">
         <button class="iconbtn" id="calPrev" title="Önceki ay"><svg class="ic" aria-hidden="true"><use href="#i-chevron-left"/></svg></button>
@@ -173,6 +176,7 @@
       <div id="hdSess" class="muted small" style="margin-bottom:8px"></div>
       <div id="hdList"></div>
     </div>
+    <div class="card" id="streakCard"></div>
   </section>
 
   <!-- ==================== İLERLEME ==================== -->
@@ -181,16 +185,6 @@
     <div class="seg" data-seg="stats"><button data-v="week" class="on">Hafta</button><button data-v="hist">Hareket</button><button data-v="rec">Rekorlar</button><button data-v="rest">Kaslar</button><button data-v="power">Güç skoru</button><button data-v="body">Vücut</button></div>
 
     <div id="stats-week">
-      <div class="card">
-        <div class="row" style="margin-bottom:12px"><h2 class="grow" style="margin:0"><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span>Süreklilik</h2>
-          <label class="row" style="margin:0;gap:6px;font-size:13px">Hedef <select id="goalSel" style="width:auto;min-height:36px;padding:4px 8px"></select></label></div>
-        <div class="heat" id="heat"></div>
-        <div class="stats" style="margin-top:12px">
-          <div class="stat"><b id="gWeek">0/3</b><span>bu hafta</span></div>
-          <div class="stat" id="gStreakBox"><b id="gStreak">0</b><span id="gStreakUnit">seri (gün)</span></div>
-          <div class="stat" id="gBestBox"><b id="gBest">0</b><span id="gBestUnit">en uzun (gün)</span></div>
-        </div>
-      </div>
       <div class="card">
         <div class="weeknav">
           <button class="iconbtn" id="wPrev" title="Önceki hafta"><svg class="ic" aria-hidden="true"><use href="#i-chevron-left"/></svg></button>
