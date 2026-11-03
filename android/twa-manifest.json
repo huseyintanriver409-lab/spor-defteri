@@ -14,16 +14,16 @@
     "enableNotifications":  false,
     "startUrl":  "/spor-defteri/spor-defteri.html",
     "fullScopeUrl":  "https://huseyintanriver409-lab.github.io/spor-defteri/",
-    "iconUrl":  "https://huseyintanriver409-lab.github.io/spor-defteri/icons/icon-512.png",
-    "maskableIconUrl":  "https://huseyintanriver409-lab.github.io/spor-defteri/icons/icon-maskable-512.png",
+    "iconUrl":  "https://huseyintanriver409-lab.github.io/spor-defteri/icons/icon-1024.png",
+    "maskableIconUrl":  "https://huseyintanriver409-lab.github.io/spor-defteri/icons/icon-maskable-1024.png",
     "webManifestUrl":  "https://huseyintanriver409-lab.github.io/spor-defteri/manifest.webmanifest",
     "splashScreenFadeOutDuration":  300,
     "signingKey":  {
                        "path":  "C:\\Android\\anahtar\\spor-defteri.keystore",
                        "alias":  "spordefteri"
                    },
-    "appVersionCode":  1,
-    "appVersion":  "1.0.0",
+    "appVersionCode":  2,
+    "appVersion":  "1.0.1",
     "shortcuts":  [
 
                   ],
