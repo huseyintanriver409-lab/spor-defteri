@@ -85,7 +85,7 @@ Platformdan bağımsız, kendi tasarım dilimiz. Material 3 ya da iOS dili kulla
 - **Yazı tipi:** Inter (değişken) dosyaya gömülü, böylece her platformda aynı görünür. Rakamlar eşit genişlikte (`tabular-nums`). Etiketler küçük, büyük harf ve geniş aralıklı (`.eyebrow`); önemli sayılar büyük ve kalın (`.bignum`, `.stat b`).
 - **İkonlar:** Lucide 1.50.0, SVG sprite olarak gömülü. Kullanım: `ic("isim")`.
 - **Bileşenler:** `.card`, `.btn` (`.primary`, `.xl`, `.sm`, `.quiet`), `.iconbtn` (44 px dokunma alanı), `.seg` ve `.fchip` (kaydırılabilir çipler), `.stepper` (basılı tutunca hızlanır), alttan açılan panel (`openSheet`), geri al bildirimi (`undoable`), onay penceresi (`choose`/`ask`).
-- **Ekranlar:** Bugün, Antrenman (Programlar / Elle kayıt / Haftalık plan), Geçmiş (aylık takvim), İlerleme (Hafta / Hareket / Rekorlar / Kaslar / Güç / Vücut), Profil (Ayarlar / Hareketler / Araçlar / Yedek). Canlı antrenman tam ekran açılır (`#focus`).
+- **Ekranlar:** Bugün, Antrenman (Programlar / Elle kayıt / Haftalık plan), Takvim (aylık: yapılan günler dolu, planlı günler çerçeveli), İlerleme (Hafta / Hareket / Rekorlar / Kaslar / Güç / Vücut), Profil (Ayarlar / Hareketler / Araçlar / Yedek). Canlı antrenman tam ekran açılır (`#focus`).
 - **UX kuralları:** Silme işlemleri önce onay sorar (telefon cepteyken yanlışlıkla dokunma), sildikten sonra 5 saniye "Geri al" da sunar. Canlı antrenmanda her set anında kaydedilir. Ekran açık tutulur (Wake Lock). Dokunuşlar kısa titreşimle onaylanır (ayarlardan kapatılabilir).
 
 ## Faz 2 — Yayına alma ve cihazlara kurulum (tamamlandı)
