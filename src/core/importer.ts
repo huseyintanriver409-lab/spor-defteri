@@ -55,16 +55,17 @@ const KINDS = ["press", "fly", "flye", "row", "curl", "chop", "woodchopper", "sq
   "lunge", "dip", "dips", "crunch", "plank", "shrug", "thrust", "bridge", "pullover", "kickback", "carry", "walk", "twist", "rollout", "clean", "snatch", "jerk", "swing"];
 const kindsOf = (words: string[]) => new Set(words.filter(w => KINDS.includes(w)));
 
-// Hareket adını uygulamadaki listeyle eşleştirir: birebir → bilinen başka ad → biri diğerini içeriyor →
+// Hareket adını uygulamadaki listeyle eşleştirir: bilinen başka ad → birebir → biri diğerini içeriyor →
 // kelime örtüşmesi (hareket türü aynıysa). Bulunamazsa null (yeni hareket olarak eklenir).
 export function matchExercise(name: string, known: string[]): string | null {
   const n = normalize(name);
   if (!n) return null;
+  // bilinen başka ad birebir eşleşmeden önce gelir: eskiden aynı adla özel hareket eklenmiş olsa da kütüphanedeki kazanır
+  const alias = ALIASES[n];
+  if (alias && known.includes(alias)) return alias;
   const norm = known.map(k => [k, normalize(k)] as const);
   const exact = norm.find(([, k]) => k === n);
   if (exact) return exact[0];
-  const alias = ALIASES[n];
-  if (alias && known.includes(alias)) return alias;
   // "bench press" → "Bench Press (Barbell)": verilen ad listedekinin başında/içinde geçiyorsa en kısası
   const contains = norm.filter(([, k]) => (" " + k + " ").includes(" " + n + " ")).sort((a, b) => a[1].length - b[1].length);
   if (contains.length) return contains[0][0];

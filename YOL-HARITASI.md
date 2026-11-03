@@ -177,6 +177,9 @@ Başka uygulamadan geçen ya da defter tutmadan çalışmış kullanıcı, her h
 - **Seri (Duolingo tarzı, `src/core/streak.ts`):** Gün sayar. Haftalık plan varsa planlı günü kaçırmak seriyi bozar, dinlenme günleri bozmaz; plan yoksa haftalık hedefin tutmadığı hafta bozar. Ayda 2 dondurma kendiliğinden kullanılır. Kayıtlardan hesaplanır, saklanmaz (bütün cihazlarda aynı). Ana sayfada alev ve "bugün antrenman günü: serini koru" satırı, İlerleme'de gün serisi ve en uzun seri, antrenman bitince seri arttıysa kutlama (`src/app/streak.js`); 7/14/30/60/100/180/365 gün rozetleri Profil'de.
 - **Hesap:** Profil'in üstünde bu cihazın Drive'a bağlı Google hesabı (ad, e-posta, fotoğraf). Drive `about` uç noktasından okunur, yeni izin gerekmez; cihaza özel `sporDefteri.sync` içinde tutulur, günde bir yenilenir.
 
+## Hareket birleştirme (2026-11-03)
+Aynı hareket iki adla girildiyse (eski sürümde ayrı eklenen "Conventional Deadlift" ile kütüphanedeki "Deadlift" gibi) Profil → Hareketler'de özel hareketin yanındaki düğmeyle başka bir hareketle birleştirilir. Kütüphanede karşılığı bulunan özel hareketin altında "… ile birleştir" önerisi çıkar. Kayıtlar (aynı gündekiler tek kayıtta), programlar, başlangıç verisi, notlar, tercihler ve favoriler yeni ada taşınır; eski özel hareket listeden kalkar; geri alınabilir. İşlem `src/core/merge.ts`te (testler `tests/merge.test.ts`). Eşleştirmede bilinen başka ad, aynı adlı özel hareketten önce gelir: Claude "Conventional Deadlift" yazsa da "Deadlift"e eşlenir.
+
 ## Faz 5 — Mağazalar (isteğe bağlı)
 
 - **Google Play:** Bubblewrap/TWA ile PWA paketlenir. Geliştirici hesabı bir kerelik 25 dolar.

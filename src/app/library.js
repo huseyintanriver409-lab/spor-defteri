@@ -1,7 +1,9 @@
 import { shortDate, ymd } from "../core/dates.ts";
 import { $, LIB, ask, esc, fmt, ic, save, state, toast } from "./store.js";
 import { EQUIPS, HOME, allEx, equipOf, musclesOf } from "./exercises.js";
-import { emptyHTML, segState, showTab, undoable } from "./ui.js";
+import { emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
+import { matchExercise } from "../core/importer.ts";
+import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
 import { liveItems, openFocus } from "./live.js";
 import { chart } from "./stats.js";
@@ -17,13 +19,16 @@ export function renderLib(){
     return [e.name, e.group, e.eq, ...e.m.p, ...e.m.s].join(" ").toLocaleLowerCase("tr").includes(q);
   });
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex]||0)+1);
+  // özel hareket kütüphanedekiyle aynı olabilir (ör. "Conventional Deadlift" → "Deadlift"): birleştirme önerilir
+  const libNames = Object.values(LIB).flat(), twin = n => matchExercise(n, libNames);
   const open = q || eqf || home;
   $("#libList").innerHTML = groups().map(g => {
     const items = ex.filter(e => e.group===g); if (!items.length) return "";
     return `<details ${open ? "open" : ""}><summary>${esc(g)} <span>(${items.length})</span></summary>` + items.map(e =>
       `<div class="exitem"><div class="grow"><div>${esc(e.name)}${counts[e.name] ? ` <span class="muted small">· ${counts[e.name]} kayıt</span>` : ""}</div>
-        <div class="ms"><span class="tag">${e.eq}</span>${e.m.p.length ? `<b>${e.m.p.join(", ")}</b>` : ""}${e.m.s.length ? ` · yardımcı: ${e.m.s.join(", ")}` : ""}</div></div>
-       ${e.custom ? `<button class="iconbtn danger" data-rm="${esc(e.name)}" title="Listeden kaldır">${ic("trash-2")}</button>` : ""}
+        <div class="ms"><span class="tag">${e.eq}</span>${e.m.p.length ? `<b>${e.m.p.join(", ")}</b>` : ""}${e.m.s.length ? ` · yardımcı: ${e.m.s.join(", ")}` : ""}</div>
+        ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">“${esc(twin(e.name))}” ile birleştir</button>` : ""}</div>
+       ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="Başka bir hareketle birleştir">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="Listeden kaldır">${ic("trash-2")}</button>` : ""}
        <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + " exercise form")}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(e.name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`).join("") + `</details>`;
   }).join("") || emptyHTML("search", "Sonuç yok", "Başka bir kelimeyle ara ya da filtreleri kaldır.");
@@ -33,6 +38,11 @@ export function renderLib(){
     segState.train = "log"; showTab("train"); resetEditor(); $("#logEx").value = n; $("#logEx").dispatchEvent(new Event("input"));
     $("#setRows .w").focus();
   });
+  $("#libList").querySelectorAll("[data-mg]").forEach(b => b.onclick = () => {
+    const from = b.dataset.mg;
+    if (b.dataset.to) mergeInto(from, b.dataset.to);
+    else openPicker(`“${from}” hangi hareketle birleşsin?`, to => mergeInto(from, to));
+  });
   $("#libList").querySelectorAll("[data-rm]").forEach(b => b.onclick = async () => {
     const n = b.dataset.rm;
     if (!(await ask(`"${n}" hareketi listeden kaldırılsın mı?\nBu hareketle girdiğin eski kayıtlar silinmez.`, "Kaldır"))) return;
@@ -41,6 +51,19 @@ export function renderLib(){
     save(); refreshDatalist(); renderLib();
     undoable(`"${n}" kaldırıldı`, () => { state.custom.splice(i, 0, c); save(); refreshDatalist(); renderLib(); });
   });
+}
+
+// Eski adın bütün kayıtları, programları, başlangıç verisi ve notları yeni ada taşınır (core/merge.ts)
+async function mergeInto(from, to){
+  if (from === to) return toast("Aynı hareket seçildi");
+  const n = state.entries.filter(e => e.ex === from).length;
+  if (!(await ask(`“${from}” → “${to}”
+
+${n ? `${n} kayıt, ` : ""}programlar, başlangıç verisi ve notlar “${to}” adına taşınır. “${from}” listeden kalkar.`, "Birleştir"))) return;
+  const before = JSON.stringify(state);
+  const r = mergeExercise(state, from, to);
+  save(); refreshDatalist(); renderLib();
+  undoable(`Birleştirildi: ${r.entries} kayıt, ${r.programs} program`, () => { Object.assign(state, JSON.parse(before)); save(); refreshDatalist(); renderLib(); });
 }
 
 /* ---------- Body ---------- */

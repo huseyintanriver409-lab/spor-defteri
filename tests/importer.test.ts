@@ -23,6 +23,8 @@ describe("hareket eşleştirme", () => {
 
   it("yaygın başka adları tanır, hareket türü farklıysa (chop ↔ fly) eşleştirmez", () => {
     expect(matchExercise("Conventional Deadlift", known)).toBe("Deadlift");
+    // eskiden aynı adla özel hareket eklenmişse bile kütüphanedeki kazanır
+    expect(matchExercise("Conventional Deadlift", [...known, "Conventional Deadlift"])).toBe("Deadlift");
     expect(matchExercise("Dumbbell Overhead Press", known)).toBe("Standing Dumbbell Press");
     expect(matchExercise("Cable High to Low Chop", known)).toBe("Cable Woodchopper");
     expect(String(matchExercise("Cable Low to High Twist", known))).not.toMatch(/Fly/);
