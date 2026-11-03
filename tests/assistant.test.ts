@@ -61,6 +61,23 @@ describe("kilolar başlangıç noktasına", () => {
 });
 
 describe("haftalık plan", () => {
+  it("plan Google'da görev ya da etkinlik olarak seçilebilir; görevde biten antrenman ayrıca yazılmaz", () => {
+    const s = fresh();
+    addProgram(s, "Full Body", [{ name: "A", items: [{ exercise: "Back Squat" }] }], uid);
+    s.gcal = { ...s.gcal, log: true };
+    const v = setPlan(s, [{ day: "MO" }, { day: "WE" }, { day: "FR" }], "2027-01-01", TODAY, "gorev");
+    expect(s.gcal).toMatchObject({ plan: true, mode: "task", log: false });
+    expect(v.googleCalendar).toMatch(/^gorev/);
+    setPlan(s, [{ day: "MO" }], undefined, TODAY, "etkinlik");
+    expect(s.gcal).toMatchObject({ plan: true, mode: "event" });
+    // verilmezse ayar değişmez
+    setPlan(s, [{ day: "TU" }], undefined, TODAY);
+    expect(s.gcal.mode).toBe("event");
+    setPlan(s, [{ day: "TU" }], undefined, TODAY, "kapali");
+    expect(s.gcal.plan).toBe(false);
+    expect(() => setPlan(s, [], undefined, TODAY, "tikli")).toThrow();
+  });
+
   const withProgs = () => {
     const s = fresh();
     addProgram(s, "AB", [{ name: "A", items: [{ exercise: "Back Squat" }] }, { name: "B", items: [{ exercise: "Deadlift" }] }], uid);

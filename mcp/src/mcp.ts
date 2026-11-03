@@ -11,7 +11,9 @@ const INSTRUCTIONS = `Spor Defteri, kullanıcının antrenman defteri uygulamas�
 - Program eklerken hareket adlarını yaygın İngilizce adlarıyla yaz (Bench Press, Back Squat, Lat Pulldown…); uygulamanın listesine eşlenir. Sonuçtaki notes eşlemeleri gösterir; anlamı değişen ya da emin olmadığın bir eşleme görürsen kullanıcıya sor.
 - Kullanıcı hareketlerde çalıştığı kiloları söylerse programdaki hareketlere kg olarak yaz ya da baslangic_kaydet kullan: bunlar "Mevcut verilerim" olur, uygulama ilk antrenmanda kiloyu oradan önerir. Antrenman kaydı değildir.
 - Çok günlü program her gün için ayrı program olur ("Ad · Gün").
-- plan_kur haftalık planı baştan kurar; "6 Ocak'a kadar" gibi bitiş tarihi verilirse plan Google Takvim'e o güne kadar yazılır.
+- plan_kur haftalık planı baştan kurar; "6 Ocak'a kadar" gibi bitiş tarihi verilirse plan Google'a o güne kadar yazılır.
+- Plan Google'da iki şekilde görünebilir (plan_kur'daki calendar): "gorev" = Google Görevler'de tikli, saatsiz görev; antrenman bitince kendiliğinden tiklenir. "etkinlik" = Google Takvim'de saatli, hatırlatmalı etkinlik. Kullanıcı görev, tik, yapılacak ya da saatsiz derse "gorev" kullan; saat sorma.
+- Spor planı için başka takvim ya da görev araçlarıyla (Google Takvim bağlayıcısı gibi) kendin etkinlik veya görev oluşturma: telefon planı kendisi yazar, sen de yazarsan her gün iki kez görünür.
 - Kullanıcı yaptığı antrenmanları (başka uygulamadan geçerken eski kayıtlarını da) anlatırsa antrenman_kaydet ile deftere yaz. Uzun geçmişi parçalara bölüp birkaç çağrıda gönder; aynı setler iki kez yazılmaz.
 - Değişiklikler telefondaki uygulamaya bir sonraki eşitlemede (uygulama açılınca) gelir; takvimi de telefon günceller.
 - Kullanıcıyla Türkçe konuş.`;
@@ -150,7 +152,7 @@ const TOOLS = [
   },
   {
     name: "plan_kur", title: "Haftalık planı kur",
-    description: "Haftalık antrenman planını baştan kurar (listede olmayan günler plandan çıkar). Her gün için program verilmezse o günün mevcut programı ya da plandaki programlar sırayla kullanılır. Google Takvim açıksa telefon planı takvime tarih tarih yazar. Boş days listesi planı temizler.",
+    description: "Haftalık antrenman planını baştan kurar (listede olmayan günler plandan çıkar). Her gün için program verilmezse o günün mevcut programı ya da plandaki programlar sırayla kullanılır. Telefon planı Google'a tarih tarih yazar: calendar ile görev (tikli, saatsiz) ya da etkinlik (saatli) seçilir. Boş days listesi planı temizler.",
     inputSchema: {
       type: "object", required: ["days"], additionalProperties: false,
       properties: {
@@ -163,10 +165,11 @@ const TOOLS = [
           },
         } },
         until: { type: "string", description: "Planın bitiş tarihi YYYY-AA-GG (en fazla bir yıl ileride). \"\" = süresiz; hiç verilmezse mevcut bitiş tarihi kalır." },
+        calendar: { type: "string", enum: ["gorev", "etkinlik", "kapali"], description: "Plan Google'da nasıl görünsün: gorev = tikli, saatsiz Google görevi (antrenman bitince tiklenir); etkinlik = saatli, hatırlatmalı takvim etkinliği; kapali = Google'a yazılmaz. Verilmezse mevcut ayar kalır." },
       },
     },
     write: true,
-    run: (s: State, a: any, c: Ctx) => setPlan(s, a.days, a.until, c.today()),
+    run: (s: State, a: any, c: Ctx) => setPlan(s, a.days, a.until, c.today(), a.calendar),
   },
 ];
 

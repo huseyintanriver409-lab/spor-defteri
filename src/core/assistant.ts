@@ -110,7 +110,10 @@ export interface PlanDayInput { day: string; program?: string; time?: string }
 
 // Haftalık planı baştan kurar. Programı yazılmayan günler, mevcut plandaki programı ya da planlı programları sırayla alır.
 // until: "" = süresiz, verilmezse (undefined) eski bitiş tarihi kalır.
-export function setPlan(s: State, days: PlanDayInput[], until: string | undefined, today: Date) {
+// calendar: planın Google'da nasıl görüneceği ("gorev" tikli görev, "etkinlik" saatli etkinlik, "kapali");
+// verilmezse ayar değişmez. Yazma işini telefon yapar (izin ilk kez orada istenir).
+export const CALENDAR_MODES = ["gorev", "etkinlik", "kapali"];
+export function setPlan(s: State, days: PlanDayInput[], until: string | undefined, today: Date, calendar?: string) {
   if (!Array.isArray(days)) throw new Error("Günler listesi gerekli.");
   if (days.length && !s.programs.length) throw new Error("Önce bir program ekle; plan programlara göre kurulur.");
   const old = s.plan.days, next: Record<string, { prog: string; time: string }> = {};
@@ -142,6 +145,13 @@ export function setPlan(s: State, days: PlanDayInput[], until: string | undefine
       s.plan.until = v;
     } else s.plan.until = "";
   }
+  if (calendar !== undefined) {
+    if (!CALENDAR_MODES.includes(calendar)) throw new Error(`Takvim seçeneği anlaşılamadı: ${calendar}`);
+    s.gcal = { ...s.gcal, plan: calendar !== "kapali" };
+    if (calendar !== "kapali") s.gcal.mode = calendar === "gorev" ? "task" : "event";
+    // görevde tik yeterli: biten antrenman ayrıca etkinlik yazılmaz (uygulamadaki gibi)
+    if (calendar === "gorev") s.gcal.log = false;
+  }
   // gün sırası haftaya göre
   s.plan.days = Object.fromEntries(WEEK.filter(c => next[c]).map(c => [c, next[c]]));
   if (days.length) s.goal = days.length;
@@ -153,7 +163,7 @@ export function planView(s: State) {
     days: WEEK.filter(c => s.plan.days[c]).map(c => ({ day: DAY_NAMES[c], code: c, time: s.plan.days[c].time || "19:00", program: progName(s, s.plan.days[c].prog) })),
     until: s.plan.until || "",
     durationMin: s.plan.dur, reminderMin: s.plan.remind,
-    googleCalendar: !!s.gcal?.plan,
+    googleCalendar: !s.gcal?.plan ? "kapali" : s.gcal.mode === "task" ? "gorev (tikli, saatsiz)" : "etkinlik (saatli, hatırlatmalı)",
   };
 }
 
