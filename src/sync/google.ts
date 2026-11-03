@@ -9,9 +9,10 @@
 
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 export const CAL_SCOPE = "https://www.googleapis.com/auth/calendar.app.created";
+export const TASKS_SCOPE = "https://www.googleapis.com/auth/tasks";
 const TOKEN_KEY = "sporDefteri.gtoken";
 const GIS_SRC = "https://accounts.google.com/gsi/client";
-const NAMES: Record<string, string> = { [DRIVE_SCOPE]: "Drive", [CAL_SCOPE]: "Takvim" };
+const NAMES: Record<string, string> = { [DRIVE_SCOPE]: "Drive", [CAL_SCOPE]: "Takvim", [TASKS_SCOPE]: "Görevler" };
 
 // s: anahtarın taşıdığı kapsamlar (boşlukla ayrılmış); eski kayıtlarda yoksa yalnız Drive sayılır
 type Stored = { t: string; exp: number; s?: string };

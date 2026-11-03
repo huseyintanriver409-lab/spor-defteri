@@ -1,10 +1,11 @@
 import { GOOGLE_CLIENT_ID } from "../config.ts";
-import { CAL_SCOPE, DRIVE_SCOPE, cachedToken, dropScope, gisReady, preload as preloadGoogle, requestToken, revoke } from "../sync/google.ts";
+import { CAL_SCOPE, DRIVE_SCOPE, TASKS_SCOPE, cachedToken, dropScope, gisReady, preload as preloadGoogle, requestToken, revoke } from "../sync/google.ts";
 import { syncOnce } from "../core/sync.ts";
 import { AuthError, driveAccount, driveStore } from "../sync/drive.ts";
 import { mergeStates } from "../core/schema.ts";
-import { planSignature, runCalendar } from "../core/calendar.ts";
+import { currentSig, planSignature, runCalendar, taskPlan } from "../core/calendar.ts";
 import { calendarClient } from "../sync/calendar.ts";
+import { tasksClient } from "../sync/tasks.ts";
 import { $, choose, esc, ic, save, setState, stampChanges, state, takeSnapshot, toast } from "./store.js";
 import { _mCache } from "./exercises.js";
 import { refreshAll } from "./ui.js";
@@ -127,16 +128,21 @@ export function renderAccount(){
    Ne yazılacağına core/calendar.ts karar verir; istemci sync/calendar.ts. Ayarlar (state.gcal) Drive ile eşitlenir.
    Bu cihazda takvim izni yoksa sorun değil: yazılmamış antrenmanlar Drive ile diğer cihaza gider ve oradan yazılır. */
 export const calOn = () => state.gcal.log || state.gcal.plan;
+// Görev modunda (ya da görevlerde silinecek eski plan varsa) Görevler izni de gerekir
+const needTasks = () => taskPlan(state.gcal) || !!state.gcal.taskSig;
+const calScopes = () => needTasks() ? [CAL_SCOPE, TASKS_SCOPE] : [CAL_SCOPE];
+// gereken bütün izinleri taşıyan anahtar (tek anahtar bütün izinleri taşır)
+const calToken = () => { const t = cachedToken(CAL_SCOPE); return t && calScopes().every(x => cachedToken(x) === t) ? t : null; };
 export let calBusy = false, calErr = "", calTimer = null;
 export const timeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch(e){ return "UTC"; } };
 
 export function runCal(interactive){
   const g = state.gcal;
-  if (!syncCanRun() || calBusy || (!g.log && !g.plan && !g.planSig)) return Promise.resolve();
-  let token = cachedToken(CAL_SCOPE), tokenP = null;
+  if (!syncCanRun() || calBusy || (!g.log && !g.plan && !g.planSig && !g.taskSig)) return Promise.resolve();
+  let token = calToken(), tokenP = null;
   if (!token) {
     if (!interactive || !gisReady()) { renderCalStatus(); return Promise.resolve(); }
-    tokenP = requestToken(GOOGLE_CLIENT_ID, false, [CAL_SCOPE]);
+    tokenP = requestToken(GOOGLE_CLIENT_ID, false, calScopes());
   }
   calBusy = true; calErr = ""; renderCalStatus();
   return enqueue(async () => {
@@ -144,18 +150,18 @@ export function runCal(interactive){
     try {
       if (tokenP) token = await tokenP;
       // sıra beklerken Drive birleştirmesi state'i değiştirmiş olabilir: güncel state kullanılır
-      r = await runCalendar(state, calendarClient(token), { describeProgram: progDetails, describeSession, timeZone: timeZone() });
+      r = await runCalendar(state, calendarClient(token), { describeProgram: progDetails, describeSession, timeZone: timeZone() }, needTasks() ? tasksClient(token) : undefined);
       sync.calLast = Date.now(); saveSync();
-      if (interactive) toast(r.written || r.planUpdated ? "Takvim güncellendi" : "Takvim zaten güncel", "calendar-days");
+      if (interactive) toast(r.written || r.planUpdated || r.ticked ? "Takvim güncellendi" : "Takvim zaten güncel", "calendar-days");
     } catch(e){
-      if (e instanceof AuthError) dropScope(CAL_SCOPE);
+      if (e instanceof AuthError) dropScope(/^Görev/.test(e.message) ? TASKS_SCOPE : CAL_SCOPE);
       else calErr = (e && e.message) || "Takvime yazılamadı";
     } finally {
       // yarıda kalsa da yazılanların işaretleri kaydedilir
       save(); calBusy = false; renderCalStatus(); renderPlan();
     }
     // takvim kimliği ve "yazıldı" işaretleri diğer cihazlara gitsin
-    if (r && (r.written || r.created || r.planUpdated) && sync.on) runSync(false);
+    if (r && (r.written || r.created || r.planUpdated || r.ticked) && sync.on) runSync(false);
   });
 }
 
@@ -164,34 +170,39 @@ export function calSoon(){
   clearTimeout(calTimer);
   calTimer = setTimeout(() => {
     const g = state.gcal, target = g.plan ? planSignature(state.plan, state.programs) : "";
-    if (target !== g.planSig) runCal(false);
+    if (target !== currentSig(g)) runCal(false);
   }, 4000);
 }
 
-// Onay kutusu dokunuşu: izin yoksa giriş penceresi bu dokunuşta açılır
-export function toggleCal(key, on){
-  if (on && !cachedToken(CAL_SCOPE)) {
+// Onay kutusu ve plan türü dokunuşu: gereken izin yoksa giriş penceresi bu dokunuşta açılır
+export function toggleCal(key, value){
+  const prev = state.gcal[key];
+  state.gcal[key] = value;
+  if (value && !calToken()) {
     if (!gisReady()) {
-      $(key === "log" ? "#calLog" : "#calPlan").checked = false;
+      state.gcal[key] = prev; renderCalStatus();
       preloadGoogle().then(() => toast("Google hazır, tekrar dokun", "check"), e => toast(e.message));
       return;
     }
-    const tokenP = requestToken(GOOGLE_CLIENT_ID, false, [CAL_SCOPE]);
-    state.gcal[key] = true; save(); calBusy = true; calErr = ""; renderCalStatus();
+    const tokenP = requestToken(GOOGLE_CLIENT_ID, false, calScopes());
+    save(); calBusy = true; calErr = ""; renderCalStatus();
     tokenP.then(() => { calBusy = false; return runCal(false); })
-      .catch(e => { calBusy = false; state.gcal[key] = false; save(); calErr = e.message; renderCalStatus(); });
+      .catch(e => { calBusy = false; state.gcal[key] = prev; save(); calErr = e.message; renderCalStatus(); });
     return;
   }
-  state.gcal[key] = on; save(); renderCalStatus();
+  save(); renderCalStatus();
   // kapatırken takvimdeki planı silmek için izin gerekebilir; dokunuş içinde olduğumuz için pencere açılabilir
   runCal(true);
 }
 
 export function renderCalStatus(){
-  const g = state.gcal, can = syncCanRun(), on = g.log || g.plan, hasToken = !!cachedToken(CAL_SCOPE);
+  const g = state.gcal, can = syncCanRun(), on = g.log || g.plan, hasToken = !!calToken();
   $("#calCard").classList.toggle("hidden", !GOOGLE_CLIENT_ID);
   $("#calLog").checked = g.log; $("#calPlan").checked = g.plan;
   $("#calLog").disabled = $("#calPlan").disabled = !can || calBusy;
+  $("#calModeRow").classList.toggle("hidden", !g.plan);
+  document.querySelectorAll('[name="calMode"]').forEach(r => { r.checked = r.value === (g.mode === "task" ? "task" : "event"); r.disabled = !can || calBusy; });
+  $("#calModeNote").textContent = g.mode === "task" ? "Görevler takvimde saatsiz görünür (Google görevlere saat koydurmuyor). Antrenmanı bitirince görev kendiliğinden tiklenir." : "Planlı saatte, hatırlatmayla.";
   let status = "";
   if (!can) status = "Google Takvim için uygulamayı web adresinden aç.";
   else if (calBusy) status = "Takvim güncelleniyor…";
@@ -231,6 +242,12 @@ document.addEventListener("visibilitychange", () => {
 setInterval(() => { if (sync.on && !syncBusy) renderSyncStatus(); }, 60e3);
 $("#calLog").onchange = e => toggleCal("log", e.target.checked);
 $("#calPlan").onchange = e => toggleCal("plan", e.target.checked);
+document.querySelectorAll('[name="calMode"]').forEach(r => r.onchange = () => {
+  if (!r.checked) return;
+  // görevde tik yeterli: biten antrenman ayrıca etkinlik olarak yazılmaz (istenirse yeniden açılabilir)
+  if (r.value === "task" && state.gcal.log) { state.gcal.log = false; toast("Biten antrenmanlar artık görevin tikiyle görünür", "check"); }
+  toggleCal("mode", r.value);
+});
 $("#calAuth").onclick = () => runCal(true);
 $("#calOpen").onclick = () => openUrl("https://calendar.google.com/calendar/r");
 }

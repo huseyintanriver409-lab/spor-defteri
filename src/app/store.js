@@ -29,7 +29,7 @@ export function save(){
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
   catch(e){ toast("Kaydedilemedi! Yedek al."); }
   // plan ya da programlar değiştiyse takvimdeki planı birkaç saniye sonra güncelle (art arda değişiklikler tek seferde)
-  if (state.gcal.plan || state.gcal.planSig) calSoon();
+  if (state.gcal.plan || state.gcal.planSig || state.gcal.taskSig) calSoon();
 }
 // Tarayıcının confirm() penceresi bazı uygulama içi görüntüleyicilerde engellenir; bu yüzden kendi onay penceremiz
 // choices: [{ label, value, primary? }]; dışarı tıklamak null döndürür

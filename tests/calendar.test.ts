@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   eventId, sessionEventId, planEventId, dayEventId, plannedDates, plannedEvent, planSignature, pendingSessions, sessionEvent, runCalendar,
-  CalendarMissing, BACKFILL_DAYS, MAX_PER_RUN, MAX_PLAN_PER_RUN, HORIZON_DAYS, type CalendarClient, type CalendarState, type Session,
+  CalendarMissing, TaskListMissing, type TasksClient, type Task, BACKFILL_DAYS, MAX_PER_RUN, MAX_PLAN_PER_RUN, HORIZON_DAYS, type CalendarClient, type CalendarState, type Session,
 } from "../src/core/calendar.ts";
 import { calendarClient } from "../src/sync/calendar.ts";
+import { tasksClient } from "../src/sync/tasks.ts";
 import { AuthError } from "../src/sync/drive.ts";
 import { withDefaults, mergeStates, DEFAULTS } from "../src/core/schema.ts";
 
@@ -281,7 +282,7 @@ describe("runCalendar", () => {
 
 describe("takvim ayarları ve Drive birleştirmesi", () => {
   it("eski verilerde takvim ayarı kapalı varsayılır", () => {
-    expect(withDefaults({ v: 2 }).gcal).toEqual({ log: false, plan: false, id: "", planSig: "", dates: [], dated: 0 });
+    expect(withDefaults({ v: 2 }).gcal).toEqual({ log: false, plan: false, id: "", planSig: "", dates: [], dated: 0, mode: "event", taskList: "", taskSig: "" });
     expect(withDefaults({ v: 2, gcal: { log: true } }).gcal).toMatchObject({ log: true, plan: false, id: "" });
   });
   it("takvim kimliği ve 'yazıldı' işareti cihazlar arasında eşitlenir", () => {
@@ -347,5 +348,86 @@ describe("calendarClient", () => {
     await expect(make(() => res(403, { error: { errors: [{ reason: "insufficientPermissions" }] } })).client.deleteEvent("c", "x1234")).rejects.toBeInstanceOf(AuthError);
     const e = await make(() => res(403, { error: { errors: [{ reason: "rateLimitExceeded" }] } })).client.deleteEvent("c", "x1234").catch(x => x);
     expect(e).not.toBeInstanceOf(AuthError);
+  });
+});
+
+// Bellekte görev listesi tutan sahte istemci (kimliği Google verir gibi kendisi üretir)
+function fakeTasks() {
+  const lists: Record<string, Task[]> = {};
+  let n = 0;
+  const log: string[] = [];
+  const list = (id: string) => { if (!lists[id]) throw new TaskListMissing(); return lists[id]; };
+  const client: TasksClient & { lists: typeof lists; log: string[] } = {
+    lists, log,
+    async createList(title) { const id = `tl${++n}`; lists[id] = []; log.push(`list ${title}`); return id; },
+    async listTasks(id, dueMin) { return list(id).filter(t => t.due!.slice(0, 10) >= dueMin).map(t => ({ ...t })); },
+    async insertTask(id, body: any) { list(id).push({ id: `t${++n}`, ...body }); log.push(`insert ${body.due.slice(0, 10)}`); },
+    async patchTask(id, tid, body: any) { const t = list(id).find(x => x.id === tid); if (t) Object.assign(t, body); log.push(`patch ${t?.due?.slice(0, 10)} ${body.status || "metin"}`); },
+    async deleteTask(id, tid) { lists[id] = list(id).filter(x => x.id !== tid); log.push(`delete ${tid}`); },
+  };
+  return client;
+}
+const taskState = (over: Partial<CalendarState["gcal"]> = {}, sessions: Session[] = []): CalendarState =>
+  ({ gcal: { log: false, plan: true, id: "", planSig: "", mode: "task", taskList: "", taskSig: "", ...over }, plan: plan(), programs: progs, sessions });
+
+describe("görev modu", () => {
+  it("plan tarihleri görev olur, takvime etkinlik yazılmaz; ikinci çalıştırma bir şey değiştirmez", async () => {
+    const st = taskState(), cal = fakeCalendar(), tc = fakeTasks();
+    const r = await runCalendar(st, cal, helpers, tc);
+    expect(r.planUpdated).toBe(true);
+    const tasks = tc.lists[st.gcal.taskList!];
+    expect(tasks.map(t => t.due!.slice(0, 10))).toEqual(MO_TH);
+    expect(tasks[0]).toMatchObject({ title: "Antrenman: Push", notes: "• Bench Press (Barbell)", status: "needsAction", due: "2026-11-02T00:00:00.000Z" });
+    expect(cal.log).toEqual([]);
+    expect(st.gcal.taskSig).toBe(planSignature(st.plan, progs));
+    tc.log.length = 0;
+    await runCalendar(st, cal, helpers, tc);
+    expect(tc.log).toEqual([]);
+  });
+
+  it("antrenman bitince o günün görevi tiklenir; plan değişince gelecekteki görevler güncellenir", async () => {
+    const st = taskState(), cal = fakeCalendar(), tc = fakeTasks();
+    await runCalendar(st, cal, helpers, tc);
+    st.sessions.push({ id: "s1", date: "2026-11-02", start: NOW + 30 * H, end: NOW + 31 * H });
+    st.plan.days = { MO: { prog: "p2" } };
+    const later = { ...helpers, now: NOW + 32 * H };
+    const r = await runCalendar(st, cal, later, tc);
+    expect(r.ticked).toBe(1);
+    const tasks = tc.lists[st.gcal.taskList!];
+    expect(tasks.find(t => t.due!.startsWith("2026-11-02"))).toMatchObject({ status: "completed", title: "Antrenman: Push" });
+    // perşembeler plandan çıktı, pazartesiler Pull oldu
+    expect(tasks.filter(t => t.status !== "completed").every(t => new Date(t.due!).getUTCDay() === 1 && t.title === "Antrenman: Pull")).toBe(true);
+  });
+
+  it("plan kapatılınca ya da etkinliğe dönülünce tamamlanmamış görevler silinir, tamamlananlar kalır", async () => {
+    const st = taskState({}, [{ id: "s1", date: "2026-11-02", start: NOW + 30 * H, end: NOW + 31 * H }]), cal = fakeCalendar(), tc = fakeTasks();
+    await runCalendar(st, cal, { ...helpers, now: NOW + 32 * H }, tc);
+    st.gcal.mode = "event";
+    await runCalendar(st, cal, { ...helpers, now: NOW + 32 * H }, tc);
+    expect(tc.lists[st.gcal.taskList!].map(t => t.status)).toEqual(["completed"]);
+    expect(st.gcal.taskSig).toBe("");
+    // artık etkinlik olarak yazıldı
+    expect(cal.cals[st.gcal.id].size).toBeGreaterThan(0);
+  });
+
+  it("silinen liste yeniden oluşturulur; iki cihazın açtığı aynı günlük görevden biri silinir", async () => {
+    const st = taskState({ taskList: "yok" }), cal = fakeCalendar(), tc = fakeTasks();
+    await runCalendar(st, cal, helpers, tc);
+    expect(tc.log[0]).toBe("list Spor Defteri");
+    const list = tc.lists[st.gcal.taskList!];
+    list.push({ ...list[0], id: "kopya" });
+    await runCalendar(st, cal, helpers, tc);
+    expect(tc.lists[st.gcal.taskList!].filter(t => t.due === list[0].due)).toHaveLength(1);
+  });
+});
+
+describe("tasksClient", () => {
+  it("Tasks API kapalıysa izin istemez, anlaşılır hata verir; liste yoksa TaskListMissing", async () => {
+    const f403 = vi.fn(async () => new Response('{"error":{"status":"PERMISSION_DENIED","details":[{"reason":"SERVICE_DISABLED"}]}}', { status: 403 }));
+    await expect(tasksClient("t", f403 as any).createList("x")).rejects.toThrow(/Tasks API/);
+    const f404 = vi.fn(async () => new Response("", { status: 404 }));
+    await expect(tasksClient("t", f404 as any).listTasks("l", "2026-11-01")).rejects.toBeInstanceOf(TaskListMissing);
+    const f401 = vi.fn(async () => new Response("", { status: 401 }));
+    await expect(tasksClient("t", f401 as any).deleteTask("l", "x")).rejects.toBeInstanceOf(AuthError);
   });
 });

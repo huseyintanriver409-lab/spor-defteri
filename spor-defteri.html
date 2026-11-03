@@ -378,10 +378,17 @@
       </div>
       <div class="card hidden" id="calCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg></span>Google Takvim</h2>
-        <p class="muted" style="margin-top:-4px">Google Takvim'inde uygulamaya ait bir "Spor Defteri" takvimi oluşturulur ve yalnız ona yazılır. Uygulama diğer takvimlerini ve etkinliklerini göremez.</p>
+        <p class="muted" style="margin-top:-4px">Google Takvim'inde uygulamaya ait bir "Spor Defteri" takvimi oluşturulur ve yalnız ona yazılır. Uygulama diğer takvimlerini ve etkinliklerini göremez. Plan görev olarak konursa "Spor Defteri" görev listesine yazılır.</p>
         <div style="display:grid;gap:14px;margin:4px 0 6px">
           <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="calLog"><span>Biten antrenmanları takvime yaz</span></label>
-          <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="calPlan"><span>Haftalık planı hatırlatmalı etkinlik olarak koy</span></label>
+          <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="calPlan"><span>Haftalık planı takvime koy</span></label>
+          <div id="calModeRow" class="hidden" style="margin:-6px 0 0 30px">
+            <div class="row" style="gap:6px 18px">
+              <label class="check row" style="margin:0;gap:6px"><input type="radio" name="calMode" value="event"><span>Etkinlik (saatli)</span></label>
+              <label class="check row" style="margin:0;gap:6px"><input type="radio" name="calMode" value="task"><span>Görev (tikli)</span></label>
+            </div>
+            <p class="muted small" id="calModeNote" style="margin:4px 0 0"></p>
+          </div>
         </div>
         <p id="calStatus" class="small"></p>
         <div class="row">

@@ -139,6 +139,7 @@ Giriş ekranında "Google bu uygulamayı doğrulamadı" uyarısı çıkar; test 
 - Etkinlik kimlikleri kayıttan türetilir (base32hex): iki cihaz aynı oturumu yazsa da tek etkinlik olur. Önce güncellenir (PUT), yoksa oluşturulur; takvim Google'da silinmişse yeniden oluşturulur.
 - Ayarlar `state.gcal` (log, plan, takvim kimliği, planSig, dates, dated) Drive ile eşitlenir. Drive ve Takvim işleri tek sırada çalışır.
 - Kurulum: Cloud projesinde **Google Calendar API** etkin olmalı.
+- **Görev modu** (2026-11-03): Ayarlarda plan "Görev (tikli)" seçilirse plan, uygulamanın "Spor Defteri" görev listesine her tarih için Google görevi olarak yazılır; o gün antrenman bitince görev kendiliğinden tiklenir. Google görevlere API'den saat koydurmadığı için görevler takvimde saatsiz görünür. Görev kimliğini Google verdiğinden her çalıştırmada liste okunup tarihlere göre eşlenir. Kapsam `tasks` (Google dar kapsam sunmuyor; uygulama yalnız kendi listesine ve "Antrenman: " görevlerine dokunur). Kurulum: Cloud projesinde **Google Tasks API** de etkin olmalı. İstemci `src/sync/tasks.ts`.
 - Testler: `tests/calendar.test.ts`.
 
 **Sıradaki (isteğe bağlı):** Takvimde elle taşınan/eklenen antrenmanları uygulamada göstermek (takvimden okuma).

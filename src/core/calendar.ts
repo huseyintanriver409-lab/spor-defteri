@@ -9,7 +9,11 @@
      yeniden yazılır. Geçmiş tarihlere dokunulmaz.
    - O gün antrenman bitince ilk oturum aynı tarih kimliğiyle "✅" etkinliği olarak yazılır: takvimdeki plan
      etkinliği tamamlandıya döner, yanında ikinci bir etkinlik açılmaz.
-   Etkinlik kimlikleri kayıttan türetilir: aynı oturum iki cihazdan yazılsa da tek etkinlik olur. */
+   Etkinlik kimlikleri kayıttan türetilir: aynı oturum iki cihazdan yazılsa da tek etkinlik olur.
+   Görev modu (gcal.mode = "task"): plan etkinlik yerine uygulamanın "Spor Defteri" görev listesine her tarih için
+   tikli bir Google görevi olur (Google görevlere saat koydurmaz: takvimde saatsiz görünür). O gün antrenman
+   bitince görev tamamlandı olarak işaretlenir. Görev kimliğini Google verir; bu yüzden her çalıştırmada listedeki
+   görevler okunup tarihlerine göre eşlenir (iki cihaz aynı anda yazsa da fazlası silinir). */
 import { pad, parse, ymd } from "./dates.ts";
 
 export const CAL_SUMMARY = "Spor Defteri";
@@ -35,6 +39,19 @@ export interface CalendarClient {
 }
 // Takvim Google'da silinmiş: yeniden oluşturulmalı
 export class CalendarMissing extends Error {}
+
+export interface Task { id: string; title?: string; notes?: string; due?: string; status?: string }
+export interface TasksClient {
+  createList(title: string): Promise<string>;
+  // due tarihi dueMin ("YYYY-MM-DD") ve sonrası olan görevler, tamamlananlar dahil
+  listTasks(listId: string, dueMin: string): Promise<Task[]>;
+  insertTask(listId: string, body: object): Promise<void>;
+  patchTask(listId: string, id: string, body: object): Promise<void>;
+  // görev zaten yoksa hata vermez
+  deleteTask(listId: string, id: string): Promise<void>;
+}
+// Görev listesi Google'da silinmiş: yeniden oluşturulmalı
+export class TaskListMissing extends Error {}
 
 // Google etkinlik kimliği yalnız base32hex (0-9, a-v) karakterlerinden oluşabilir, 5-1024 uzunlukta.
 // Kayıt anahtarı UTF-8 onaltılık kodlanır (0-9a-f ⊂ base32hex); önek de bu alfabeden seçildi.
@@ -118,7 +135,7 @@ export function pendingSessions(sessions: Session[], now: number): Session[] {
 }
 
 export interface CalendarState {
-  gcal: { log: boolean; plan: boolean; id: string; planSig: string; dates?: string[]; dated?: number };
+  gcal: { log: boolean; plan: boolean; id: string; planSig: string; dates?: string[]; dated?: number; mode?: string; taskList?: string; taskSig?: string };
   plan: Plan; programs: Program[]; sessions: Session[];
 }
 export interface CalendarHelpers {
@@ -130,10 +147,12 @@ export interface CalendarHelpers {
 
 // Gerekenleri takvime yazar. state'i yerinde değiştirir (takvim kimliği, planSig, oturumlardaki cal işareti);
 // hata olursa o ana kadar yapılanlar state'te kalır, çağıran her durumda kaydetmelidir.
-export async function runCalendar(state: CalendarState, client: CalendarClient, h: CalendarHelpers) {
-  const g = state.gcal, now = h.now ?? Date.now(), out = { written: 0, planUpdated: false, created: false };
+// tasks: görev modunda (ya da görevlerde eski plan kaldıysa) görev istemcisi; yoksa görevlere dokunulmaz
+export async function runCalendar(state: CalendarState, client: CalendarClient, h: CalendarHelpers, tasks?: TasksClient) {
+  const g = state.gcal, now = h.now ?? Date.now(), out = { written: 0, planUpdated: false, created: false, ticked: 0 };
+  if (tasks && (taskPlan(g) || g.taskSig)) await runTasks(state, tasks, h, out);
   // plan kapatıldıysa ama takvimde hâlâ plan varsa (planSig dolu) silinmesi gerekir
-  if (!g.log && !g.plan && !g.planSig) return out;
+  if (!g.log && !eventPlan(g) && !g.planSig) return out;
   const ensure = async () => {
     if (!g.id) { g.id = await client.createCalendar(CAL_SUMMARY, CAL_DESCRIPTION, h.timeZone); out.created = true; }
     return g.id;
@@ -166,8 +185,8 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
   const today = ymd(new Date(now));
   const done = new Set(g.log ? state.sessions.filter(s => s.end).map(s => s.date) : []);
   g.dates = (g.dates || []).filter(d => d >= today && !done.has(d));
-  const want = g.plan ? plannedDates(state.plan, state.programs, new Date(now)).filter(x => !done.has(x.date)) : [];
-  const target = g.plan ? planSignature(state.plan, state.programs) : "";
+  const want = eventPlan(g) ? plannedDates(state.plan, state.programs, new Date(now)).filter(x => !done.has(x.date)) : [];
+  const target = eventPlan(g) ? planSignature(state.plan, state.programs) : "";
   if (target !== g.planSig) {
     if (!g.id) g.dates = [];
     // plandan çıkan tarihler silinir; kalanlar aşağıda yeni haliyle yeniden yazılır
@@ -186,4 +205,57 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
     g.dates.push(x.date); out.planUpdated = true;
   }
   return out;
+}
+
+// Plan etkinlik olarak mı, görev olarak mı konuyor
+export const taskPlan = (g: CalendarState["gcal"]) => g.plan && g.mode === "task";
+export const eventPlan = (g: CalendarState["gcal"]) => g.plan && g.mode !== "task";
+// O an hangi imzanın güncel olması gerekiyor (plan değişince yeniden yazmak için)
+export const currentSig = (g: CalendarState["gcal"]) => taskPlan(g) ? g.taskSig || "" : g.planSig;
+
+export const TASK_LIST = "Spor Defteri";
+const TASK_PREFIX = "Antrenman: ";
+const dueOf = (date: string) => `${date}T00:00:00.000Z`;
+
+// Görev modu: plandaki tarihler görev olur, antrenmanı yapılan günün görevi tiklenir; plandan çıkan
+// (tamamlanmamış, gelecekteki) görevler silinir. Yalnız uygulamanın listesindeki "Antrenman: " görevlerine dokunulur.
+async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelpers, out: { planUpdated: boolean; ticked: number }) {
+  const g = state.gcal, now = new Date(h.now ?? Date.now()), today = ymd(now);
+  const since = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - BACKFILL_DAYS));
+  let list: Task[] = [];
+  if (g.taskList) {
+    try { list = await tc.listTasks(g.taskList, since); }
+    catch (e) { if (!(e instanceof TaskListMissing)) throw e; g.taskList = ""; }
+  }
+  const want = taskPlan(g) ? plannedDates(state.plan, state.programs, now) : [];
+  if (!g.taskList) {
+    if (!want.length) { g.taskSig = ""; return; }
+    g.taskList = await tc.createList(TASK_LIST);
+  }
+  const done = new Set(state.sessions.filter(s => s.end).map(s => s.date));
+  const byDate = new Map<string, Task>();
+  for (const t of list.filter(t => t.due && String(t.title || "").startsWith(TASK_PREFIX))) {
+    const d = t.due!.slice(0, 10), other = byDate.get(d);
+    // iki cihaz aynı tarihe görev açtıysa biri kalır (tamamlanmış olan tercih edilir)
+    if (other) {
+      const drop = other.status === "completed" || t.status !== "completed" ? t : other;
+      if (drop.status !== "completed") await tc.deleteTask(g.taskList, drop.id);
+      if (drop === other) byDate.set(d, t);
+    } else byDate.set(d, t);
+  }
+  for (const [d, t] of byDate) if (done.has(d) && t.status !== "completed") { await tc.patchTask(g.taskList, t.id, { status: "completed" }); t.status = "completed"; out.ticked++; }
+  const wantBy = new Map(want.map(x => [x.date, x]));
+  for (const [d, t] of byDate) {
+    if (d >= today && t.status !== "completed" && !wantBy.has(d)) { await tc.deleteTask(g.taskList, t.id); byDate.delete(d); out.planUpdated = true; }
+  }
+  let n = 0;
+  for (const x of want) {
+    const t = byDate.get(x.date), body = { title: TASK_PREFIX + x.p.name, notes: h.describeProgram(x.p) };
+    if (t && (t.status === "completed" || (t.title === body.title && (t.notes || "") === body.notes))) continue;
+    if (n++ >= MAX_PLAN_PER_RUN) break;
+    if (t) await tc.patchTask(g.taskList, t.id, body);
+    else await tc.insertTask(g.taskList, { ...body, due: dueOf(x.date), status: done.has(x.date) ? "completed" : "needsAction" });
+    out.planUpdated = true;
+  }
+  g.taskSig = want.length ? planSignature(state.plan, state.programs) : "";
 }
