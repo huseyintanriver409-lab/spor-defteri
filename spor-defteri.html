@@ -323,7 +323,11 @@
 
     <div id="profile-settings">
       <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span>Hedef ve seri</h2>
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sun-moon"/></svg></span>Görünüm</h2>
+        <div class="fchips" id="themeChips"></div>
+      </div>
+      <details class="card fold" id="goalCard">
+        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span>Hedef ve seri</h2><span class="muted small" id="goalSum"></span></summary>
         <div style="display:grid;gap:12px">
           <div><label for="setGoal">Haftalık hedef</label><select id="setGoal"></select></div>
           <div><label for="setStreak">Seri</label><select id="setStreak">
@@ -332,11 +336,7 @@
             <option value="off">Kapalı</option></select></div>
         </div>
         <p class="muted small" id="streakHelp" style="margin:8px 0 0"></p>
-      </div>
-      <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sun-moon"/></svg></span>Görünüm</h2>
-        <div class="fchips" id="themeChips"></div>
-      </div>
+      </details>
       <details class="card fold" id="aiCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2><span class="muted small">Claude, ChatGPT, Gemini… bağla</span></summary>
         <p class="muted" style="margin-top:-4px">Claude, ChatGPT ya da Gemini gibi bir yapay zekâ Spor Defteri'ne bağlanabilir: program kurar, planını ayarlar, antrenmanlarını kaydeder, geçmişine bakar. Bağlanırken kendi Google hesabınla giriş yaparsın; yapay zekâ yalnız senin verini görür. Değişiklikler telefona bir sonraki eşitlemede gelir (Google Drive bağlı olmalı).</p>

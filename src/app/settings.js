@@ -12,6 +12,7 @@ export function renderSettings(){
   $("#streakHelp").textContent = { auto: "Haftalık planın varsa planlı günleri kaçırmadıkça seri gün gün artar; plan yoksa haftalık sayılır.",
     week: "Haftalık hedefini tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.",
     off: "Seri ve rozetler hiçbir yerde görünmez." }[$("#setStreak").value];
+  $("#goalSum").textContent = `Haftada ${state.goal} gün · seri: ${$("#setStreak").selectedOptions[0].textContent.toLocaleLowerCase("tr")}`;
 }
 
 // Antrenman → Programlar'ın altındaki "Antrenman ayarları"
@@ -55,7 +56,7 @@ export function labelIcons(root){
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
 $("#setRest").onchange = () => { state.rest = setTDur(+$("#setRest").value); save(); };
-$("#setGoal").onchange = () => { state.goal = +$("#setGoal").value; save(); };
+$("#setGoal").onchange = () => { state.goal = +$("#setGoal").value; save(); renderSettings(); };
 $("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; save(); refreshAll(); renderSettings(); };
 $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(); };
 $("#prefWake").onchange = () => { state.prefs.wake = $("#prefWake").checked; save(); if (!state.prefs.wake) keepAwake(false); };
