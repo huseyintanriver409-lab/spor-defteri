@@ -1,7 +1,9 @@
 import { DAYS, mondayOf, niceDate, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, esc, fmt, ic, state } from "./store.js";
-import { durText, isCardio, liftOn, musclesOf } from "./exercises.js";
+import { durText, focus, isCardio, isYoga, liftOn, musclesOf } from "./exercises.js";
+import { applyProgram } from "./presets.js";
+import { programById } from "../core/programs.ts";
 import { segState, showTab } from "./ui.js";
 import { WEEKDAYS, ssLabels } from "./programs.js";
 import { elapsedText, liveItems, openFocus, startWorkout } from "./live.js";
@@ -72,10 +74,20 @@ export function renderHome(){
   const score = x => { const ms = [...new Set(x.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a, m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };
   const best = state.programs.map(x => ({ x, s: score(x) })).filter(o => o.s > 0).sort((a, b) => b.s - a.s)[0];
   const tired = Object.entries(R).filter(([, v]) => v.pct < .5).map(([m]) => m);
+  // spor ve yogayı birlikte kullananlara: kaslar yorgunken hafif yoga önerisi (aktif toparlanma)
+  const yogaProg = state.programs.filter(x => x.items.length && x.items.every(i => isYoga(i.ex))).sort((a, b) => (b.lib === "yoga-aksam") - (a.lib === "yoga-aksam"))[0];
+  const activeRest = focus() === "both" && tired.length && !state.live;
   $("#homeRecovery").innerHTML = Object.keys(R).length ? `<div class="section-title">Toparlanma<span class="grow"></span></div><div class="card">
     ${best ? `<div class="row"><div class="grow"><div class="eyebrow">En uygun program</div><div style="font-size:20px;font-weight:800;letter-spacing:-.02em">${esc(best.x.name)}</div><div class="muted small">Kasları %${Math.round(best.s * 100)} hazır</div></div>${state.live ? "" : `<button class="btn sm" data-start="${best.x.id}">${ic("play")}Başla</button>`}</div>` : ""}
-    ${tired.length ? `<div class="hint">${ic("battery-low")} Dinlenmesi gereken: <b>${esc(tired.join(", "))}</b></div>` : `<div class="hint good">${ic("battery-full")} Bütün kasların hazır görünüyor.</div>`}</div>` : "";
+    ${tired.length ? `<div class="hint">${ic("battery-low")} Dinlenmesi gereken: <b>${esc(tired.join(", "))}</b></div>` : `<div class="hint good">${ic("battery-full")} Bütün kasların hazır görünüyor.</div>`}
+    ${activeRest ? `<div style="margin-top:10px"><div class="small"><b>Aktif toparlanma:</b> yorgun kasları zorlamadan hafif yoga ve esneme kan akışını artırır, tutulmayı azaltır.</div>
+      <button class="btn sm" id="homeYoga" style="margin-top:8px">${ic("leaf")}${yogaProg ? esc(yogaProg.name) : "20 dk esneme"}</button></div>` : ""}</div>` : "";
   $("#homeRecovery").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
+  if ($("#homeYoga")) $("#homeYoga").onclick = () => {
+    // yoga programı yoksa "Akşam Esneme ve Rahatlama" programlara eklenir (plana dokunmadan) ve başlar
+    if (!yogaProg) applyProgram(programById("yoga-aksam"), 3, false);
+    startWorkout((yogaProg || state.programs.find(x => x.lib === "yoga-aksam")).id);
+  };
   // son antrenman
   const lastDate = state.entries.reduce((m, e) => e.date > m ? e.date : m, "");
   if (lastDate) {
