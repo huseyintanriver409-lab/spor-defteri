@@ -1,7 +1,7 @@
 // Vücut haritası: önden ve arkadan kaslar; renk kademesi core/musclemap.ts'ten. Kasa dokununca o kasın hareketleri açılır.
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
-import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, fatigueTier, loadTier, rankForMuscle, setsByMuscle } from "../core/musclemap.ts";
+import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
 import { isCardio, musclesOf, pickableEx } from "./exercises.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
@@ -12,19 +12,25 @@ import { ART } from "./bodyart.js";
 
 // Çizimdeki bölge → uygulamadaki kas(lar). Omuz çizimde tek parça: önden ön+yan, arkadan arka+yan omuz; en yoğun olanın rengini alır.
 const REGION = {
-  front: { chest: ["Göğüs"], abs: ["Karın"], obliques: ["Karın"], biceps: ["Biceps"], triceps: ["Triceps"], trapezius: ["Trapez"], deltoids: ["Ön Omuz", "Yan Omuz"],
+  front: { chest: ["Göğüs"], abs: ["Karın"], obliques: ["Oblik"], biceps: ["Biceps"], triceps: ["Triceps"], trapezius: ["Trapez"], deltoids: ["Ön Omuz", "Yan Omuz"],
     adductors: ["İç Bacak"], quadriceps: ["Quadriceps"], calves: ["Baldır"], tibialis: ["Baldır"], forearm: ["Önkol"] },
   back: { trapezius: ["Trapez"], "upper-back": ["Lat"], "lower-back": ["Bel"], deltoids: ["Arka Omuz", "Yan Omuz"], triceps: ["Triceps"], forearm: ["Önkol"],
     gluteal: ["Kalça"], hamstring: ["Hamstring"], adductors: ["İç Bacak"], calves: ["Baldır"] },
 };
-const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-dusuk": 1, "y-koruma": 2, "y-gelisim": 3, "y-asiri": 4, sec: 1 };
-const LABEL = Object.fromEntries([...FATIGUE_TIERS, ...LOAD_TIERS.map(([k, l]) => ["y-" + k, l])].map(([k, l]) => [k, l]));
+// iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
+const ON_TOP = ["adductors"];
+const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-dusuk": 1, "y-koruma": 2, "y-gelisim": 3, "y-asiri": 4,
+  "g-yok": 0, "g-hafif": 1, "g-ideal": 2, "g-yuksek": 3, "g-asiri": 4, sec: 1 };
+// haftalık yük "y-", tek antrenman yükü "g-" önekiyle
+const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
+const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
 // erkek ya da kadın çizimi: profilde cinsiyet belirtildiyse o, değilse Ayarlar'daki seçim
 export const bodySex = () => ["m", "f"].includes(state.profile.sex) ? state.profile.sex : state.prefs.body === "f" ? "f" : "m";
 
 function figure(side, tiers, caption){
   const [vb, parts] = ART[bodySex()][side];
-  const paths = parts.map(([slug, ds]) => {
+  const order = [...parts.filter(([s]) => !ON_TOP.includes(s)), ...parts.filter(([s]) => ON_TOP.includes(s))];
+  const paths = order.map(([slug, ds]) => {
     const ms = REGION[side][slug];
     if (!ms) return ds.map(d => `<path class="bm-base" d="${d}"/>`).join("");
     const t = ms.map(m => tiers[m] || "yok").reduce((x, y) => RANK[y] > RANK[x] ? y : x);
@@ -33,21 +39,50 @@ function figure(side, tiers, caption){
   }).join("");
   return `<figure><svg viewBox="${vb}" role="img" aria-label="${caption} görünüm"><g class="bm-m">${paths}</g></svg><figcaption>${caption}</figcaption></figure>`;
 }
-// tiers: kas → kademe. Haftalık yük kademeleri "y-" önekiyle boyanır (ör. "y-gelisim").
+// tiers: kas → kademe (yorgunluk, "y-" haftalık ya da "g-" tek antrenman yükü)
 export const bodyMap = (tiers, { tap = true, small = false } = {}) =>
   `<div class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}">${figure("front", tiers, "Ön")}${figure("back", tiers, "Arka")}</div>`;
-export const legend = kind => `<div class="bm-legend">${(kind === "load" ? LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]) : FATIGUE_TIERS)
+export const legend = kind => `<div class="bm-legend">${KINDS[kind]
   .map(([k, l, d]) => `<span><i data-t="${k}"></i>${l}<small>${d}</small></span>`).join("")}</div>`;
 
 export const fatigueTiers = (R = recoveryMap()) => Object.fromEntries(MUSCLES.map(m => [m, fatigueTier(R[m])]));
 export const loadTiers = ms => Object.fromEntries(MUSCLES.map(m => [m, "y-" + loadTier(ms[m] || 0)]));
+export const sessionTiers = ms => Object.fromEntries(MUSCLES.map(m => [m, "g-" + sessionTier(ms[m] || 0)]));
 // bu haftanın etkili setleri (Pazartesiden bugüne)
 export function weekSets(){
   const a = ymd(mondayOf(new Date()));
   return setsByMuscle(state.entries.filter(e => e.date >= a && !isCardio(e.ex)).map(e => ({ ex: e.ex, sets: work(e.sets).length })), musclesOf);
 }
+// Dokunulan kas: tam üstüne basılmadıysa en yakındaki kas seçilir (küçük bölgeler kolay ıskalanır)
+function hitMuscle(svg, e){
+  const own = e.target.closest("[data-m]"); if (own) return own;
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(svg.getScreenCTM().inverse()), w = svg.viewBox.baseVal.width, els = [...svg.querySelectorAll("[data-m]")];
+  // dokunulan noktanın çevresinde genişleyen halkalarda ilk denk gelen kas
+  for (let r = w * .015; r <= w * .08; r += w * .015)
+    for (let k = 0; k < 16; k++) {
+      const q = svg.createSVGPoint(); q.x = p.x + r * Math.cos(k * Math.PI / 8); q.y = p.y + r * Math.sin(k * Math.PI / 8);
+      const hit = els.find(el => el.isPointInFill(q)); if (hit) return hit;
+    }
+  return null;
+}
 export function bindBodyMap(root){
-  root.querySelectorAll(".bodymap.tap [data-m]").forEach(p => p.onclick = () => { const ms = p.dataset.m.split("|"); openMuscleSheet(ms[0], ms); });
+  root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {
+    const el = hitMuscle(svg, e); if (!el) return;
+    const ms = el.dataset.m.split("|"); openMuscleSheet(ms[0], ms);
+  });
+}
+
+// Tek antrenmanın kas yükü: harita, renk açıklaması ve fazla yüklenen kaslarda hangi hareketlerden geldiği
+export function sessionLoadHTML(items, { tap = false, small = true } = {}){
+  const list = items.filter(i => i.ex), rows = sessionBreakdown(list, musclesOf);
+  if (!rows.length) return "";
+  const ms = Object.fromEntries(rows.map(r => [r.muscle, r.sets]));
+  const heavy = rows.filter(r => r.sets >= 9);
+  return bodyMap(sessionTiers(ms), { tap, small }) + legend("session")
+    + heavy.map(r => `<div class="hint" style="margin-top:10px">${ic("battery-low")} <span><b>${esc(r.muscle)}: ${fmt(r.sets)} set</b> (${LABEL["g-" + sessionTier(r.sets)].toLocaleLowerCase("tr")})
+        <span class="muted small" style="display:block">${r.from.map(f => `${esc(f.ex)} ${fmt(f.sets)}`).join(" · ")}${r.sets >= 12 ? " · Bir hareketi çıkar ya da başka güne al." : ""}</span></span></div>`).join("")
+    + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets < 9).map(r => `<span class="chip">${esc(r.muscle)} · ${fmt(r.sets)}</span>`).join("")}</div>`;
 }
 
 // Kasın hareketleri: en iyiler, sonra ana, sonra yardımcı çalıştıranlar

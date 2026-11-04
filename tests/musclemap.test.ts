@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BEST, MUSCLES, fatigueTier, loadTier, rankForMuscle, setsByMuscle } from "../src/core/musclemap.ts";
+import { BEST, MUSCLES, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../src/core/musclemap.ts";
 import { LIB } from "../src/core/library.ts";
 
 const allNames = new Set(Object.values(LIB).flat());
@@ -37,5 +37,10 @@ describe("vücut haritası", () => {
       { name: "Bench Press (Barbell)", kind: "best" }, { name: "Cable Crossover", kind: "best" },
       { name: "Dumbbell Fly", kind: "ana" }, { name: "Close-Grip Bench Press", kind: "yardimci" },
     ]);
+  });
+  it("tek antrenman kademeleri ve kas başına dağılım", () => {
+    expect([0, 3, 4, 8, 9, 11, 12].map(sessionTier)).toEqual(["yok", "hafif", "ideal", "ideal", "yuksek", "yuksek", "asiri"]);
+    const b = sessionBreakdown([{ ex: "Bench Press (Barbell)", sets: 4 }, { ex: "Close-Grip Bench Press", sets: 3 }], musclesOf);
+    expect(b[0]).toEqual({ muscle: "Göğüs", sets: 5.5, from: [{ ex: "Bench Press (Barbell)", sets: 4 }, { ex: "Close-Grip Bench Press", sets: 1.5 }] });
   });
 });

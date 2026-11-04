@@ -1,7 +1,7 @@
 // Vücut haritası: kas başına yorgunluk ve yük kademeleri, kasa göre en iyi hareketler.
 import type { MuscleRecovery } from "./recovery.ts";
 
-export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omuz", "Arka Omuz", "Biceps", "Triceps", "Önkol", "Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır", "Karın"];
+export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omuz", "Arka Omuz", "Biceps", "Triceps", "Önkol", "Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır", "Karın", "Oblik"];
 type MusclesOf = (ex: string) => { p: string[]; s: string[] };
 
 // Haftalık etkili set: <4 düşük uyarı, 4–9 korur, 10–20 geliştirir, 20 üstü toparlanmayı aşar
@@ -25,6 +25,23 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
   if (r.pct >= 1) return "hazir";
   if (r.pct >= .5) return "toparlaniyor";
   return r.sets >= HEAVY_DAY ? "asiri" : "yorgun";
+}
+
+// Tek antrenmanda kas başına etkili set: 4–8 verimli; 12 ve üstü toparlanmayı uzatır, fazlası boşa gider
+export type SessionTier = "yok" | "hafif" | "ideal" | "yuksek" | "asiri";
+export const SESSION_TIERS: [SessionTier, string, string][] = [
+  ["hafif", "Hafif", "1–3 set"], ["ideal", "İdeal", "4–8 set"], ["yuksek", "Yüksek", "9–11 set"], ["asiri", "Aşırı", "12+ set"],
+];
+export function sessionTier(sets: number): SessionTier {
+  if (!(sets > 0)) return "yok";
+  return sets < 4 ? "hafif" : sets <= 8 ? "ideal" : sets < HEAVY_DAY ? "yuksek" : "asiri";
+}
+// Kas başına hangi hareketten kaç set geldiği (ana kas tam, yardımcı yarım); en yüklü kas önce
+export function sessionBreakdown(items: { ex: string; sets: number }[], musclesOf: MusclesOf): { muscle: string; sets: number; from: { ex: string; sets: number }[] }[] {
+  const by: Record<string, { ex: string; sets: number }[]> = {};
+  items.forEach(({ ex, sets }) => { const m = musclesOf(ex);
+    m.p.forEach(x => (by[x] ||= []).push({ ex, sets })); m.s.forEach(x => (by[x] ||= []).push({ ex, sets: sets / 2 })); });
+  return Object.entries(by).map(([muscle, from]) => ({ muscle, from, sets: from.reduce((a, f) => a + f.sets, 0) })).sort((a, b) => b.sets - a.sets);
 }
 
 // ana kas tam set, yardımcı kas yarım set
@@ -52,6 +69,7 @@ export const BEST: Record<string, string[]> = {
   "İç Bacak": ["Hip Adduction Makinesi", "Sumo Deadlift", "Lateral Lunge"],
   "Baldır": ["Standing Calf Raise", "Seated Calf Raise", "Leg Press Calf Raise", "Donkey Calf Raise"],
   "Karın": ["Cable Crunch", "Hanging Leg Raise", "Ab Wheel Rollout", "Crunch", "Plank"],
+  "Oblik": ["Cable Woodchopper", "Pallof Press", "Side Plank", "Russian Twist", "Bicycle Crunch"],
 };
 
 // En iyiler (sırasıyla), sonra kası ana çalıştıranlar, en sonda yardımcı çalıştıranlar.

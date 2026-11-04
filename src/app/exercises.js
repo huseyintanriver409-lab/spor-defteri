@@ -51,14 +51,16 @@ export const GROUP_MUSCLES = {
   "Bacak (Ön)":[["Quadriceps"],["Kalça"]], "Arka Bacak & Kalça":[["Hamstring","Kalça"],[]], "Baldır":[["Baldır"],[]],
   "Karın & Core":[["Karın"],[]]
 };
-export const MUSCLE_ORDER = ["Göğüs","Lat","Trapez","Bel","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Önkol","Quadriceps","Hamstring","Kalça","İç Bacak","Baldır","Karın"];
+// karın hareketleri: yan karın (oblik) ağırlıklı olanlar ayrı
+const CORE_RULES = [[/twist|side plank|woodchop|side bend|bicycle|pallof|windshield/, ["Oblik"], ["Karın"]]];
+export const MUSCLE_ORDER = ["Göğüs","Lat","Trapez","Bel","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Önkol","Quadriceps","Hamstring","Kalça","İç Bacak","Baldır","Karın","Oblik"];
 export const _mCache = {};
 export function musclesOf(name){
   if (_mCache[name]) return _mCache[name];
   const g = groupOf(name), n = name.toLowerCase();
   const def = GROUP_MUSCLES[g] ? { p: GROUP_MUSCLES[g][0], s: GROUP_MUSCLES[g][1] } : { p: [], s: [] };
-  // kardiyo, yoga, karın ve özel ("Diğer") hareketlerde kurallar uygulanmaz
-  const r = [CARDIO, YOGA, "Diğer", "Karın & Core"].includes(g) ? null : MUSCLE_RULES.find(([re]) => re.test(n));
+  // kardiyo, yoga ve özel ("Diğer") hareketlerde kurallar uygulanmaz; karında yalnız oblik kuralı
+  const r = g === "Karın & Core" ? CORE_RULES.find(([re]) => re.test(n)) : [CARDIO, YOGA, "Diğer"].includes(g) ? null : MUSCLE_RULES.find(([re]) => re.test(n));
   return _mCache[name] = r ? { p: r[1], s: r[2] } : def;
 }
 export const EQUIPS = ["Barbell","Dumbbell","Kablo","Makine","Smith","Kettlebell","Vücut Ağırlığı","Diğer","Kardiyo"];

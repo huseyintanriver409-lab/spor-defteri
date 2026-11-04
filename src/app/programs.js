@@ -3,8 +3,7 @@ import { volume, work } from "../core/training.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, liftOn, setLabel, yogaOn } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, openSheet, sheetHead, undoable } from "./ui.js";
-import { setsByMuscle } from "../core/musclemap.ts";
-import { bindBodyMap, bodyMap, legend, loadTiers } from "./bodymap.js";
+import { bindBodyMap, sessionLoadHTML } from "./bodymap.js";
 import { refreshDatalist } from "./log.js";
 import { startWorkout } from "./live.js";
 import { shareProgram } from "./importer.js";
@@ -22,10 +21,10 @@ export function pRow(it = {ex:"", sets:3, reps:"10"}){
   const ss = div.querySelector(".pss");
   ss.onclick = () => { ss.classList.toggle("on"); ss.setAttribute("aria-pressed", ss.classList.contains("on")); };
   const pe = div.querySelector(".pe");
-  pe.onclick = () => openPicker("Hareket seç", n => pe.value = n);
+  pe.onclick = () => openPicker("Hareket seç", n => { pe.value = n; renderEditorLoad(); });
   pe.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pe.click(); } };
-  div.querySelector(".danger").onclick = () => div.remove();
-  $("#pRows").appendChild(div);
+  div.querySelector(".danger").onclick = () => { div.remove(); renderEditorLoad(); };
+  $("#pRows").appendChild(div); renderEditorLoad();
   return div;
 }
 // program formu yalnız "Kendi programını oluştur" ya da Düzenle ile açılır
@@ -42,15 +41,18 @@ export function ssLabels(items){
   return out;
 }
 export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
-// Programın haftalık kas yükü: plandaki gün sayısı kadar tekrarlanır (planda yoksa haftada bir)
+// Programın bir antrenmanda kaslara yükü: aynı kası çalıştıran hareketler üst üste binerse uyarır
 function openProgramMap(p){
-  const times = Math.max(1, Object.values(state.plan.days).filter(d => d.prog === p.id).length);
-  const ms = setsByMuscle(p.items.map(i => ({ ex: i.ex, sets: i.sets * times })), musclesOf);
-  const top = Object.entries(ms).sort((a, b) => b[1] - a[1]);
-  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">Haftada ${times} kez yapılınca kaslarına düşen etkili set. Kasa dokun: o kasın hareketleri açılır.</p>
-    ${top.length ? bodyMap(loadTiers(ms)) + legend("load") + `<div class="chips" style="margin-top:12px">${top.map(([m, v]) => `<span class="chip">${esc(m)} · ${fmt(v)}</span>`).join("")}</div>`
-      : `<p class="muted">Bu programdaki hareketler kas haritasına girmiyor (yoga, kardiyo ya da kendi hareketlerin).</p>`}`);
+  const html = sessionLoadHTML(p.items, { tap: true, small: false });
+  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">Bu antrenmanı bir kez yapınca kaslarına düşen etkili set (ana kas 1, yardımcı ½). Kasa dokun: hareketleri açılır.</p>
+    ${html || `<p class="muted">Bu programdaki hareketler kas haritasına girmiyor (yoga, kardiyo ya da kendi hareketlerin).</p>`}`);
   bindBodyMap(body);
+}
+// Program yazarken: o anki hareketlerin kas yükü
+export function renderEditorLoad(){
+  const items = [...$("#pRows").children].map(d => ({ ex: d.querySelector(".pe").value.trim(), sets: Math.max(1, parseInt(d.querySelector(".ps").value) || 1) }));
+  const html = liftOn() ? sessionLoadHTML(items) : "";
+  $("#pLoad").innerHTML = html ? `<div class="pk-head">Bu antrenman kaslarını ne kadar yorar</div>${html}` : "";
 }
 export function renderProg(){
   $("#yogaCard").classList.toggle("hidden", !yogaOn()); $("#liftCard").classList.toggle("hidden", !liftOn());
@@ -196,6 +198,7 @@ export function fold(line){
 export function setup(){
 $("#pAddRow").onclick = () => pRow().querySelector(".pe").click();
 $("#pCancel").onclick = resetProgEditor;
+$("#pRows").addEventListener("input", e => { if (e.target.classList.contains("ps")) renderEditorLoad(); });
 $("#pNew").onclick = () => { resetProgEditor(); showEditor(true); $("#pEditor").scrollIntoView({ behavior: "smooth", block: "start" }); $("#pName").focus({ preventScroll: true }); };
 $("#pSave").onclick = () => {
   const name = $("#pName").value.trim();

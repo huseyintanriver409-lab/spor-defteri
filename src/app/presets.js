@@ -5,9 +5,8 @@ import { buzz, closeSheet, openSheet, sheetHead, refreshAll } from "./ui.js";
 import { renderProg, WEEKDAYS } from "./programs.js";
 import { syncCanRun, connectDrive } from "./cloud.js";
 import { openBaseline } from "./baseline.js";
-import { liftOn, musclesOf, yogaOn } from "./exercises.js";
-import { setsByMuscle } from "../core/musclemap.ts";
-import { bodyMap, legend, loadTiers } from "./bodymap.js";
+import { liftOn, yogaOn } from "./exercises.js";
+import { sessionLoadHTML } from "./bodymap.js";
 
 const LEVEL = { yeni: "Yeni başlayan", orta: "Orta seviye", ileri: "İleri seviye" };
 const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç", esneklik: "Esneklik, yoga" };
@@ -58,9 +57,16 @@ export function openProgramDetail(p, days, onClose){
     onClose);
   const renderPlan = () => {
     $("#pdPlan").textContent = planSummary();
-    const ms = setsByMuscle(weeklyPlan(p, d).flatMap(([, i]) => p.sessions[i].items.map(([ex, sets]) => ({ ex, sets }))), musclesOf);
-    $("#pdMap").innerHTML = Object.keys(ms).length ? `<div class="pk-head">Kaslarını haftada ne kadar çalıştırır</div>${bodyMap(loadTiers(ms), { tap: false, small: true })}${legend("load")}` : "";
   };
+  // her antrenman gününün kas yükü; birden çok antrenman varsa aralarında geçilir
+  let si = 0;
+  const renderMap = () => {
+    const html = sessionLoadHTML(p.sessions[si].items.map(([ex, sets]) => ({ ex, sets })));
+    $("#pdMap").innerHTML = html ? `<div class="pk-head">Bir antrenmanda kaslarını ne kadar yorar</div>
+      ${p.sessions.length > 1 ? `<div class="fchips" style="margin:6px 0 4px">${p.sessions.map((x, i) => `<button class="fchip${i === si ? " on" : ""}" data-si="${i}">Antrenman ${esc(x.name)}</button>`).join("")}</div>` : ""}${html}` : "";
+    $("#pdMap").querySelectorAll("[data-si]").forEach(b => b.onclick = () => { si = +b.dataset.si; renderMap(); buzz(5); });
+  };
+  renderMap();
   $("#pdDays").querySelectorAll("button").forEach(b => b.onclick = () => {
     d = +b.dataset.v; $("#pdDays").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); renderPlan(); buzz(5);
   });
