@@ -10,9 +10,12 @@ export function allEx(){
 export function groupOf(name){ const e = allEx().find(x => x.name === name); return e ? e.group : "Diğer"; }
 export const isCardio = name => groupOf(name) === CARDIO;
 export const isYoga = name => groupOf(name) === YOGA;
-// Ayarlar → Antrenman ayarları: kapalıyken yoga pozları seçim listelerinde ve hazır programlarda görünmez
-export const yogaOn = () => state.prefs.yoga !== false;
-export const pickableEx = () => yogaOn() ? allEx() : allEx().filter(e => e.group !== YOGA);
+// Ayarlar → Antrenman ayarları → "ne için kullanıyorsun": both | lift (yoga gizli) | yoga (ağırlık gizli; kardiyo ve özel hareketler kalır)
+export const focus = () => ["lift", "yoga"].includes(state.prefs.focus) ? state.prefs.focus : "both";
+export const yogaOn = () => focus() !== "lift";
+export const liftOn = () => focus() !== "yoga";
+export const groupShown = g => g === YOGA ? yogaOn() : liftOn() || g === CARDIO || g === "Diğer";
+export const pickableEx = () => allEx().filter(e => groupShown(e.group));
 
 // [desen, ana kaslar, yardımcı kaslar] — ilk eşleşen kural geçerli
 export const MUSCLE_RULES = [

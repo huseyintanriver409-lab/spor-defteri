@@ -1,5 +1,5 @@
 import { $, esc, ic, save, state, toast } from "./store.js";
-import { allEx, equipOf, groupOf, musclesOf, pickableEx } from "./exercises.js";
+import { allEx, equipOf, groupOf, liftOn, musclesOf, pickableEx } from "./exercises.js";
 import { refreshDatalist, renderDay, updateHint } from "./log.js";
 import { renderPlan, renderProg } from "./programs.js";
 import { renderLiveBar } from "./live.js";
@@ -123,9 +123,13 @@ function renderStreakCard(){
 }
 export function refreshAll(){ renderTab(curTab); renderLiveBar(); renderBackupBanner(); }
 export const segState = { stats: "week", train: "prog", profile: "settings" };
+// "Sadece yoga"da ağırlığa özel bölümler gizlenir: rekorlar, kas toparlanması, güç skoru, hesap araçları
+const LIFT_ONLY = { stats: ["rec", "rest", "power"], profile: ["tools"] };
 export function renderSeg(name){
+  const hide = liftOn() ? [] : LIFT_ONLY[name] || [];
+  if (hide.includes(segState[name])) segState[name] = document.querySelector(`.seg[data-seg="${name}"] button`).dataset.v;
   const v = segState[name], seg = document.querySelector(`.seg[data-seg="${name}"]`);
-  seg.querySelectorAll("button").forEach(b => { const on = b.dataset.v === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); $(`#${name}-${b.dataset.v}`).classList.toggle("hidden", !on); });
+  seg.querySelectorAll("button").forEach(b => { b.classList.toggle("hidden", hide.includes(b.dataset.v)); const on = b.dataset.v === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); $(`#${name}-${b.dataset.v}`).classList.toggle("hidden", !on); });
   ({ week: renderWeek, hist: renderHistSelect, rec: renderRecords, rest: renderRecovery, power: renderPower, body: renderBody,
      prog: renderProg, log: () => { renderDay(); updateHint(); }, plan: renderPlan,
      settings: renderSettings, lib: renderLib, tools: renderTools, backup: renderBackup })[v]();

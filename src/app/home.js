@@ -1,7 +1,7 @@
 import { DAYS, mondayOf, niceDate, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, esc, fmt, ic, state } from "./store.js";
-import { durText, isCardio, musclesOf } from "./exercises.js";
+import { durText, isCardio, liftOn, musclesOf } from "./exercises.js";
 import { segState, showTab } from "./ui.js";
 import { WEEKDAYS, ssLabels } from "./programs.js";
 import { elapsedText, liveItems, openFocus, startWorkout } from "./live.js";
@@ -66,7 +66,7 @@ export function renderHome(){
   $("#homeWeek").innerHTML = `<div class="stat"><b>${w.days}<span style="font-size:15px;color:var(--muted);text-transform:none;letter-spacing:0">/${state.goal}</span></b><span>gün</span></div>
     ${on ? `<div class="stat"><b>${st.count}</b><span>${st.unit} seri</span></div>` : ""}<div class="stat"><b>${w.sets}</b><span>set</span></div>`;
   $("#homeGoal").innerHTML = `<div class="f-prog" style="margin:0" aria-label="Haftalık hedef: ${w.days}/${state.goal} gün">${Array.from({ length: state.goal }, (_, i) => `<i class="${i < w.days ? "on" : ""}"></i>`).join("")}</div>
-    <div class="muted small" style="margin-top:8px">${w.days >= state.goal ? "Haftalık hedefini tamamladın." : `Hedefe ${state.goal - w.days} gün kaldı.`} Bu hafta ${fmt(w.vol)} kg hacim.</div>`;
+    <div class="muted small" style="margin-top:8px">${w.days >= state.goal ? "Haftalık hedefini tamamladın." : `Hedefe ${state.goal - w.days} gün kaldı.`}${liftOn() && w.vol ? ` Bu hafta ${fmt(w.vol)} kg hacim.` : ""}</div>`;
   // toparlanma
   const R = recoveryMap();
   const score = x => { const ms = [...new Set(x.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a, m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };

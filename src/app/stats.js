@@ -2,7 +2,7 @@ import { MONTHS, mondayOf, niceDate, parse, shortDate, ymd } from "../core/dates
 import { e1rm, liftScore, volume, work } from "../core/training.ts";
 import { recoveryMap as recoveryMapCore } from "../core/recovery.ts";
 import { $, esc, fmt, ic, save, state } from "./store.js";
-import { MUSCLE_ORDER, durText, fmtSec, groupOf, isCardio, isTimed, musclesOf } from "./exercises.js";
+import { MUSCLE_ORDER, durText, fmtSec, groupOf, isCardio, isTimed, liftOn, musclesOf } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
 
@@ -68,6 +68,7 @@ export function muscleAdvice(ms){
 
 /* ---------- History ---------- */
 export function renderHistSelect(){
+  $("#baseCard").classList.toggle("hidden", !liftOn());
   const sel = $("#histEx"), cur = sel.value;
   const names = [...new Set(state.entries.map(e => e.ex))].sort((a,b) => a.localeCompare(b,"tr"));
   sel.innerHTML = names.length ? names.map(n => `<option>${esc(n)}</option>`).join("") : `<option value="">Henüz kayıt yok</option>`;

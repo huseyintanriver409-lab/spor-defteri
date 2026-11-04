@@ -5,7 +5,7 @@ import { buzz, closeSheet, openSheet, sheetHead, refreshAll } from "./ui.js";
 import { renderProg, WEEKDAYS } from "./programs.js";
 import { syncCanRun, connectDrive } from "./cloud.js";
 import { openBaseline } from "./baseline.js";
-import { yogaOn } from "./exercises.js";
+import { liftOn, yogaOn } from "./exercises.js";
 
 const LEVEL = { yeni: "Yeni başlayan", orta: "Orta seviye", ileri: "İleri seviye" };
 const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç", esneklik: "Esneklik, yoga" };
@@ -67,17 +67,17 @@ export function openLibrary(yoga){
   const isYoga = p => p.goals.includes("esneklik");
   const item = p => `<button class="libitem" data-pid="${p.id}"><b>${esc(p.name)}</b><span class="muted small" style="display:block;margin-top:2px">${esc(p.short)}</span>${chips(p)}</button>`;
   const part = (title, list) => `<div class="pk-head" style="margin:14px 0 8px">${title}</div>${list.map(item).join("")}`;
-  const lift = PROGRAMS.filter(p => !isYoga(p)), yogas = yogaOn() ? PROGRAMS.filter(isYoga) : [];
+  const lift = liftOn() ? PROGRAMS.filter(p => !isYoga(p)) : [], yogas = yogaOn() ? PROGRAMS.filter(isYoga) : [];
   openSheet(sheetHead(yoga ? "Yoga programları" : "Hazır programlar"),
     `<p class="muted" style="margin:0 0 4px">Bir programa dokun: kime uygun olduğunu, haftalık düzenini ve nasıl ilerleneceğini gör.</p>
-     ${yoga ? yogas.map(item).join("") : yogas.length ? part("Ağırlık ve kondisyon", lift) + part("Yoga ve esneme", yogas) : lift.map(item).join("")}
+     ${yoga || !lift.length ? yogas.map(item).join("") : yogas.length ? part("Ağırlık ve kondisyon", lift) + part("Yoga ve esneme", yogas) : lift.map(item).join("")}
      <button class="btn" id="libRec" style="width:100%;justify-content:center;margin-top:4px">${ic("lightbulb")}Hangisi bana uygun?</button>`);
   $("#bsBody").querySelectorAll("[data-pid]").forEach(b => b.onclick = () => openProgramDetail(programById(b.dataset.pid), 3));
-  $("#libRec").onclick = () => openRecommender(yoga ? { goal: "esneklik" } : {});
+  $("#libRec").onclick = () => openRecommender(yoga || !lift.length ? { goal: "esneklik" } : {});
 }
 
 // Dört soru, cevap değiştikçe öneri güncellenir. onboarding: ilk açılışta, üstte "Atla" ile.
-export function openRecommender({ onboarding = false, goal = "genel" } = {}){
+export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" : "esneklik" } = {}){
   const a = { level: "yeni", goal, equip: "salon", days: 3 };
   const markDone = onboarding ? () => { state.onboarded = true; save(); } : undefined;
   const q = (key, title, opts) => `<div class="pk-head">${title}</div><div class="optgrid" data-q="${key}">${opts.map(([v, l]) => `<button class="fchip${String(a[key]) === String(v) ? " on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;
@@ -89,8 +89,8 @@ export function openRecommender({ onboarding = false, goal = "genel" } = {}){
     : sheetHead("Bana program öner");
   openSheet(head,
     q("level", "Deneyimin", [["yeni", "Hiç / çok az"], ["orta", "6 ay – 2 yıl"], ["ileri", "2 yıldan fazla"]])
-    + q("goal", "Önceliğin", [["genel", "Sağlık, kondisyon"], ["kas", "Kas kazanmak"], ["guc", "Güçlenmek"], ...(yogaOn() ? [["esneklik", "Esneklik, yoga"]] : [])])
-    + q("equip", "Nerede çalışacaksın", [["salon", "Spor salonu"], ["ev", "Evde, dumbbell var"], ["yok", "Ekipmansız"]])
+    + q("goal", "Önceliğin", [...(liftOn() ? [["genel", "Sağlık, kondisyon"], ["kas", "Kas kazanmak"], ["guc", "Güçlenmek"]] : []), ...(yogaOn() ? [["esneklik", "Esneklik, yoga"]] : [])])
+    + (liftOn() ? q("equip", "Nerede çalışacaksın", [["salon", "Spor salonu"], ["ev", "Evde, dumbbell var"], ["yok", "Ekipmansız"]]) : "")
     + q("days", "Haftada kaç gün", [2, 3, 4, 5, 6].map(n => [n, n + " gün"]))
     + `<div id="recOut" style="margin-top:16px"></div>`
     + (onboarding ? `<button class="ghost" id="obBase" style="width:100%;justify-content:center;margin-top:8px">${ic("trending-up")}Başka uygulamadan geliyorum: mevcut kilolarımı gir</button>` : "")

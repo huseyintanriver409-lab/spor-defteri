@@ -42,7 +42,7 @@
     <div id="train-prog">
       <button class="btn primary xl" id="startEmpty" style="margin-bottom:12px"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Boş antrenman başlat</button>
       <div id="pList"></div>
-      <div class="card">
+      <div class="card" id="liftCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Hazır programlar</h2>
         <p class="muted" style="margin-top:-4px">5×5, 3×5, GZCLP, tam vücut, ev ve ekipmansız programlar: kime uygun oldukları ve nasıl ilerleneceğiyle. Ya da yapay zekâya anlat, sana özel program bağlantısı versin.</p>
         <div class="row">
@@ -233,7 +233,7 @@
         </div>
         <div id="hForecast" class="hint hidden"></div>
       </div>
-      <div class="card">
+      <div class="card" id="baseCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg></span>Başlangıç noktan</h2>
         <p class="muted small" style="margin-top:-6px">Uygulamadan önce hangi kiloları kaldırıyordun? Girersen ilerlemen oradan ölçülür.</p>
         <button class="btn" id="baseOpen"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg>Mevcut verilerim</button>
@@ -337,13 +337,17 @@
         <p class="muted small" id="streakHelp" style="margin:8px 0 0"></p>
       </details>
       <details class="card fold">
-        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman ayarları</h2><span class="muted small">Dinlenme süresi, ekran, titreşim, yoga</span></summary>
+        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman ayarları</h2><span class="muted small">Spor ya da yoga, dinlenme süresi, ekran, titreşim</span></summary>
+        <div style="margin-bottom:12px"><label for="prefFocus">Uygulamayı ne için kullanıyorsun?</label><select id="prefFocus">
+            <option value="both">Spor ve yoga</option>
+            <option value="lift">Sadece spor (ağırlık, kardiyo)</option>
+            <option value="yoga">Sadece yoga ve esneme</option></select>
+          <p class="muted small" id="focusHelp" style="margin:6px 0 0"></p></div>
         <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
         <div style="display:grid;gap:14px;margin-top:16px">
           <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
           <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
           <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
-          <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="prefYoga"><span>Yoga ve esneme bölümlerini göster<span class="muted small" style="display:block">Kapalıyken yoga pozları ve programları listelerde görünmez; eski kayıtların silinmez.</span></span></label>
         </div>
       </details>
       <details class="card fold" id="aiCard">
