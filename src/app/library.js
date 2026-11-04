@@ -1,7 +1,7 @@
 import { shortDate, ymd } from "../core/dates.ts";
-import { $, LIB, ask, esc, fmt, ic, save, state, toast } from "./store.js";
+import { $, LIB, YOGA, ask, esc, fmt, ic, save, state, toast } from "./store.js";
 import { EQUIPS, HOME, allEx, equipOf, musclesOf } from "./exercises.js";
-import { emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
+import { emptyHTML, openPicker, renderSeg, segState, showTab, undoable } from "./ui.js";
 import { matchExercise } from "../core/importer.ts";
 import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
@@ -22,16 +22,20 @@ export function renderLib(){
   // özel hareket kütüphanedekiyle aynı olabilir (ör. "Conventional Deadlift" → "Deadlift"): birleştirme önerilir
   const libNames = Object.values(LIB).flat(), twin = n => matchExercise(n, libNames);
   const open = q || eqf || home;
-  $("#libList").innerHTML = groups().map(g => {
+  // yoga pozları ağırlık hareketlerinden ayrı, kendi başlığıyla en altta
+  const section = g => {
     const items = ex.filter(e => e.group===g); if (!items.length) return "";
-    return `<details ${open ? "open" : ""}><summary>${esc(g)} <span>(${items.length})</span></summary>` + items.map(e =>
+    return `<details ${open ? "open" : ""}${g === YOGA ? ' id="libYoga"' : ""}><summary>${esc(g)} <span>(${items.length})</span></summary>` + items.map(e =>
       `<div class="exitem"><div class="grow"><div>${esc(e.name)}${counts[e.name] ? ` <span class="muted small">· ${counts[e.name]} kayıt</span>` : ""}</div>
         <div class="ms"><span class="tag">${e.eq}</span>${e.m.p.length ? `<b>${e.m.p.join(", ")}</b>` : ""}${e.m.s.length ? ` · yardımcı: ${e.m.s.join(", ")}` : ""}</div>
         ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">“${esc(twin(e.name))}” ile birleştir</button>` : ""}</div>
        ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="Başka bir hareketle birleştir">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="Listeden kaldır">${ic("trash-2")}</button>` : ""}
-       <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + " exercise form")}">${ic("circle-play")}</a>
+       <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(e.name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`).join("") + `</details>`;
-  }).join("") || emptyHTML("search", "Sonuç yok", "Başka bir kelimeyle ara ya da filtreleri kaldır.");
+  };
+  const main = groups().filter(g => g !== YOGA).map(section).join(""), yoga = section(YOGA);
+  $("#libList").innerHTML = (main && yoga ? `<div class="pk-head" style="margin:0 0 6px">Ağırlık ve kondisyon</div>` : "") + main
+    + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">Yoga ve esneme</div>${yoga}` : "") || emptyHTML("search", "Sonuç yok", "Başka bir kelimeyle ara ya da filtreleri kaldır.");
   $("#libList").querySelectorAll("[data-use]").forEach(b => b.onclick = () => {
     const n = b.dataset.use;
     if (state.live) { const items = liveItems(); let i = items.findIndex(x => x.ex === n); if (i < 0) { items.push({ ex: n, sets: 3, reps: "" }); i = items.length - 1; } state.live.idx = i; save(); openFocus(); return; }
@@ -94,6 +98,12 @@ $("#libEquip").innerHTML = `<option value="">Tüm ekipmanlar</option>` + EQUIPS.
 $("#libSearch").addEventListener("input", renderLib);
 $("#libEquip").onchange = renderLib;
 $("#libHome").onchange = renderLib;
+// Programlar'daki yoga kartından: Hareketler'de yoga bölümü açık gelir
+$("#yogaMoves").onclick = () => {
+  $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false;
+  segState.train = "lib"; renderSeg("train");
+  const y = $("#libYoga"); y.open = true; y.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 $("#cAdd").onclick = () => {
   const name = $("#cName").value.trim(); if (!name) return toast("Hareketin adını yaz");
   if (allEx().some(e => e.name.toLocaleLowerCase("tr")===name.toLocaleLowerCase("tr"))) return toast("Bu hareket zaten var");
