@@ -2,7 +2,7 @@ import { MONTHS, mondayOf, niceDate, parse, shortDate, ymd } from "../core/dates
 import { e1rm, liftScore, volume, work } from "../core/training.ts";
 import { recoveryMap as recoveryMapCore } from "../core/recovery.ts";
 import { $, esc, fmt, ic, save, state } from "./store.js";
-import { MUSCLE_ORDER, durText, fmtSec, groupOf, groupShown, isCardio, isTimed, liftOn, musclesOf } from "./exercises.js";
+import { MUSCLE_ORDER, durText, fmtSec, groupOf, groupShown, isCardio, isTimed, isYoga, liftOn, musclesOf, yogaOn } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
 
@@ -19,6 +19,10 @@ export function renderWeek(){
   $("#sVol").textContent = fmt(lifts.reduce((n,e) => n+volume(e.sets), 0));
   const ms_ = state.sessions.filter(s => s.date >= a && s.date <= b).reduce((t,s) => t + s.end - s.start, 0);
   $("#sTime").textContent = ms_ ? durText(ms_) : "–";
+  // sadece yogada set ve kg hacim kutuları yerine yoga özeti
+  document.querySelectorAll("#weekStats .lift-only").forEach(x => x.classList.toggle("hidden", !liftOn()));
+  $("#weekStats").classList.toggle("two", !liftOn());
+  renderYogaWeek(list, a);
 
   // kas analizi
   const ms = {};
@@ -38,7 +42,7 @@ export function renderWeek(){
   });
   const rows = Object.entries(byEx).sort((x,y) => groupOf(x[0]).localeCompare(groupOf(y[0]),"tr") || x[0].localeCompare(y[0],"tr"));
   $("#wTable").innerHTML = rows.length
-    ? `<tr><th>Hareket</th><th>Set</th><th>Tekrar</th><th>Maks kg</th><th>Hacim</th></tr>` + rows.map(([n,o]) => o.cardio
+    ? (rows.every(([, o]) => o.cardio || o.timed) ? `<tr><th>Hareket</th><th>Set</th><th colspan="3">Süre</th></tr>` : `<tr><th>Hareket</th><th>Set</th><th>Tekrar</th><th>Maks kg</th><th>Hacim</th></tr>`) + rows.map(([n,o]) => o.cardio
         ? `<tr><td>${esc(n)}</td><td>${o.sets}</td><td colspan="3">${fmt(o.mins)} dk${o.km ? " · "+fmt(o.km)+" km" : ""}</td></tr>`
         : o.timed ? `<tr><td>${esc(n)}</td><td>${o.sets}</td><td colspan="3">${fmtSec(o.secs)} toplam${o.max ? ` · +${fmt(o.max)} kg` : ""}</td></tr>`
         : `<tr><td>${esc(n)}</td><td>${o.sets}</td><td>${o.reps}</td><td>${fmt(o.max)}</td><td>${fmt(o.vol)}</td></tr>`).join("")
@@ -51,6 +55,22 @@ export function renderWeek(){
     if (es.length) html += `<h3 style="font-size:14px;margin:14px 0 2px">${niceDate(k)}</h3>` + es.map(e => entryHTML(e,false)).join("");
   }
   $("#wDays").innerHTML = html || `<div class="empty">Bu hafta antrenman yok</div>`;
+}
+// Yoga özeti: toplam tutuş süresi, farklı poz, en uzun tutuş ve geçen haftayla fark
+const yogaSecs = es => es.reduce((t, e) => t + work(e.sets).reduce((u, s) => u + (+s.sec || 0), 0), 0);
+function renderYogaWeek(list, a){
+  const ys = list.filter(e => isYoga(e.ex)), prevA = new Date(weekStart); prevA.setDate(prevA.getDate() - 7);
+  const prev = state.entries.filter(e => e.date >= ymd(prevA) && e.date < a && isYoga(e.ex));
+  $("#yogaWeek").classList.toggle("hidden", !yogaOn() || (liftOn() && !ys.length && !prev.length));
+  if ($("#yogaWeek").classList.contains("hidden")) return;
+  const secs = yogaSecs(ys), mins = n => Math.round(n / 60);
+  let long = null; ys.forEach(e => work(e.sets).forEach(s => { if (!long || (+s.sec || 0) > long.sec) long = { ex: e.ex, sec: +s.sec || 0 }; }));
+  $("#yMin").textContent = mins(secs);
+  $("#yPoses").textContent = new Set(ys.map(e => e.ex)).size;
+  $("#yLong").textContent = long && long.sec ? fmtSec(long.sec) : "–";
+  const diff = mins(secs) - mins(yogaSecs(prev));
+  $("#yNote").innerHTML = !ys.length ? "Bu hafta yoga kaydı yok."
+    : [long && long.sec ? `En uzun tutuş: <b>${esc(long.ex)}</b>` : "", prev.length ? `Geçen haftaya göre ${diff >= 0 ? "+" : ""}${diff} dk` : ""].filter(Boolean).join(" · ");
 }
 /* ---------- Günlük yük (Takvim ve seri bunu kullanır) ---------- */
 export function dayLoad(){
@@ -80,17 +100,20 @@ export function renderHistSelect(){
 export function sessionValue(e, metric, c){
   if (c) return e.sets.reduce((a,s)=>a+(+s.w||0),0);
   const ws = work(e.sets);
-  if (isTimed(e.ex)) return Math.max(0, ...ws.map(s => +s.sec||0));
+  if (isTimed(e.ex)) return metric === "sum" ? ws.reduce((t, s) => t + (+s.sec||0), 0) : Math.max(0, ...ws.map(s => +s.sec||0));
   if (metric === "e") return Math.max(0, ...ws.filter(s => s.r<=12).map(s => e1rm(+s.w||0, +s.r||0)));
   if (metric === "v") return volume(e.sets);
   return Math.max(0, ...ws.map(s => +s.w||0));
 }
 export function renderHist(){
   const ex = $("#histEx").value, c = isCardio(ex), tm = isTimed(ex);
-  const metric = document.querySelector('input[name=hMetric]:checked').value;
+  // süreli hareketlerde (yoga pozu, plank…) kg yerine süre ölçüleri
+  document.querySelectorAll(".lift-metric").forEach(x => x.classList.toggle("hidden", tm || c));
+  document.querySelectorAll(".time-metric").forEach(x => x.classList.toggle("hidden", !tm));
+  const metric = tm ? document.querySelector('input[name=hMetricT]:checked').value : document.querySelector('input[name=hMetric]:checked').value;
   const list = state.entries.filter(e => e.ex===ex).sort((a,b) => a.date.localeCompare(b.date));
   const pts = list.map(e => ({ date:e.date, v: sessionValue(e, metric, c) })).filter(p => p.v > 0);
-  $("#hChartTitle").textContent = c ? "Gelişim (seans süresi, dk)" : tm ? "Gelişim (en uzun set, sn)" : ({w:"Gelişim (seanstaki en ağır set, kg)", e:"Gelişim (tahmini 1RM, kg)", v:"Gelişim (seans hacmi, kg)"})[metric];
+  $("#hChartTitle").textContent = c ? "Gelişim (seans süresi, dk)" : tm ? (metric === "sum" ? "Gelişim (seanstaki toplam süre, sn)" : "Gelişim (en uzun tutuş, sn)") : ({w:"Gelişim (seanstaki en ağır set, kg)", e:"Gelişim (tahmini 1RM, kg)", v:"Gelişim (seans hacmi, kg)"})[metric];
   $("#hMax").nextElementSibling.textContent = tm ? "rekor süre" : "rekor kg";
 
   // gelişim tahmini: son 8 seansın tahmini 1RM eğilimi
@@ -111,7 +134,8 @@ export function renderHist(){
   $("#histChart").innerHTML = chart(pts, proj);
   const allSets = list.flatMap(e => work(e.sets));
   $("#hMax").textContent = allSets.length && tm ? fmtSec(Math.max(...allSets.map(s => +s.sec||0))) : allSets.length && !c ? fmt(Math.max(...allSets.map(s => +s.w||0))) : "–";
-  $("#h1rm").textContent = allSets.length && !c && !tm ? fmt(Math.max(0, ...allSets.filter(s => s.r<=12).map(s => e1rm(+s.w||0, +s.r||0)))) : "–";
+  $("#h1rm").nextElementSibling.textContent = tm ? "toplam süre" : "tahmini 1RM";
+  $("#h1rm").textContent = allSets.length && tm ? fmtSec(allSets.reduce((t, s) => t + (+s.sec||0), 0)) : allSets.length && !c ? fmt(Math.max(0, ...allSets.filter(s => s.r<=12).map(s => e1rm(+s.w||0, +s.r||0)))) : "–";
   $("#hCount").textContent = list.length;
   // rekor setleri işaretle (ısınma setleri hariç)
   let best = 0; const prMap = {};
@@ -246,7 +270,7 @@ $("#wPrev").onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderWe
 $("#wNext").onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderWeek(); };
 $("#wToday").onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); };
 $("#histEx").onchange = renderHist;
-document.querySelectorAll('input[name=hMetric]').forEach(r => r.onchange = renderHist);
+document.querySelectorAll('input[name=hMetric], input[name=hMetricT]').forEach(r => r.onchange = renderHist);
 $("#pfSex").onchange = () => { state.profile.sex = $("#pfSex").value; save(); renderPower(); };
 $("#pfBw").oninput = () => { state.profile.bw = $("#pfBw").value; save(); renderPower(true); };
 }

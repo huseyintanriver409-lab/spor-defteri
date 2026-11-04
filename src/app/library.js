@@ -71,16 +71,26 @@ ${n ? `${n} kayıt, ` : ""}programlar, başlangıç verisi ve notlar “${to}”
 }
 
 /* ---------- Body ---------- */
-export const BODY = [["weight","Kilo","kg"],["fat","Yağ oranı","%"],["waist","Bel","cm"],["chest","Göğüs","cm"],["arm","Kol","cm"],["thigh","Bacak","cm"],["hip","Kalça","cm"]];
+export const BODY = [["weight","Kilo","kg"],["fat","Yağ oranı","%"],["waist","Bel","cm"],["chest","Göğüs","cm"],["arm","Kol","cm"],["thigh","Bacak","cm"],["hip","Kalça","cm"],["reach","Otur-uzan","cm"],["balance","Tek ayak denge","sn"]];
+// esneklik ve denge (yoga açıkken görünür); otur-uzan eksi olabilir
+const FLEX = ["reach", "balance"];
+const bodyKeys = () => BODY.filter(([k]) => yogaOn() || !FLEX.includes(k));
+const has = v => v != null && v !== "";
 export function renderBody(){
   if (!$("#bDate").value) $("#bDate").value = ymd(new Date());
+  $("#flexFields").classList.toggle("hidden", !yogaOn());
+  const cur = $("#bMetric").value;
+  $("#bMetric").innerHTML = bodyKeys().map(([k,l,u]) => `<option value="${k}">${l} (${u})</option>`).join("");
+  $("#bMetric").value = bodyKeys().some(([k]) => k === cur) ? cur : "weight";
   const k = $("#bMetric").value, [ , label, unit] = BODY.find(b => b[0]===k);
   const list = state.body.slice().sort((a,b) => a.date.localeCompare(b.date));
-  const pts = list.filter(b => b[k]).map(b => ({ date: b.date, v: b[k] }));
+  const pts = list.filter(b => has(b[k])).map(b => ({ date: b.date, v: b[k] }));
   $("#bChart").innerHTML = chart(pts);
   $("#bDelta").textContent = pts.length >= 2 ? `${label}: ilk kayıttan bu yana ${pts[pts.length-1].v - pts[0].v >= 0 ? "+" : ""}${fmt(pts[pts.length-1].v - pts[0].v)} ${unit} (${shortDate(pts[0].date)} → ${shortDate(pts[pts.length-1].date)})` : "";
-  $("#bTable").innerHTML = list.length ? `<tr><th>Tarih</th>${BODY.map(([,l]) => `<th>${l}</th>`).join("")}<th></th></tr>` +
-    list.slice().reverse().map(b => `<tr><td>${shortDate(b.date)}</td>${BODY.map(([k]) => `<td>${b[k] ? fmt(b[k]) : "–"}</td>`).join("")}<td><button class="iconbtn danger" data-bdel="${b.date}" title="Sil">${ic("trash-2")}</button></td></tr>`).join("")
+  // yalnız en az bir kaydı olan ölçüler sütun olur
+  const cols = bodyKeys().filter(([k]) => list.some(b => has(b[k])));
+  $("#bTable").innerHTML = list.length ? `<tr><th>Tarih</th>${cols.map(([,l]) => `<th>${l}</th>`).join("")}<th></th></tr>` +
+    list.slice().reverse().map(b => `<tr><td>${shortDate(b.date)}</td>${cols.map(([k]) => `<td>${has(b[k]) ? fmt(b[k]) : "–"}</td>`).join("")}<td><button class="iconbtn danger" data-bdel="${b.date}" title="Sil">${ic("trash-2")}</button></td></tr>`).join("")
     : `<tr><td>${emptyHTML("ruler", "Henüz ölçü yok", "Yukarıdan ilk ölçünü kaydet.")}</td></tr>`;
   $("#bTable").querySelectorAll("[data-bdel]").forEach(btn => btn.onclick = async () => {
     if (!(await ask(`${shortDate(btn.dataset.bdel)} tarihli ölçü silinsin mi?`))) return;
@@ -110,12 +120,11 @@ $("#cAdd").onclick = () => {
   state.custom.push({ name, group: $("#cGroup").value }); save(); refreshDatalist();
   $("#cName").value = ""; toast("Eklendi", "check"); renderLib();
 };
-$("#bMetric").innerHTML = BODY.map(([k,l,u]) => `<option value="${k}">${l} (${u})</option>`).join("");
 $("#bMetric").onchange = renderBody;
 $("#bSave").onclick = () => {
   const date = $("#bDate").value; if (!date) return toast("Tarih seç");
   const rec = { date }; let any = false;
-  BODY.forEach(([k]) => { const v = parseFloat($("#b_"+k).value); if (v > 0) { rec[k] = v; any = true; } });
+  BODY.forEach(([k]) => { const v = parseFloat($("#b_"+k).value); if (k === "reach" ? Number.isFinite(v) : v > 0) { rec[k] = v; any = true; } });
   if (!any) return toast("En az bir ölçü gir");
   const ex = state.body.find(b => b.date===date);
   if (ex) Object.assign(ex, rec); else state.body.push(rec);

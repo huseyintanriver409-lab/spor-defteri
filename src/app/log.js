@@ -155,7 +155,9 @@ export function saveEditor(){
 
 export function entryHTML(e, actions, prs){
   const c = isCardio(e.ex);
-  const extra = c ? `${fmt(e.sets.reduce((a,s)=>a+(+s.w||0),0))} dk toplam` : `${work(e.sets).length} set · ${fmt(volume(e.sets))} kg hacim`;
+  const extra = c ? `${fmt(e.sets.reduce((a,s)=>a+(+s.w||0),0))} dk toplam`
+    : isTimed(e.ex) ? `${work(e.sets).length} set · ${fmtSec(work(e.sets).reduce((a,s)=>a+(+s.sec||0),0))} toplam`
+    : `${work(e.sets).length} set · ${fmt(volume(e.sets))} kg hacim`;
   let k = 0;
   const chips = e.sets.map((s,i) => {
     const warm = s.t === "w", pr = prs && prs.has(i);

@@ -113,7 +113,7 @@ export function renderTab(t){
   if (t === "home") renderHome();
   if (t === "train") renderSeg("train");
   if (t === "history") { renderHistory(); renderStreakCard(); }
-  if (t === "progress") renderSeg("stats");
+  if (t === "progress") { $("#progTitle").textContent = liftOn() ? "Ne kadar güçlendin?" : "Ne kadar ilerledin?"; renderSeg("stats"); }
   if (t === "profile") { renderAccount(); renderSeg("profile"); }
 }
 // Takvim'in üstündeki seri kartı: yalnız bilgi; türü Profil → Ayarlar'dan seçilir

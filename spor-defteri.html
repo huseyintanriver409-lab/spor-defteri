@@ -180,7 +180,7 @@
 
   <!-- ==================== İLERLEME ==================== -->
   <section id="tab-progress" class="hidden">
-    <div class="hero"><div class="eyebrow">İlerleme</div><h2>Ne kadar güçlendin?</h2></div>
+    <div class="hero"><div class="eyebrow">İlerleme</div><h2 id="progTitle">Ne kadar güçlendin?</h2></div>
     <div class="seg" data-seg="stats"><button data-v="week" class="on">Hafta</button><button data-v="hist">Hareket</button><button data-v="rec">Rekorlar</button><button data-v="rest">Kaslar</button><button data-v="power">Güç skoru</button><button data-v="body">Vücut</button></div>
 
     <div id="stats-week">
@@ -191,12 +191,21 @@
           <button class="iconbtn" id="wNext" title="Sonraki hafta"><svg class="ic" aria-hidden="true"><use href="#i-chevron-right"/></svg></button>
         </div>
         <div style="text-align:center"><button class="ghost" id="wToday">Bu haftaya dön</button></div>
-        <div class="stats four" style="margin-top:8px">
+        <div class="stats four" id="weekStats" style="margin-top:8px">
           <div class="stat"><b id="sDays">0</b><span>gün</span></div>
-          <div class="stat"><b id="sSets">0</b><span>çalışma seti</span></div>
-          <div class="stat"><b id="sVol">0</b><span>hacim (kg)</span></div>
+          <div class="stat lift-only"><b id="sSets">0</b><span>çalışma seti</span></div>
+          <div class="stat lift-only"><b id="sVol">0</b><span>hacim (kg)</span></div>
           <div class="stat"><b id="sTime">–</b><span>süre</span></div>
         </div>
+      </div>
+      <div class="card hidden" id="yogaWeek">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span>Yoga</h2>
+        <div class="stats">
+          <div class="stat"><b id="yMin">0</b><span>dk tutuş</span></div>
+          <div class="stat"><b id="yPoses">0</b><span>farklı poz</span></div>
+          <div class="stat"><b id="yLong">–</b><span>en uzun tutuş</span></div>
+        </div>
+        <p class="muted small" id="yNote" style="margin:10px 0 0"></p>
       </div>
       <div class="card" id="musclesCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg></span>Kas analizi</h2>
@@ -218,9 +227,11 @@
         <label for="histEx">Hareket</label>
         <select id="histEx"></select>
         <div class="row" style="margin-top:12px;gap:14px">
-          <label class="check row" style="margin:0;gap:6px"><input type="radio" name="hMetric" value="w" checked> En ağır set</label>
-          <label class="check row" style="margin:0;gap:6px"><input type="radio" name="hMetric" value="e"> Tahmini 1RM</label>
-          <label class="check row" style="margin:0;gap:6px"><input type="radio" name="hMetric" value="v"> Hacim</label>
+          <label class="check row lift-metric" style="margin:0;gap:6px"><input type="radio" name="hMetric" value="w" checked> En ağır set</label>
+          <label class="check row lift-metric" style="margin:0;gap:6px"><input type="radio" name="hMetric" value="e"> Tahmini 1RM</label>
+          <label class="check row lift-metric" style="margin:0;gap:6px"><input type="radio" name="hMetric" value="v"> Hacim</label>
+          <label class="check row time-metric hidden" style="margin:0;gap:6px"><input type="radio" name="hMetricT" value="max" checked> En uzun tutuş</label>
+          <label class="check row time-metric hidden" style="margin:0;gap:6px"><input type="radio" name="hMetricT" value="sum"> Toplam süre</label>
         </div>
       </div>
       <div class="card">
@@ -299,6 +310,17 @@
           <div><label for="b_arm">Kol (cm)</label><input type="number" inputmode="decimal" step="0.1" id="b_arm"></div>
           <div><label for="b_thigh">Bacak (cm)</label><input type="number" inputmode="decimal" step="0.1" id="b_thigh"></div>
           <div><label for="b_hip">Kalça (cm)</label><input type="number" inputmode="decimal" step="0.1" id="b_hip"></div>
+        </div>
+        <div id="flexFields">
+          <div class="pk-head" style="margin:16px 0 6px">Esneklik ve denge</div>
+          <div class="grid2">
+            <div><label for="b_reach">Otur-uzan (cm)</label><input type="number" inputmode="decimal" step="0.5" id="b_reach" placeholder="örn. -5 ya da 8"></div>
+            <div><label for="b_balance">Tek ayak denge (sn)</label><input type="number" inputmode="numeric" step="1" id="b_balance"></div>
+          </div>
+          <details class="small" style="margin-top:8px"><summary class="muted">Nasıl ölçülür?</summary>
+            <p class="muted small" style="margin:6px 0 0"><b>Otur-uzan:</b> ısındıktan sonra yere otur, bacaklar düz, tabanlar duvara dayalı. Yavaşça öne uzan, 2 saniye tut. Parmak uçların ayak ucunu geçiyorsa geçtiği cm'yi artı, değmiyorsa kalan cm'yi eksi yaz (değiyorsa 0). Üç denemenin en iyisini al.</p>
+            <p class="muted small" style="margin:6px 0 0"><b>Tek ayak denge:</b> çıplak ayak, eller belde, bir ayağını kaldır; düşene ya da ayağını yere koyana kadar geçen saniye. İki taraftan iyi olanı yaz.</p>
+          </details>
         </div>
         <div class="row" style="margin-top:12px"><span class="grow muted small">Boş bıraktıkların kaydedilmez.</span><button class="btn primary" id="bSave"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Kaydet</button></div>
       </div>
