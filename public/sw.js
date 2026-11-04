@@ -1,7 +1,7 @@
 // Spor Defteri service worker: uygulamayı çevrimdışı çalıştırır.
 // Sayfa için önce ağ denenir (güncellemeler hemen gelsin), ağ yoksa önbellekteki sürüm açılır.
 // Yeni bir sürüm yayınlarken CACHE adını artır ki eski önbellek temizlensin.
-const CACHE = "spor-defteri-v38";
+const CACHE = "spor-defteri-v39";
 const ASSETS = [
   "./",
   "./spor-defteri.html",
@@ -26,7 +26,9 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const req = e.request;
-  if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  // bağlayıcı dönüş sayfası Google'ın tek kullanımlık kodunu taşır: önbelleğe alınmaz
+  if (req.method !== "GET" || url.origin !== location.origin || url.pathname.endsWith("/baglayici.html")) return;
   if (req.mode === "navigate") {
     e.respondWith(
       fetch(req)

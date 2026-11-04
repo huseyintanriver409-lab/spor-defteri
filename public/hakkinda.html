@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spor Defteri</title>
+<meta name="description" content="Spor Defteri: ücretsiz antrenman defteri. Antrenmanlarını kaydet, program ve haftalık plan kur, kaslarının toparlanmasını ve ilerlemeni gör.">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{--bg:#0a0a0b;--card:#141416;--text:#f4f4f5;--muted:#a1a1aa;--line:#26262a;--accent:#ff6a2b;--ink:#160802}
+@media (prefers-color-scheme:light){:root{--bg:#f3f3f4;--card:#fff;--text:#0b0b0c;--muted:#5e5e66;--line:#e4e4e7;--accent:#e14f12;--ink:#fff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:46rem;margin:0 auto;padding:40px 16px 64px}
+a{color:var(--accent)}
+header{display:flex;align-items:center;gap:14px}
+header img{width:64px;height:64px;border-radius:16px}
+h1{font-size:2.2rem;line-height:1.1;letter-spacing:-.03em;margin:0}
+h2{font-size:1.2rem;margin:2.2em 0 .5em}
+.lead{font-size:1.15rem;margin:20px 0}
+.muted{color:var(--muted)}
+.cta{display:inline-block;background:var(--accent);color:var(--ink);font-weight:700;text-decoration:none;padding:12px 22px;border-radius:12px;margin:6px 0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.card b{display:block;margin-bottom:2px}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);display:flex;gap:18px;flex-wrap:wrap;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<header><img src="icons/icon-192.png" alt=""><h1>Spor Defteri</h1></header>
+<p class="lead">Ücretsiz antrenman defteri: antrenmanlarını kaydet, program ve haftalık plan kur, kaslarının ne kadar yorulduğunu ve ne kadar ilerlediğini gör. Ağırlık, kardiyo ve yoga için.</p>
+<a class="cta" href="spor-defteri.html">Uygulamayı aç</a>
+<p class="muted">Tarayıcıda çalışır, telefona uygulama olarak eklenebilir; internet olmadan da kullanılır. Üyelik gerekmez.</p>
+
+<h2>Neler yapar?</h2>
+<div class="grid">
+<div class="card"><b>Antrenman kaydı</b>Set, tekrar, kilo ya da süre; canlı antrenman ekranı ve dinlenme sayacı.</div>
+<div class="card"><b>Programlar ve plan</b>Hazır programlar, kendi programın ve haftalık plan.</div>
+<div class="card"><b>Kas haritası</b>Hangi kasın yorgun olduğunu ve bir antrenmanın kaslarına yükünü gösterir.</div>
+<div class="card"><b>İlerleme</b>Rekorlar, hareket grafikleri, vücut ölçüleri, yoga özeti.</div>
+</div>
+
+<h2>Google hesabın ne için kullanılır?</h2>
+<p>Google ile bağlanmak isteğe bağlıdır. Bağlanmazsan her şey yalnız cihazında kalır. Bağlanırsan:</p>
+<ul>
+<li><b>Google Drive:</b> kayıtların Drive'ında yalnız bu uygulamanın görebildiği gizli bir klasöre yedeklenir, telefonun ve bilgisayarın eşitlenir. Diğer dosyalarını göremez.</li>
+<li><b>Google Takvim:</b> istersen haftalık planın ve biten antrenmanların, uygulamanın oluşturduğu "Spor Defteri" takvimine yazılır. Diğer takvimlerini göremez.</li>
+<li><b>Google Görevler:</b> istersen plan günlerin "Spor Defteri" görev listesine yazılır ve antrenmanı bitirince işaretlenir.</li>
+</ul>
+<p>Verilerin satılmaz, reklam için kullanılmaz ve geliştiricinin bir sunucusunda toplanmaz. Ayrıntılar <a href="gizlilik.html">Gizlilik Politikası</a>'nda.</p>
+
+<h2 lang="en">In English</h2>
+<div lang="en">
+<p>Spor Defteri ("workout notebook") is a free workout log for strength training, cardio and yoga: log sets, build programs and a weekly plan, and see muscle recovery and progress. It runs in the browser, works offline and needs no account.</p>
+<p>Signing in with Google is optional. If you do, the app uses <b>Google Drive</b> (only its own hidden app-data folder) to sync your records between devices, <b>Google Calendar</b> (only a "Spor Defteri" calendar it creates) to put your plan and finished workouts on your calendar, and <b>Google Tasks</b> (only a "Spor Defteri" task list it creates) to add plan days as tasks. Your data is not sold, not used for ads and not collected on the developer's servers. See the <a href="gizlilik.html#english">Privacy Policy</a>.</p>
+</div>
+
+<footer><a href="spor-defteri.html">Uygulamayı aç</a><a href="gizlilik.html">Gizlilik Politikası</a><a href="https://github.com/huseyintanriver409-lab/spor-defteri">Kaynak kodu</a><a href="https://github.com/huseyintanriver409-lab/spor-defteri/issues">İletişim</a></footer>
+</main>
+</body>
+</html>

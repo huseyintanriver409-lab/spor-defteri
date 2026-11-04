@@ -15,7 +15,9 @@
 		// uygulamanın kullandığı Google istemcisi (gizli değil; ../.env ile aynı). Gizli anahtarı: wrangler secret put GOOGLE_CLIENT_SECRET
 		"GOOGLE_CLIENT_ID": "680474357315-tc6glk62rcpg0662397lnbjjmuccsa35.apps.googleusercontent.com",
 		// "bugün" ve plan tarihleri bu saat dilimine göre
-		"TIME_ZONE": "Europe/Istanbul"
+		"TIME_ZONE": "Europe/Istanbul",
+		// Google girişinden dönüş: GitHub Pages'teki sayfa kodu bu sunucunun /callback'ine iletir (Google Cloud'da yetkili yönlendirme URI'si olarak ekli olmalı)
+		"GOOGLE_REDIRECT_URI": "https://huseyintanriver409-lab.github.io/spor-defteri/baglayici.html"
 	},
 	// gizli değerler (depoda durmaz): GOOGLE_CLIENT_SECRET ve isteğe bağlı ALLOWED_EMAILS
 	// (virgülle ayrılmış e-postalar; yoksa Google girişi yapabilen herkes yalnız kendi verisine bağlanabilir)

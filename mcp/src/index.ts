@@ -14,7 +14,11 @@ interface Env {
   GOOGLE_CLIENT_SECRET: string;
   TIME_ZONE: string;
   ALLOWED_EMAILS?: string;
+  // Google'ın döneceği adres. Google, izin ekranı doğrulamasında bu alan adının sahipliğini ister; workers.dev bizim değil.
+  // Bu yüzden GitHub Pages'teki baglayici.html'e döner, o sayfa kodu olduğu gibi buradaki /callback'e iletir. Boşsa doğrudan /callback.
+  GOOGLE_REDIRECT_URI?: string;
 }
+const PRIVACY = "https://huseyintanriver409-lab.github.io/spor-defteri/gizlilik.html";
 interface Props { email: string; sub: string; refresh: string }
 
 const esc = (v: string) => v.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
@@ -45,7 +49,7 @@ const apiHandler = {
 
 const defaultHandler = {
   async fetch(req: Request, env: Env) {
-    const url = new URL(req.url), oauth = env.OAUTH_PROVIDER, callback = `${url.origin}/callback`;
+    const url = new URL(req.url), oauth = env.OAUTH_PROVIDER, callback = env.GOOGLE_REDIRECT_URI || `${url.origin}/callback`;
     try {
       if (url.pathname === "/authorize" && req.method === "GET") {
         const request = await oauth.parseAuthRequest(req);
@@ -54,7 +58,7 @@ const defaultHandler = {
         const from = d.clientDomain ? `<b>${esc(d.clientDomain)}</b> yayınlıyor.` : "Uygulama kendini kaydetti; adı doğrulanmadı.";
         return page("Spor Defteri'ne erişim", `<p><b>${esc(d.clientName)}</b> Spor Defteri'ndeki programlarını, planını ve antrenman geçmişini okumak ve değiştirmek istiyor.</p>
 <p class="muted">${from} Erişim <b>${esc(d.redirectHost)}</b> adresine gönderilecek.${d.redirectIsLoopback ? " Bu, bilgisayarındaki bir uygulama; girişi az önce kendin başlattıysan devam et." : ""}</p>
-<p class="muted">İzin verince Google girişine geçeceksin. Spor Defteri yalnız kendi gizli Drive klasörünü görür.</p>
+<p class="muted">İzin verince Google girişine geçeceksin. Spor Defteri yalnız kendi gizli Drive klasörünü görür. <a href="${PRIVACY}">Gizlilik politikası</a></p>
 <form method="post" action="/authorize"><input type="hidden" name="handle" value="${esc(consent.handle)}">
 <button class="primary" name="decision" value="approve">İzin ver</button><button name="decision" value="deny">Reddet</button></form>`, 200, consent.headers);
       }
@@ -88,7 +92,7 @@ const defaultHandler = {
         headers.set("Location", redirectTo);
         return new Response(null, { status: 302, headers });
       }
-      if (url.pathname === "/") return page("Spor Defteri bağlayıcısı", `<p>Bu adres yapay zekâ uygulamaları içindir (Claude, ChatGPT, Gemini CLI…). Uygulamanın bağlayıcı ya da MCP sunucusu ekleme ayarına şunu yaz:</p><p><code>${esc(url.origin)}/mcp</code></p><p class="muted">Adımlar Spor Defteri'nde: Profil → Ayarlar → Yapay zekâ bağlantısı.</p>`);
+      if (url.pathname === "/") return page("Spor Defteri bağlayıcısı", `<p>Bu adres yapay zekâ uygulamaları içindir (Claude, ChatGPT, Gemini CLI…). Uygulamanın bağlayıcı ya da MCP sunucusu ekleme ayarına şunu yaz:</p><p><code>${esc(url.origin)}/mcp</code></p><p class="muted">Adımlar Spor Defteri'nde: Profil → Ayarlar → Yapay zekâ bağlantısı. <a href="${PRIVACY}">Gizlilik politikası</a></p>`);
       return new Response("Bulunamadı", { status: 404 });
     } catch (e) {
       if (e instanceof AuthorizationError) {

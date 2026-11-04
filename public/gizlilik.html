@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gizlilik Politikası · Spor Defteri</title>
+<meta name="description" content="Spor Defteri gizlilik politikası: hangi verilerin nerede saklandığı ve Google hesabı izinlerinin ne için kullanıldığı.">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{--bg:#0a0a0b;--card:#141416;--text:#f4f4f5;--muted:#a1a1aa;--line:#26262a;--accent:#ff6a2b}
+@media (prefers-color-scheme:light){:root{--bg:#f3f3f4;--card:#fff;--text:#0b0b0c;--muted:#5e5e66;--line:#e4e4e7;--accent:#e14f12}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:46rem;margin:0 auto;padding:32px 16px 64px}
+a{color:var(--accent)}
+h1{font-size:2rem;line-height:1.2;letter-spacing:-.02em;margin:.2em 0}
+h2{font-size:1.25rem;margin:2em 0 .4em;letter-spacing:-.01em}
+h3{font-size:1.05rem;margin:1.4em 0 .3em}
+.muted{color:var(--muted)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin:16px 0}
+nav{display:flex;gap:16px;flex-wrap:wrap;font-weight:600;margin-bottom:24px}
+code{font-size:.9em}
+hr{border:0;border-top:1px solid var(--line);margin:48px 0}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="hakkinda.html">Spor Defteri</a><a href="spor-defteri.html">Uygulamayı aç</a><a href="#english">English</a></nav>
+
+<h1>Gizlilik Politikası</h1>
+<p class="muted">Son güncelleme: 4 Kasım 2026</p>
+
+<p>Spor Defteri, antrenmanlarını, programlarını, haftalık planını ve vücut ölçülerini kaydettiğin ücretsiz bir antrenman defteridir. Bu sayfa hangi verinin nerede durduğunu ve Google hesabına verdiğin izinlerin ne için kullanıldığını anlatır.</p>
+
+<div class="box"><b>Kısaca:</b> Verilerin kendi cihazında durur. Uygulamanın geliştiricisi verilerini görmez ve hiçbir sunucuda toplamaz. Reklam, analiz ya da izleme aracı yoktur. Google hesabını bağlamak isteğe bağlıdır. Bağlarsan veriler yalnız kendi Google hesabında saklanır.</div>
+
+<h2>1. Cihazında saklanan veriler</h2>
+<p>Girdiğin her şey (antrenman kayıtları, programlar, plan, ölçüler, notlar, ayarlar) tarayıcının ya da uygulamanın yerel deposunda, yalnız senin cihazında tutulur. Bu veriler hiçbir sunucuya gönderilmez. Uygulamayı silersen ya da tarayıcı verilerini temizlersen bu kopya da silinir. Profil → Yedek bölümünden istediğin zaman dosya olarak yedek alabilirsin.</p>
+
+<h2>2. Google hesabı (isteğe bağlı)</h2>
+<p>Google ile bağlanırsan uygulama aşağıdaki izinleri ister. Her izin yalnız ilgili özelliği açtığında istenir. Erişim anahtarı yalnız senin cihazında tutulur.</p>
+<h3>Google Drive: uygulama verileri (<code>drive.appdata</code>)</h3>
+<p>Kayıtlarının bir kopyası Google Drive'ında, yalnız Spor Defteri'nin erişebildiği gizli uygulama klasörüne yazılır. Böylece telefonun ve bilgisayarın eşitlenir. Uygulama Drive'daki diğer dosyalarını göremez, okuyamaz, değiştiremez.</p>
+<h3>Google Takvim: uygulamanın oluşturduğu takvim (<code>calendar.app.created</code>)</h3>
+<p>Takvim özelliğini açarsan Google Takvim'inde "Spor Defteri" adlı bir takvim oluşturulur. Haftalık plan ve biten antrenmanlar yalnız bu takvime yazılır. Uygulama diğer takvimlerini ve etkinliklerini göremez.</p>
+<h3>Google Görevler (<code>tasks</code>)</h3>
+<p>Planı "görev" olarak koymayı seçersen Google Görevler'de "Spor Defteri" adlı bir liste oluşturulur. Plan günleri bu listeye görev olarak yazılır, antrenmanı bitirince işaretlenir. Uygulama yalnız kendi oluşturduğu bu listeyi kullanır. Diğer görev listelerini okumaz, değiştirmez.</p>
+
+<h2>3. Yapay zekâ bağlayıcısı (isteğe bağlı)</h2>
+<p>Claude, ChatGPT ya da Gemini gibi bir yapay zekâ uygulamasını Spor Defteri'ne bağlamayı seçersen, bağlantı <code>spor-defteri-mcp.spor-defteri.workers.dev</code> adresindeki küçük bir sunucu (Cloudflare Workers) üzerinden kurulur. Bağlanırken Google ile giriş yaparsın. Sunucu bu girişte şu izinleri ister: e-posta adresin (<code>openid</code>, <code>email</code>; seni tanımak için) ve Drive uygulama klasörü (<code>drive.appdata</code>).</p>
+<p>Google'ın verdiği yenileme anahtarı bu sunucuda şifrelenmiş olarak saklanır. Yalnız senin yapay zekâ uygulaman bir araç çağırdığında (örneğin "bugünkü antrenmanımı kaydet"), Drive'daki Spor Defteri dosyanı okumak ve güncellemek için kullanılır. Sunucu verilerini ayrıca saklamaz.</p>
+<p>Yapay zekâ uygulamasına giden bilgiler o uygulamanın kendi gizlilik koşullarına tabidir. Bağlantıyı yapay zekâ uygulamasından ya da Google hesabının izinler sayfasından istediğin zaman kaldırabilirsin.</p>
+
+<h2>4. Google kullanıcı verilerinin sınırlı kullanımı</h2>
+<p>Spor Defteri'nin Google API'lerinden aldığı bilgileri kullanması ve aktarması, Sınırlı Kullanım (Limited Use) koşulları dahil <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Hizmetleri Kullanıcı Verileri Politikası</a>'na uyar. Bu veriler:</p>
+<ul>
+<li>yalnız yukarıda anlatılan, senin açtığın özellikler için kullanılır;</li>
+<li>satılmaz, reklam için kullanılmaz, kimseyle paylaşılmaz (senin bağlamayı seçtiğin yapay zekâ uygulaması hariç);</li>
+<li>hiçbir insan tarafından okunmaz (güvenlik ya da yasal zorunluluk dışında);</li>
+<li>yapay zekâ modellerini eğitmek için kullanılmaz.</li>
+</ul>
+
+<h2>5. Diğer bağlantılar</h2>
+<p>"Nasıl yapılır?" düğmeleri YouTube aramasını, "Yapay zekâ ile program yap" düğmeleri seçtiğin yapay zekâ sitesini açar. Bu siteler kendi gizlilik koşullarına tabidir. Spor Defteri onlara yalnız düğmede gördüğün metni gönderir.</p>
+
+<h2>6. Verilerini silmek</h2>
+<ul>
+<li><b>Cihazdaki veriler:</b> uygulamayı kaldır ya da tarayıcının site verilerini temizle.</li>
+<li><b>Google Drive kopyası:</b> Google Drive → Ayarlar → Uygulamaları yönet → Spor Defteri → "Gizli uygulama verilerini sil".</li>
+<li><b>Takvim ve görevler:</b> Google Takvim'de "Spor Defteri" takvimini, Google Görevler'de "Spor Defteri" listesini sil.</li>
+<li><b>İzinleri geri almak:</b> <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> sayfasında Spor Defteri'nin erişimini kaldır. Bu, yapay zekâ bağlayıcısının anahtarını da geçersiz kılar.</li>
+</ul>
+
+<h2>7. Çocuklar</h2>
+<p>Spor Defteri 13 yaşından küçük çocuklara yönelik değildir.</p>
+
+<h2>8. Değişiklikler ve iletişim</h2>
+<p>Bu politika değişirse bu sayfa güncellenir ve üstteki tarih değişir. Soruların için: <a href="https://github.com/huseyintanriver409-lab/spor-defteri/issues">github.com/huseyintanriver409-lab/spor-defteri/issues</a>. Uygulamanın kaynak kodu da aynı yerde, herkese açıktır.</p>
+
+<hr>
+
+<section id="english" lang="en">
+<h1>Privacy Policy</h1>
+<p class="muted">Last updated: November 4, 2026</p>
+<p>Spor Defteri ("workout notebook") is a free app for logging workouts, programs, a weekly plan and body measurements.</p>
+<div class="box"><b>In short:</b> your data stays on your device. The developer does not see or collect it on any server. There are no ads, analytics or trackers. Connecting a Google account is optional; if you do, your data is stored only in your own Google account.</div>
+
+<h2>1. Data on your device</h2>
+<p>Everything you enter is kept in the local storage of your browser or the app, on your device only, and is not sent to any server. You can export a backup file at any time.</p>
+
+<h2>2. Google account (optional)</h2>
+<p>Each permission is requested only when you turn on the related feature. The access token is kept on your device only.</p>
+<ul>
+<li><b>Google Drive, app data (<code>drive.appdata</code>):</b> a copy of your records is stored in a hidden app folder in your Drive that only Spor Defteri can access, to sync your devices. The app cannot see any other Drive files.</li>
+<li><b>Google Calendar, app-created calendars (<code>calendar.app.created</code>):</b> creates a calendar named "Spor Defteri" and writes your plan and finished workouts only to it. The app cannot see your other calendars or events.</li>
+<li><b>Google Tasks (<code>tasks</code>):</b> if you choose to place your plan as tasks, the app creates a task list named "Spor Defteri" and only writes to and checks off tasks in that list. It does not read or change your other task lists.</li>
+</ul>
+
+<h2>3. AI connector (optional)</h2>
+<p>If you connect an AI assistant (Claude, ChatGPT, Gemini…), the connection goes through a small server at <code>spor-defteri-mcp.spor-defteri.workers.dev</code> (Cloudflare Workers). You sign in with Google and grant <code>openid</code>, <code>email</code> (to identify you) and <code>drive.appdata</code>. The Google refresh token is stored encrypted on that server and is used only when your AI assistant calls a tool, to read and update your Spor Defteri file in Drive. The server does not keep your workout data. Information you share with your AI assistant is governed by that assistant's privacy terms.</p>
+
+<h2>4. Limited Use of Google user data</h2>
+<p>Spor Defteri's use and transfer of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. Google user data is used only to provide the features described above. It is never sold, never used for advertising, and never shared with anyone except the AI assistant you choose to connect. Humans do not read it except for security or legal reasons. It is not used to train AI models.</p>
+
+<h2>5. Deleting your data</h2>
+<p>Uninstall the app or clear site data to remove the local copy. To delete the Drive copy, go to Google Drive → Settings → Manage apps → Spor Defteri → "Delete hidden app data". Delete the "Spor Defteri" calendar and task list in Google Calendar and Tasks. Revoke access at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>; this also invalidates the AI connector's token.</p>
+
+<h2>6. Children</h2>
+<p>Spor Defteri is not directed at children under 13.</p>
+
+<h2>7. Changes and contact</h2>
+<p>If this policy changes, this page and the date above are updated. Contact: <a href="https://github.com/huseyintanriver409-lab/spor-defteri/issues">github.com/huseyintanriver409-lab/spor-defteri/issues</a>. The app's source code is public at the same place.</p>
+</section>
+</main>
+</body>
+</html>

@@ -46,7 +46,7 @@ Kurulum bir kez yapılır, yaklaşık 15 dakika sürer. Gizli anahtarları ve gi
 Uygulamanın kullandığı Google projesindeyiz: **spor-defteri-513413**.
 
 1. https://console.cloud.google.com/auth/clients?project=spor-defteri-513413 adresini aç ve **Spor Defteri web** istemcisine gir.
-2. **Yetkili yönlendirme URI'leri** bölümüne `SUNUCU/callback` adresini ekle (örneğin `https://spor-defteri-mcp.ADIN.workers.dev/callback`), sonra **Kaydet**'e bas.
+2. **Yetkili yönlendirme URI'leri** bölümüne `wrangler.jsonc`'taki `GOOGLE_REDIRECT_URI` adresini ekle (şu an `https://huseyintanriver409-lab.github.io/spor-defteri/baglayici.html`; o sayfa Google'ın kodunu sunucunun `/callback`'ine iletir), sonra **Kaydet**'e bas. `GOOGLE_REDIRECT_URI` boşsa bunun yerine `SUNUCU/callback` eklenir.
 3. Aynı sayfada **İstemci gizli anahtarları** bölümünde **Gizli anahtar ekle**'ye bas ve yeni anahtarı kopyala.
 4. Gizli anahtarı sunucuya ver. Komut anahtarı sorar; yapıştırıp Enter'a bas. Anahtar ekranda görünmez ve depoya yazılmaz.
 

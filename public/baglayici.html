@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Spor Defteri bağlayıcısı</title>
+<style>body{margin:0;background:#0a0a0b;color:#f4f4f5;font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center;padding:0 16px}a{color:#ff6a2b}</style>
+</head>
+<body>
+<p id="msg">Yapay zekâ bağlantısına dönülüyor…</p>
+<script>
+// Google girişi buraya döner (izin ekranının doğrulanabilen alan adı bu site). Kod ve durum olduğu gibi bağlayıcı sunucusuna iletilir; sayfa hiçbir şey saklamaz.
+var q = location.search;
+if (/[?&](code|error)=/.test(q)) location.replace("https://spor-defteri-mcp.spor-defteri.workers.dev/callback" + q);
+else document.getElementById("msg").innerHTML = 'Bu sayfa yalnız yapay zekâ bağlantısı içindir. <a href="hakkinda.html">Spor Defteri</a>';
+</script>
+</body>
+</html>
