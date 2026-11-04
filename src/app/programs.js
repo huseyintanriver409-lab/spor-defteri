@@ -1,7 +1,7 @@
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
-import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, setLabel } from "./exercises.js";
+import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, setLabel, yogaOn } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, undoable } from "./ui.js";
 import { refreshDatalist } from "./log.js";
 import { startWorkout } from "./live.js";
@@ -41,6 +41,7 @@ export function ssLabels(items){
 }
 export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
 export function renderProg(){
+  $("#yogaCard").classList.toggle("hidden", !yogaOn());
   $("#pList").innerHTML = state.programs.length ? state.programs.map(p => {
     const ms = {}; p.items.forEach(i => { const m = musclesOf(i.ex); m.p.forEach(x => ms[x] = (ms[x]||0) + i.sets); m.s.forEach(x => ms[x] = (ms[x]||0) + i.sets/2); });
     const top = Object.entries(ms).sort((a,b) => b[1]-a[1]).slice(0,4).map(([m]) => m).join(" · ");

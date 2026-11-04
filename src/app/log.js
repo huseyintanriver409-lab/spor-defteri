@@ -2,14 +2,14 @@ import { e1rm, volume, warmupSets, work } from "../core/training.ts";
 import { niceDate, ymd } from "../core/dates.ts";
 import { baseBest, baseSet } from "../core/baseline.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
-import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, isYoga, setLabel } from "./exercises.js";
+import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, isYoga, pickableEx, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
 import { autoLogged } from "./programs.js";
 
 /* ---------- Manual log (geçmişe dönük ya da canlı mod olmadan kayıt) ---------- */
 export let editingId = null;
 export function refreshDatalist(){
-  $("#exList").innerHTML = allEx().map(e => `<option value="${esc(e.name)}"></option>`).join("");
+  $("#exList").innerHTML = pickableEx().map(e => `<option value="${esc(e.name)}"></option>`).join("");
 }
 export function setRow(s = {}){
   const cardio = isCardio($("#logEx").value);

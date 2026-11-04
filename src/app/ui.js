@@ -1,5 +1,5 @@
 import { $, esc, ic, save, state, toast } from "./store.js";
-import { allEx, equipOf, groupOf, musclesOf } from "./exercises.js";
+import { allEx, equipOf, groupOf, musclesOf, pickableEx } from "./exercises.js";
 import { refreshDatalist, renderDay, updateHint } from "./log.js";
 import { renderPlan, renderProg } from "./programs.js";
 import { renderLiveBar } from "./live.js";
@@ -9,7 +9,7 @@ import { renderHistSelect, renderPower, renderRecords, renderRecovery, renderWee
 import { groups, renderBody, renderLib } from "./library.js";
 import { renderTools } from "./tools.js";
 import { renderBackup, renderBackupBanner } from "./backup.js";
-import { renderSettings, renderTrainPrefs } from "./settings.js";
+import { renderSettings } from "./settings.js";
 import { renderAccount } from "./cloud.js";
 import { streakCardHTML, streakNow, streakOn } from "./streak.js";
 
@@ -70,11 +70,11 @@ export function openPicker(title, onPick){
   const renderList = () => {
     const raw = $("#pkQ").value.trim(), q = raw.toLocaleLowerCase("tr");
     let list;
-    if (q) list = allEx().filter(e => { const m = musclesOf(e.name); return [e.name, e.group, equipOf(e.name), ...m.p, ...m.s].join(" ").toLocaleLowerCase("tr").includes(q); });
+    if (q) list = pickableEx().filter(e => { const m = musclesOf(e.name); return [e.name, e.group, equipOf(e.name), ...m.p, ...m.s].join(" ").toLocaleLowerCase("tr").includes(q); });
     else if (filter === "recent") list = recentExercises().map(known);
     else if (filter === "fav") list = state.favs.map(known);
-    else if (filter === "all") list = allEx();
-    else list = allEx().filter(e => e.group === filter);
+    else if (filter === "all") list = pickableEx();
+    else list = pickableEx().filter(e => e.group === filter);
     const exact = q && allEx().some(e => e.name.toLocaleLowerCase("tr") === q);
     let html = q && !exact ? `<div class="pk-item"><button class="pk-main" data-new="1"><b>${ic("circle-plus", "acc")} “${esc(raw)}” ekle</b><small>Kendi hareketin olarak kaydedilir</small></button></div>` : "";
     html += list.map(e => {
@@ -110,7 +110,7 @@ export function showTab(t){
 }
 export function renderTab(t){
   if (t === "home") renderHome();
-  if (t === "train") { renderSeg("train"); renderTrainPrefs(); }
+  if (t === "train") renderSeg("train");
   if (t === "history") { renderHistory(); renderStreakCard(); }
   if (t === "progress") renderSeg("stats");
   if (t === "profile") { renderAccount(); renderSeg("profile"); }

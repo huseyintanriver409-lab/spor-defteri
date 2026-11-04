@@ -51,7 +51,7 @@
           <button class="btn" id="aiOpen"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile program yap</button>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="yogaCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span>Yoga ve esneme</h2>
         <p class="muted" style="margin-top:-4px">Başlangıç yogası, sabah ve akşam akışları; pozlar süreyle tutulur, kilo girilmez. Bir mat yeterli.</p>
         <div class="row">
@@ -74,15 +74,6 @@
           <button class="btn primary" id="pSave"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>Kaydet</button>
         </div>
       </div>
-      <details class="card fold">
-        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman ayarları</h2><span class="muted small">Dinlenme süresi, ekran, titreşim</span></summary>
-        <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
-        <div style="display:grid;gap:14px;margin-top:16px">
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
-          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
-        </div>
-      </details>
     </div>
 
     <div id="train-log" class="hidden">
@@ -344,6 +335,16 @@
             <option value="off">Kapalı</option></select></div>
         </div>
         <p class="muted small" id="streakHelp" style="margin:8px 0 0"></p>
+      </details>
+      <details class="card fold">
+        <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman ayarları</h2><span class="muted small">Dinlenme süresi, ekran, titreşim, yoga</span></summary>
+        <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
+        <div style="display:grid;gap:14px;margin-top:16px">
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefWake"> Antrenmanda ekran açık kalsın</label>
+          <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="prefHaptic"> Titreşimli geri bildirim</label>
+          <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="prefYoga"><span>Yoga ve esneme bölümlerini göster<span class="muted small" style="display:block">Kapalıyken yoga pozları ve programları listelerde görünmez; eski kayıtların silinmez.</span></span></label>
+        </div>
       </details>
       <details class="card fold" id="aiCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2><span class="muted small">Claude, ChatGPT, Gemini… bağla</span></summary>

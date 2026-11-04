@@ -1,6 +1,6 @@
 import { shortDate, ymd } from "../core/dates.ts";
 import { $, LIB, YOGA, ask, esc, fmt, ic, save, state, toast } from "./store.js";
-import { EQUIPS, HOME, allEx, equipOf, musclesOf } from "./exercises.js";
+import { EQUIPS, HOME, allEx, equipOf, musclesOf, yogaOn } from "./exercises.js";
 import { emptyHTML, openPicker, renderSeg, segState, showTab, undoable } from "./ui.js";
 import { matchExercise } from "../core/importer.ts";
 import { mergeExercise } from "../core/merge.ts";
@@ -9,7 +9,7 @@ import { liveItems, openFocus } from "./live.js";
 import { chart } from "./stats.js";
 
 /* ---------- Library ---------- */
-export function groups(){ return [...Object.keys(LIB), "Diğer"]; }
+export function groups(){ return [...Object.keys(LIB), "Diğer"].filter(g => g !== YOGA || yogaOn()); }
 export function renderLib(){
   const q = $("#libSearch").value.trim().toLocaleLowerCase("tr"), eqf = $("#libEquip").value, home = $("#libHome").checked;
   const ex = allEx().map(e => ({ ...e, m: musclesOf(e.name), eq: equipOf(e.name) })).filter(e => {
@@ -33,7 +33,7 @@ export function renderLib(){
        <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(e.name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`).join("") + `</details>`;
   };
-  const main = groups().filter(g => g !== YOGA).map(section).join(""), yoga = section(YOGA);
+  const main = groups().filter(g => g !== YOGA).map(section).join(""), yoga = yogaOn() ? section(YOGA) : "";
   $("#libList").innerHTML = (main && yoga ? `<div class="pk-head" style="margin:0 0 6px">Ağırlık ve kondisyon</div>` : "") + main
     + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">Yoga ve esneme</div>${yoga}` : "") || emptyHTML("search", "Sonuç yok", "Başka bir kelimeyle ara ya da filtreleri kaldır.");
   $("#libList").querySelectorAll("[data-use]").forEach(b => b.onclick = () => {

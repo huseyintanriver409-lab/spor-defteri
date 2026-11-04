@@ -1,6 +1,8 @@
 import { $, fmt, ic, save, state, toast } from "./store.js";
 import { buzz, keepAwake, refreshAll } from "./ui.js";
 import { openRecommender } from "./presets.js";
+import { yogaOn } from "./exercises.js";
+import { refreshDatalist } from "./log.js";
 import { mmss, setTDur } from "./tools.js";
 
 /* ---------- Settings ---------- */
@@ -12,13 +14,14 @@ export function renderSettings(){
   $("#streakHelp").textContent = { auto: "Haftalık planın varsa planlı günleri kaçırmadıkça seri gün gün artar; plan yoksa haftalık sayılır.",
     week: "Haftalık hedefini tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.",
     off: "Seri ve rozetler hiçbir yerde görünmez." }[$("#setStreak").value];
+  renderTrainPrefs();
   $("#goalSum").textContent = `Haftada ${state.goal} gün · seri: ${$("#setStreak").selectedOptions[0].textContent.toLocaleLowerCase("tr")}`;
 }
 
-// Antrenman → Programlar'ın altındaki "Antrenman ayarları"
+// Ayarlar → "Antrenman ayarları"
 export function renderTrainPrefs(){
   $("#setRest").innerHTML = [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
-  $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
+  $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics; $("#prefYoga").checked = yogaOn();
 }
 
 /* ---------- Theme ----------
@@ -61,6 +64,7 @@ $("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; sav
 $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(); };
 $("#prefWake").onchange = () => { state.prefs.wake = $("#prefWake").checked; save(); if (!state.prefs.wake) keepAwake(false); };
 $("#prefHaptic").onchange = () => { state.prefs.haptics = $("#prefHaptic").checked; save(); buzz(30); };
+$("#prefYoga").onchange = () => { state.prefs.yoga = $("#prefYoga").checked; save(); refreshDatalist(); refreshAll(); };
 try { const t = localStorage.getItem(THEME_KEY); if (THEMES[t]) theme = t; } catch(e){}
 $("#themeBtn").onclick = () => { setTheme({ dark: "light", light: "system", system: "dark" }[theme]); toast(THEMES[theme][1], THEMES[theme][0]); };
 darkMq.addEventListener("change", applyTheme);
