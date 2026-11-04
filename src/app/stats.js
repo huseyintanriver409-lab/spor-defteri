@@ -2,7 +2,7 @@ import { MONTHS, mondayOf, niceDate, parse, shortDate, ymd } from "../core/dates
 import { e1rm, liftScore, volume, work } from "../core/training.ts";
 import { recoveryMap as recoveryMapCore } from "../core/recovery.ts";
 import { $, esc, fmt, ic, save, state } from "./store.js";
-import { MUSCLE_ORDER, durText, fmtSec, groupOf, isCardio, isTimed, liftOn, musclesOf } from "./exercises.js";
+import { MUSCLE_ORDER, durText, fmtSec, groupOf, groupShown, isCardio, isTimed, liftOn, musclesOf } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
 
@@ -25,6 +25,7 @@ export function renderWeek(){
   lifts.forEach(e => { const n = work(e.sets).length, m = musclesOf(e.ex); m.p.forEach(x => ms[x] = (ms[x]||0) + n); m.s.forEach(x => ms[x] = (ms[x]||0) + n/2); });
   const shown = MUSCLE_ORDER.filter(m => ms[m] || ["Göğüs","Lat","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır","Karın"].includes(m));
   const scale = Math.max(24, ...Object.values(ms));
+  $("#musclesCard").classList.toggle("hidden", !liftOn());
   $("#wMuscles").innerHTML = lifts.length ? shown.map(m => {
     const v = ms[m] || 0, cls = v >= 10 && v <= 20 ? "ok" : "";
     return `<div class="mbar"><span>${m}</span><div class="track"><div class="zone" style="left:${10/scale*100}%;width:${10/scale*100}%"></div><i class="${cls}" style="width:${v/scale*100}%"></i></div><b>${fmt(v)}</b></div>`;
@@ -70,7 +71,8 @@ export function muscleAdvice(ms){
 export function renderHistSelect(){
   $("#baseCard").classList.toggle("hidden", !liftOn());
   const sel = $("#histEx"), cur = sel.value;
-  const names = [...new Set(state.entries.map(e => e.ex))].sort((a,b) => a.localeCompare(b,"tr"));
+  // seçilen kullanım türünde gizli gruplar (ör. sadece yogada ağırlık hareketleri) listede çıkmaz
+  const names = [...new Set(state.entries.map(e => e.ex))].filter(n => groupShown(groupOf(n))).sort((a,b) => a.localeCompare(b,"tr"));
   sel.innerHTML = names.length ? names.map(n => `<option>${esc(n)}</option>`).join("") : `<option value="">Henüz kayıt yok</option>`;
   if (names.includes(cur)) sel.value = cur;
   renderHist();

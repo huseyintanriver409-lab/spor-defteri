@@ -1,5 +1,5 @@
 import { $, esc, ic, save, state, toast } from "./store.js";
-import { allEx, equipOf, groupOf, liftOn, musclesOf, pickableEx } from "./exercises.js";
+import { allEx, equipOf, groupOf, groupShown, liftOn, musclesOf, pickableEx } from "./exercises.js";
 import { refreshDatalist, renderDay, updateHint } from "./log.js";
 import { renderPlan, renderProg } from "./programs.js";
 import { renderLiveBar } from "./live.js";
@@ -55,12 +55,13 @@ export const emptyHTML = (icon, title, text) => `<div class="empty">${ic(icon)}<
 export function recentExercises(){
   const seen = new Set(), out = [];
   state.entries.slice().sort((a,b) => (b.ts||0) - (a.ts||0)).forEach(e => { if (!seen.has(e.ex)) { seen.add(e.ex); out.push(e.ex); } });
-  return out.slice(0, 15);
+  return out.filter(n => groupShown(groupOf(n))).slice(0, 15);
 }
 export function openPicker(title, onPick){
   openSheet(sheetHead(title) + `<div class="search">${ic("search")}<input id="pkQ" placeholder="Hareket ara" autocomplete="off" aria-label="Hareket ara"></div>
     <div class="fchips" id="pkChips" style="margin:10px 0 4px"></div>`, `<div class="pk-list" id="pkList"></div>`);
-  let filter = recentExercises().length ? "recent" : state.favs.length ? "fav" : "all";
+  const favs = () => state.favs.filter(n => groupShown(groupOf(n)));
+  let filter = recentExercises().length ? "recent" : favs().length ? "fav" : "all";
   const chips = [["recent", "Son kullanılanlar", "history"], ["fav", "Favoriler", "star"], ["all", "Tümü", "list"], ...groups().map(g => [g, g, ""])];
   const renderChips = () => {
     $("#pkChips").innerHTML = chips.map(([k,l,i]) => `<button class="fchip${filter===k ? " on" : ""}" data-k="${esc(k)}">${i ? ic(i) : ""}${esc(l)}</button>`).join("");
@@ -72,7 +73,7 @@ export function openPicker(title, onPick){
     let list;
     if (q) list = pickableEx().filter(e => { const m = musclesOf(e.name); return [e.name, e.group, equipOf(e.name), ...m.p, ...m.s].join(" ").toLocaleLowerCase("tr").includes(q); });
     else if (filter === "recent") list = recentExercises().map(known);
-    else if (filter === "fav") list = state.favs.map(known);
+    else if (filter === "fav") list = favs().map(known);
     else if (filter === "all") list = pickableEx();
     else list = pickableEx().filter(e => e.group === filter);
     const exact = q && allEx().some(e => e.name.toLocaleLowerCase("tr") === q);
