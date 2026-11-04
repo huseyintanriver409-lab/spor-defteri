@@ -5,7 +5,9 @@ import { buzz, closeSheet, openSheet, sheetHead, refreshAll } from "./ui.js";
 import { renderProg, WEEKDAYS } from "./programs.js";
 import { syncCanRun, connectDrive } from "./cloud.js";
 import { openBaseline } from "./baseline.js";
-import { liftOn, yogaOn } from "./exercises.js";
+import { liftOn, musclesOf, yogaOn } from "./exercises.js";
+import { setsByMuscle } from "../core/musclemap.ts";
+import { bodyMap, legend, loadTiers } from "./bodymap.js";
 
 const LEVEL = { yeni: "Yeni başlayan", orta: "Orta seviye", ileri: "İleri seviye" };
 const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç", esneklik: "Esneklik, yoga" };
@@ -44,6 +46,7 @@ export function openProgramDetail(p, days, onClose){
      <div class="pk-head">Kime uygun</div><p style="margin:4px 0 0">${esc(p.who)}</p>
      <div class="pk-head">Haftada kaç gün</div><div class="optgrid" id="pdDays">${p.days.map(n => `<button class="fchip${n === d ? " on" : ""}" data-v="${n}">${n} gün</button>`).join("")}</div>
      <p class="muted small" id="pdPlan" style="margin:8px 0 0"></p>
+     <div id="pdMap"></div>
      ${p.sessions.map(s => `<div class="pk-head">${esc(p.sessions.length > 1 ? "Antrenman " + s.name : "Antrenman")}</div>
        <div style="display:grid;gap:4px;margin-top:4px">${s.items.map(([ex, sets, reps]) => `<div class="row" style="flex-wrap:nowrap"><span class="grow">${esc(ex)}</span><span class="chip">${sets} × ${esc(reps)}</span></div>`).join("")}</div>`).join("")}
      <div class="pk-head">Nasıl ilerlenir</div>${list(p.progression)}
@@ -53,7 +56,11 @@ export function openProgramDetail(p, days, onClose){
      <label class="check row" style="margin:14px 0 0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="pdPlace" checked><span>Haftalık plana yerleştir${hasPlan ? " (mevcut planın yerine geçer)" : ""}</span></label>
      <button class="btn primary xl" id="pdGo" style="margin-top:12px">${ic("play")}Bu programla başla</button>`,
     onClose);
-  const renderPlan = () => { $("#pdPlan").textContent = planSummary(); };
+  const renderPlan = () => {
+    $("#pdPlan").textContent = planSummary();
+    const ms = setsByMuscle(weeklyPlan(p, d).flatMap(([, i]) => p.sessions[i].items.map(([ex, sets]) => ({ ex, sets }))), musclesOf);
+    $("#pdMap").innerHTML = Object.keys(ms).length ? `<div class="pk-head">Kaslarını haftada ne kadar çalıştırır</div>${bodyMap(loadTiers(ms), { tap: false, small: true })}${legend("load")}` : "";
+  };
   $("#pdDays").querySelectorAll("button").forEach(b => b.onclick = () => {
     d = +b.dataset.v; $("#pdDays").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); renderPlan(); buzz(5);
   });

@@ -7,10 +7,14 @@ import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
 import { liveItems, openFocus } from "./live.js";
 import { chart } from "./stats.js";
+import { bindBodyMap, bodyMap } from "./bodymap.js";
+import { MUSCLES } from "../core/musclemap.ts";
 
 /* ---------- Library ---------- */
 export function groups(){ return [...Object.keys(LIB), "Diğer"].filter(groupShown); }
 export function renderLib(){
+  $("#libMapCard").classList.toggle("hidden", !liftOn());
+  if (liftOn() && !$("#libMap").innerHTML) { $("#libMap").innerHTML = bodyMap(Object.fromEntries(MUSCLES.map(m => [m, "sec"])), { small: true }); bindBodyMap($("#libMap")); }
   const q = $("#libSearch").value.trim().toLocaleLowerCase("tr"), eqf = $("#libEquip").value, home = $("#libHome").checked;
   const ex = allEx().map(e => ({ ...e, m: musclesOf(e.name), eq: equipOf(e.name) })).filter(e => {
     if (eqf && e.eq !== eqf) return false;

@@ -5,6 +5,7 @@ import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, groupShown, isCardio, isTimed, isYoga, liftOn, musclesOf, yogaOn } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
+import { bindBodyMap, bodyMap, fatigueTiers, legend, loadTiers, weekSets } from "./bodymap.js";
 
 /* ---------- Week ---------- */
 export let weekStart = mondayOf(new Date());
@@ -194,23 +195,18 @@ export function renderRecords(){
 export const recoveryMap = () => recoveryMapCore({ entries: state.entries, sessions: state.sessions, isCardio, musclesOf });
 export function renderRecovery(){
   const R = recoveryMap();
-  const shown = MUSCLE_ORDER.filter(m => R[m] || ["Göğüs","Lat","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır","Karın"].includes(m));
-  $("#restList").innerHTML = shown.map(m => {
-    const r = R[m];
-    if (!r) return `<div class="rec"><span>${m}</span><div class="track"></div><span class="st muted">kayıt yok</span></div>`;
-    const cls = r.pct >= 1 ? "st-ok" : r.pct >= .5 ? "st-mid" : "st-low";
-    const color = r.pct >= 1 ? "var(--good)" : r.pct >= .5 ? "var(--warn)" : "var(--danger)";
-    const ago = r.hrs < 24 ? `${Math.round(r.hrs)} sa önce` : `${Math.floor(r.hrs/24)} gün önce`;
-    return `<div class="rec" title="Son: ${shortDate(r.date)} · ${fmt(r.sets)} etkili set"><span>${m}<br><span class="muted" style="font-size:11px">${ago} · ${fmt(r.sets)} set</span></span>
-      <div class="track"><i style="width:${r.pct*100}%;background:${color}"></i></div><span class="st ${cls}">${r.pct >= 1 ? "Hazır" : r.pct >= .5 ? "Toparlanıyor" : "Yorgun"}</span></div>`;
-  }).join("");
+  // vücut haritası: şu anki yorgunluk ya da bu haftanın set yükü
+  const week = segState.bm === "week", ws = week ? weekSets() : null;
+  $("#bmView").querySelectorAll("button").forEach(x => x.classList.toggle("on", (x.dataset.v === "week") === week));
+  $("#bmNote").textContent = week ? "Bu haftaki etkili setler: ana kas 1, yardımcı kas ½ sayılır. Gelişim için kas başına haftada 10–20 set önerilir."
+    : "Büyük kaslar ~48 saat, küçük kaslar ~36 saat dinlenir; yoğun seanslarda daha uzun. Kasa dokun: hareketleri ve ayrıntısı açılır.";
+  $("#restMap").innerHTML = bodyMap(week ? loadTiers(ws) : fatigueTiers(R)) + legend(week ? "load" : "fatigue");
+  bindBodyMap($("#restMap"));
   // en hazır programı öner: ana kasların ortalama toparlanması
   const score = p => { const ms = [...new Set(p.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a,m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };
   const ranked = state.programs.map(p => ({ p, s: score(p) })).filter(x => x.s > 0).sort((a,b) => b.s - a.s);
-  const ready = shown.filter(m => !R[m] || R[m].pct >= 1);
   let html = "";
   if (ranked.length) html += `<div class="hint good">${ic("lightbulb")} Bugün en uygun program: <b>${esc(ranked[0].p.name)}</b> (kasları %${Math.round(ranked[0].s*100)} hazır)</div>`;
-  if (ready.length) html += `<div class="hint">Hazır kaslar: ${ready.join(", ")}</div>`;
   $("#restSuggest").innerHTML = html + `<div style="height:8px"></div>`;
 }
 
@@ -270,6 +266,7 @@ $("#wPrev").onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderWe
 $("#wNext").onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderWeek(); };
 $("#wToday").onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); };
 $("#histEx").onchange = renderHist;
+$("#bmView").querySelectorAll("button").forEach(b => b.onclick = () => { segState.bm = b.dataset.v; renderRecovery(); });
 document.querySelectorAll('input[name=hMetric], input[name=hMetricT]').forEach(r => r.onchange = renderHist);
 $("#pfSex").onchange = () => { state.profile.sex = $("#pfSex").value; save(); renderPower(); };
 $("#pfBw").oninput = () => { state.profile.bw = $("#pfBw").value; save(); renderPower(true); };

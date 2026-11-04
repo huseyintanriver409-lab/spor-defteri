@@ -3,6 +3,7 @@ import { volume, work } from "../core/training.ts";
 import { $, esc, fmt, ic, state } from "./store.js";
 import { durText, focus, isCardio, isYoga, liftOn, musclesOf } from "./exercises.js";
 import { applyProgram } from "./presets.js";
+import { bindBodyMap, bodyMap, fatigueTiers } from "./bodymap.js";
 import { programById } from "../core/programs.ts";
 import { segState, showTab } from "./ui.js";
 import { WEEKDAYS, ssLabels } from "./programs.js";
@@ -79,10 +80,12 @@ export function renderHome(){
   const activeRest = focus() === "both" && tired.length && !state.live;
   $("#homeRecovery").innerHTML = Object.keys(R).length ? `<div class="section-title">Toparlanma<span class="grow"></span></div><div class="card">
     ${best ? `<div class="row"><div class="grow"><div class="eyebrow">En uygun program</div><div style="font-size:20px;font-weight:800;letter-spacing:-.02em">${esc(best.x.name)}</div><div class="muted small">Kasları %${Math.round(best.s * 100)} hazır</div></div>${state.live ? "" : `<button class="btn sm" data-start="${best.x.id}">${ic("play")}Başla</button>`}</div>` : ""}
+    ${liftOn() ? bodyMap(fatigueTiers(R), { small: true }) : ""}
     ${tired.length ? `<div class="hint">${ic("battery-low")} Dinlenmesi gereken: <b>${esc(tired.join(", "))}</b></div>` : `<div class="hint good">${ic("battery-full")} Bütün kasların hazır görünüyor.</div>`}
     ${activeRest ? `<div style="margin-top:10px"><div class="small"><b>Aktif toparlanma:</b> yorgun kasları zorlamadan hafif yoga ve esneme kan akışını artırır, tutulmayı azaltır.</div>
       <button class="btn sm" id="homeYoga" style="margin-top:8px">${ic("leaf")}${yogaProg ? esc(yogaProg.name) : "20 dk esneme"}</button></div>` : ""}</div>` : "";
   $("#homeRecovery").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
+  bindBodyMap($("#homeRecovery"));
   if ($("#homeYoga")) $("#homeYoga").onclick = () => {
     // yoga programı yoksa "Akşam Esneme ve Rahatlama" programlara eklenir (plana dokunmadan) ve başlar
     if (!yogaProg) applyProgram(programById("yoga-aksam"), 3, false);

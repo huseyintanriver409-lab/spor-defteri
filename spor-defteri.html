@@ -137,6 +137,11 @@
     </div>
 
     <div id="train-lib" class="hidden">
+      <div class="card" id="libMapCard">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg></span>Kasa göre bul</h2>
+        <p class="muted small" style="margin-top:-6px">Bir kasa dokun: o kası en iyi çalıştıran hareketler sırayla açılır.</p>
+        <div id="libMap"></div>
+      </div>
       <div class="card">
         <div class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" placeholder="Hareket veya kas ara (örn. arka omuz)" aria-label="Hareket ara"></div>
         <div class="row" style="margin-top:10px">
@@ -269,10 +274,11 @@
 
     <div id="stats-rest" class="hidden">
       <div class="card">
-        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-battery-medium"/></svg></span>Kas toparlanma</h2>
-        <p class="muted small" style="margin-top:-6px">Büyük kaslar ~48 saat, küçük kaslar ~36 saat; yoğun seanslarda daha uzun.</p>
-        <div id="restSuggest"></div>
-        <div id="restList"></div>
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-battery-medium"/></svg></span>Kaslar</h2>
+        <div class="fchips" id="bmView" style="margin-bottom:6px"><button class="fchip on" data-v="now">Şu an</button><button class="fchip" data-v="week">Bu hafta</button></div>
+        <p class="muted small" id="bmNote" style="margin:6px 0 0"></p>
+        <div id="restMap"></div>
+        <div id="restSuggest" style="margin-top:12px"></div>
       </div>
     </div>
 

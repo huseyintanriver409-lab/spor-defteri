@@ -2,7 +2,9 @@ import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, liftOn, setLabel, yogaOn } from "./exercises.js";
-import { buzz, emptyHTML, openPicker, undoable } from "./ui.js";
+import { buzz, emptyHTML, openPicker, openSheet, sheetHead, undoable } from "./ui.js";
+import { setsByMuscle } from "../core/musclemap.ts";
+import { bindBodyMap, bodyMap, legend, loadTiers } from "./bodymap.js";
 import { refreshDatalist } from "./log.js";
 import { startWorkout } from "./live.js";
 import { shareProgram } from "./importer.js";
@@ -40,6 +42,16 @@ export function ssLabels(items){
   return out;
 }
 export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
+// Programın haftalık kas yükü: plandaki gün sayısı kadar tekrarlanır (planda yoksa haftada bir)
+function openProgramMap(p){
+  const times = Math.max(1, Object.values(state.plan.days).filter(d => d.prog === p.id).length);
+  const ms = setsByMuscle(p.items.map(i => ({ ex: i.ex, sets: i.sets * times })), musclesOf);
+  const top = Object.entries(ms).sort((a, b) => b[1] - a[1]);
+  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">Haftada ${times} kez yapılınca kaslarına düşen etkili set. Kasa dokun: o kasın hareketleri açılır.</p>
+    ${top.length ? bodyMap(loadTiers(ms)) + legend("load") + `<div class="chips" style="margin-top:12px">${top.map(([m, v]) => `<span class="chip">${esc(m)} · ${fmt(v)}</span>`).join("")}</div>`
+      : `<p class="muted">Bu programdaki hareketler kas haritasına girmiyor (yoga, kardiyo ya da kendi hareketlerin).</p>`}`);
+  bindBodyMap(body);
+}
 export function renderProg(){
   $("#yogaCard").classList.toggle("hidden", !yogaOn()); $("#liftCard").classList.toggle("hidden", !liftOn());
   $("#pList").innerHTML = state.programs.length ? state.programs.map(p => {
@@ -47,7 +59,7 @@ export function renderProg(){
     const top = Object.entries(ms).sort((a,b) => b[1]-a[1]).slice(0,4).map(([m]) => m).join(" · ");
     const L = ssLabels(p.items), total = p.items.reduce((a,i) => a + i.sets, 0);
     return `<div class="card progcard">
-      <div class="eyebrow">${p.items.length} hareket · ${total} set${top ? " · " + esc(top) : ""}</div>
+      <div class="eyebrow">${p.items.length} hareket · ${total} set${top ? ` · <button class="linkbtn" data-pmap="${p.id}" title="Kas haritasında gör">${ic("activity")}${esc(top)}</button>` : ""}</div>
       <h3>${esc(p.name)}</h3>
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " sn" : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn primary" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
@@ -55,6 +67,7 @@ export function renderProg(){
     </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, yapay zekâyla oluştur ya da kendin kur.")}</div>`;
   const find = id => state.programs.find(p => p.id===id);
   $("#pList").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
+  $("#pList").querySelectorAll("[data-pmap]").forEach(b => b.onclick = () => openProgramMap(find(b.dataset.pmap)));
   $("#pList").querySelectorAll("[data-pcal]").forEach(b => b.onclick = () => openCalModal(find(b.dataset.pcal)));
   $("#pList").querySelectorAll("[data-pedit]").forEach(b => b.onclick = () => {
     const p = find(b.dataset.pedit); progEditId = p.id;
