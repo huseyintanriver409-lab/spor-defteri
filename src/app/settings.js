@@ -9,6 +9,11 @@ import { mmss, setTDur } from "./tools.js";
 export function renderSettings(){
   $("#themeChips").innerHTML = [["dark","Koyu","moon"],["light","Açık","sun"],["system","Cihaz ayarı","monitor"]].map(([k,l,i]) => `<button class="fchip${theme===k?" on":""}" data-k="${k}" aria-pressed="${theme===k}">${ic(i)}${l}</button>`).join("");
   $("#themeChips").querySelectorAll("button").forEach(b => b.onclick = () => setTheme(b.dataset.k));
+  // cinsiyet erkek/kadınsa vücut haritası ona göre; değilse çizim burada seçilir
+  const sx = state.profile.sex || "", given = sx === "m" || sx === "f";
+  $("#setSex").value = sx; $("#setBody").value = state.prefs.body === "f" ? "f" : "m";
+  $("#setBodyWrap").classList.toggle("hidden", given);
+  $("#sexHelp").textContent = given ? "Kas haritası ve güç skoru buna göre." : "Kas haritasında ve güç skorunda hangi vücut kullanılsın?";
   $("#setGoal").innerHTML = [1,2,3,4,5,6,7].map(v => `<option value="${v}"${v===state.goal?" selected":""}>${v} gün</option>`).join("");
   $("#setStreak").value = state.streakMode || "auto";
   $("#streakHelp").textContent = { auto: "Haftalık planın varsa planlı günleri kaçırmadıkça seri gün gün artar; plan yoksa haftalık sayılır.",
@@ -63,6 +68,8 @@ export function labelIcons(root){
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
 $("#setRest").onchange = () => { state.rest = setTDur(+$("#setRest").value); save(); };
+$("#setSex").onchange = () => { state.profile.sex = $("#setSex").value; save(); refreshAll(); renderSettings(); };
+$("#setBody").onchange = () => { state.prefs.body = $("#setBody").value; save(); refreshAll(); };
 $("#setGoal").onchange = () => { state.goal = +$("#setGoal").value; save(); renderSettings(); };
 $("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; save(); refreshAll(); renderSettings(); };
 $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(); };

@@ -8,14 +8,14 @@ describe("withDefaults", () => {
   it("eksik alanları varsayılanlarla doldurur", () => {
     const s = withDefaults({ v: 2, entries: [entry("a")] });
     expect(s.programs).toEqual([]);
-    expect(s.prefs).toEqual({ wake: true, haptics: true, focus: "both" });
+    expect(s.prefs).toEqual({ wake: true, haptics: true, focus: "both", body: "m" });
     expect(s.plates).toEqual([25, 20, 15, 10, 5, 2.5, 1.25]);
   });
 
   it("iç içe ayarları birleştirir, kullanıcının değerini korur", () => {
     const s = withDefaults({ v: 2, prefs: { haptics: false }, profile: { bw: "80" } });
-    expect(s.prefs).toEqual({ wake: true, haptics: false, focus: "both" });
-    expect(s.profile).toEqual({ sex: "m", bw: "80" });
+    expect(s.prefs).toEqual({ wake: true, haptics: false, focus: "both", body: "m" });
+    expect(s.profile).toEqual({ sex: "", bw: "80" });
   });
 
   it("v1 verisini v2'ye yükseltir: zamanı olmayan kayıtlar ts ya da 1 alır", () => {

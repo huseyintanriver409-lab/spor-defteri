@@ -85,17 +85,18 @@ export function openLibrary(yoga){
 
 // Dört soru, cevap değiştikçe öneri güncellenir. onboarding: ilk açılışta, üstte "Atla" ile.
 export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" : "esneklik" } = {}){
-  const a = { level: "yeni", goal, equip: "salon", days: 3 };
+  const a = { level: "yeni", goal, equip: "salon", days: 3, sex: state.profile.sex };
   const markDone = onboarding ? () => { state.onboarded = true; save(); } : undefined;
   const q = (key, title, opts) => `<div class="pk-head">${title}</div><div class="optgrid" data-q="${key}">${opts.map(([v, l]) => `<button class="fchip${String(a[key]) === String(v) ? " on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;
   const head = onboarding
     ? `<div class="row" style="align-items:flex-start;margin-top:6px"><div class="grow"><div class="eyebrow">Hoş geldin</div>
          <h3 style="font-size:26px;margin:4px 0 6px;letter-spacing:-.035em">Sana uygun programı bulalım</h3></div>
          <button class="btn quiet" id="obSkip" style="flex:none">Atla</button></div>
-       <p class="muted" style="margin:0 0 4px">Dört soru; önerim hemen aşağıda çıkar. Ne yapacağını biliyorsan atla, programını kendin kur.</p>`
+       <p class="muted" style="margin:0 0 4px">Birkaç soru; önerim hemen aşağıda çıkar. Ne yapacağını biliyorsan atla, programını kendin kur.</p>`
     : sheetHead("Bana program öner");
   openSheet(head,
-    q("level", "Deneyimin", [["yeni", "Hiç / çok az"], ["orta", "6 ay – 2 yıl"], ["ileri", "2 yıldan fazla"]])
+    (onboarding ? q("sex", "Cinsiyetin", [["m", "Erkek"], ["f", "Kadın"], ["o", "Diğer"]]) : "")
+    + q("level", "Deneyimin", [["yeni", "Hiç / çok az"], ["orta", "6 ay – 2 yıl"], ["ileri", "2 yıldan fazla"]])
     + q("goal", "Önceliğin", [...(liftOn() ? [["genel", "Sağlık, kondisyon"], ["kas", "Kas kazanmak"], ["guc", "Güçlenmek"]] : []), ...(yogaOn() ? [["esneklik", "Esneklik, yoga"]] : [])])
     + (liftOn() ? q("equip", "Nerede çalışacaksın", [["salon", "Spor salonu"], ["ev", "Evde, dumbbell var"], ["yok", "Ekipmansız"]]) : "")
     + q("days", "Haftada kaç gün", [2, 3, 4, 5, 6].map(n => [n, n + " gün"]))
@@ -127,6 +128,7 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
   };
   $("#bsBody").querySelectorAll("[data-q]").forEach(g => g.querySelectorAll("button").forEach(b => b.onclick = () => {
     const k = g.dataset.q; a[k] = k === "days" ? +b.dataset.v : b.dataset.v;
+    if (k === "sex") { state.profile.sex = a.sex; save(); }
     g.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); buzz(5); render();
   }));
   if (onboarding) {

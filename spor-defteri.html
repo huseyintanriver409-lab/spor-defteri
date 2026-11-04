@@ -292,7 +292,7 @@
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg></span>Profil</h2>
         <div class="grid2">
-          <div><label for="pfSex">Cinsiyet</label><select id="pfSex"><option value="m">Erkek</option><option value="f">Kadın</option></select></div>
+          <div><label for="pfSex">Cinsiyet</label><select id="pfSex"><option value="">Belirtilmedi</option><option value="m">Erkek</option><option value="f">Kadın</option><option value="o">Diğer</option></select></div>
           <div><label for="pfBw">Vücut ağırlığı</label><input id="pfBw" type="number" inputmode="decimal" step="0.1" min="30"></div>
         </div>
         <p class="muted small" id="pfBwNote" style="margin-bottom:0"></p>
@@ -352,6 +352,11 @@
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sun-moon"/></svg></span>Görünüm</h2>
         <div class="fchips" id="themeChips"></div>
+        <div style="display:grid;gap:12px;margin-top:14px">
+          <div><label for="setSex">Cinsiyet</label><select id="setSex"><option value="">Belirtmek istemiyorum</option><option value="m">Erkek</option><option value="f">Kadın</option><option value="o">Diğer</option></select></div>
+          <div id="setBodyWrap"><label for="setBody">Vücut haritası çizimi</label><select id="setBody"><option value="m">Erkek vücudu</option><option value="f">Kadın vücudu</option></select></div>
+        </div>
+        <p class="muted small" id="sexHelp" style="margin:8px 0 0"></p>
       </div>
       <details class="card fold" id="goalCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span>Hedef ve seri</h2><span class="muted small" id="goalSum"></span></summary>

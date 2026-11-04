@@ -5,7 +5,7 @@ import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, groupShown, isCardio, isTimed, isYoga, liftOn, musclesOf, yogaOn } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
-import { bindBodyMap, bodyMap, fatigueTiers, legend, loadTiers, weekSets } from "./bodymap.js";
+import { bindBodyMap, bodyMap, bodySex, fatigueTiers, legend, loadTiers, weekSets } from "./bodymap.js";
 
 /* ---------- Week ---------- */
 export let weekStart = mondayOf(new Date());
@@ -233,7 +233,7 @@ export function renderPower(keepInput){
   if (!keepInput) $("#pfBw").value = lw || state.profile.bw || "";
   $("#pfBw").disabled = !!lw;
   $("#pfBwNote").textContent = lw ? `Vücut takibindeki son kilon kullanılıyor (${fmt(lw)} kg). Değiştirmek için Diğer → Vücut'a yeni ölçü gir.` : "İpucu: Diğer → Vücut'ta kilonu kaydedersen buradaki değer otomatik güncellenir.";
-  const bw = bodyweight(), std = STD[state.profile.sex];
+  const bw = bodyweight(), std = STD[bodySex()];
   if (!bw) { $("#pwScore").textContent = "–"; $("#pwLevel").textContent = "Güç skoru"; $("#pwSub").textContent = "Skor için vücut ağırlığını gir."; $("#pwLifts").innerHTML = ""; return; }
   const res = LIFTS.map(L => {
     let best = 0, date = "";
