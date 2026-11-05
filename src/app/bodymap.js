@@ -18,11 +18,14 @@ const REGION = {
     gluteal: ["Kalça"], hamstring: ["Hamstring"], adductors: ["İç Bacak"], calves: ["Baldır"] },
 };
 // Çizimde ayrı bölgesi olmayan kaslar: bölgenin alt parçaları (çizimdeki sırasıyla) başka kasa verilir.
-// Arkada kürek kemiği üstündeki parçalar (infraspinatus, teres) rotator manşet; önde kasıktaki çapraz parça kalça fleksörü.
+// Arkada kürek kemiğinin üst parçası (infraspinatus) rotator manşet; altındaki teres major Lat'ta kalır.
 const SPLIT = {
-  m: { back: { "upper-back": [[0, 2, 3, 4], ["Rotator Manşet"]] }, front: { adductors: [[0, 3], ["Kalça Fleksörü"]] } },
-  f: { back: { "upper-back": [[0, 2], ["Rotator Manşet"]] }, front: { adductors: [[1, 4], ["Kalça Fleksörü"]] } },
+  m: { back: { "upper-back": [[0, 3], ["Rotator Manşet"]] }, front: {} },
+  f: { back: { "upper-back": [[0, 2], ["Rotator Manşet"]] }, front: {} },
 };
+// Çizimde hiç olmayan kaslar: yanındaki kaslara dokununca pencerede düğme olarak çıkar.
+// Kalça fleksörü (iliopsoas) kasığın derininde; çizimde karşılığı yok.
+const NEARBY = { "Kalça Fleksörü": ["Quadriceps", "İç Bacak"] };
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-dusuk": 1, "y-koruma": 2, "y-gelisim": 3, "y-asiri": 4,
@@ -84,7 +87,9 @@ function hitMuscles(svg, e){
       const q = svg.createSVGPoint(); q.x = p.x + px * unit * Math.cos(k * Math.PI / 8); q.y = p.y + px * unit * Math.sin(k * Math.PI / 8);
       const hit = els.find(el => el.isPointInFill(q)); if (hit) { add(hit); break; }
     }
-  return out.slice(0, 5);
+  const res = out.slice(0, 5);
+  for (const [m, near] of Object.entries(NEARBY)) if (!res.includes(m) && res.some(x => near.includes(x))) res.push(m);
+  return res;
 }
 export function bindBodyMap(root){
   root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {
