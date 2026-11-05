@@ -3,7 +3,7 @@ import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
 import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, SESSION_TOO_MUCH, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
-import { isCardio, musclesOf, pickableEx } from "./exercises.js";
+import { equipOf, isCardio, musclesOf, pickableEx } from "./exercises.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
 import { resetEditor } from "./log.js";
 import { liveItems, openFocus, startWorkout } from "./live.js";
@@ -72,19 +72,20 @@ function miniSymbol(sex, side){
   }
   return id;
 }
+// bir yüzün bölgelerine renk: ana kas koyu, yardımcı açık (CSS değişkeniyle, çizim <defs>'te bir kez)
+const paint = (sex, side, m) => regionParts(sex, side).filter(([, , ms]) => ms).map(([k, , ms]) =>
+  ms.some(x => m.p.includes(x)) ? `--r-${k}:var(--mini-p)` : ms.some(x => m.s.includes(x)) ? `--r-${k}:var(--mini-s)` : "").filter(Boolean).join(";");
 export function miniMap(name){
   const m = musclesOf(name); if (!m.p.length) return "";
   const sex = bodySex(), hits = side => Object.values(REGION[side]).flat().filter(x => m.p.includes(x)).length
     + (m.p.includes("Rotator Manşet") && side === "back" ? 1 : 0);
   const hb = hits("back"), hf = hits("front"), firstBack = Object.values(REGION.back).flat().includes(m.p[0]) || m.p[0] === "Rotator Manşet";
   const side = hb > hf || (hb === hf && firstBack) ? "back" : "front";
-  const vars = regionParts(sex, side).filter(([, , ms]) => ms).map(([k, , ms]) =>
-    ms.some(x => m.p.includes(x)) ? `--r-${k}:var(--mini-p)` : ms.some(x => m.s.includes(x)) ? `--r-${k}:var(--mini-s)` : "").filter(Boolean);
   // yalnız üst ya da alt vücut çalışıyorsa o yarıya yakınlaştırılır
   const LEGS = ["Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır"], legs = m.p.filter(x => LEGS.includes(x)).length;
   const [x, y, w, h] = ART[sex][side][0].split(" ").map(Number);
   const vb = !legs ? [x, y, w, h * .5] : legs === m.p.length ? [x, y + h * .42, w, h * .58] : [x, y, w, h];
-  return `<svg class="minimap" viewBox="${vb.join(" ")}" style="${vars.join(";")}" aria-hidden="true"><use href="#${miniSymbol(sex, side)}"/></svg>`;
+  return `<svg class="minimap" viewBox="${vb.join(" ")}" style="${paint(sex, side, m)}" aria-hidden="true"><use href="#${miniSymbol(sex, side)}"/></svg>`;
 }
 export const legend = kind => `<div class="bm-legend">${KINDS[kind]
   .map(([k, l, d]) => `<span><i data-t="${k}"></i>${l}<small>${d}</small></span>`).join("")}</div>`;
@@ -121,7 +122,7 @@ function hitMuscles(svg, e){
 export function bindBodyMap(root){
   root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {
     const ms = hitMuscles(svg, e); if (!ms.length) return;
-    openMuscleSheet(ms[0], ms, { plain: svg.closest("[data-plain]") != null });
+    if (svg.closest("[data-plain]")) openMuscleReel(ms[0], ms); else openMuscleSheet(ms[0], ms);
   });
 }
 
@@ -167,10 +168,49 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
        <button class="iconbtn" data-use="${esc(name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`).join("")}`);
   body.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleSheet(b.dataset.alt, alts, { plain }));
   body.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { closeSheet(); startWorkout(b.dataset.pstart); });
-  body.querySelectorAll("[data-use]").forEach(b => b.onclick = () => {
-    const n = b.dataset.use; closeSheet();
-    if (state.live) { const items = liveItems(); let i = items.findIndex(x => x.ex === n); if (i < 0) { items.push({ ex: n, sets: 3, reps: "" }); i = items.length - 1; } state.live.idx = i; save(); openFocus(); return; }
-    segState.train = "log"; showTab("train"); resetEditor(); $("#logEx").value = n; $("#logEx").dispatchEvent(new Event("input"));
-    $("#setRows .w").focus();
-  });
+  body.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { closeSheet(); useExercise(b.dataset.use); });
+}
+// antrenman sürüyorsa harekete ekler ve geçer; sürmüyorsa elle kayıt ekranında açar
+function useExercise(n){
+  if (state.live) { const items = liveItems(); let i = items.findIndex(x => x.ex === n); if (i < 0) { items.push({ ex: n, sets: 3, reps: "" }); i = items.length - 1; } state.live.idx = i; save(); openFocus(); return; }
+  segState.train = "log"; showTab("train"); resetEditor(); $("#logEx").value = n; $("#logEx").dispatchEvent(new Event("input"));
+  $("#setRows .w").focus();
+}
+
+// Hareketler'deki haritada kasa dokununca: o kasın hareketleri tam ekran, aşağı kaydırarak birer birer.
+// Her kartta hareketin önden ve arkadan çalıştırdığı kaslar boyalı (ana koyu, yardımcı açık).
+const youtube = name => `https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}`;
+export function openMuscleReel(m, alts = [m]){
+  const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
+  const names = pickableEx().filter(e => e.group !== YOGA).map(e => e.name);
+  const list = rankForMuscle(m, names, musclesOf, counts), sex = bodySex();
+  const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
+    .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
+  const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm)}" role="img" aria-label="${side === "front" ? "Ön" : "Arka"}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
+  const cards = list.map(({ name, kind }, i) => { const mm = musclesOf(name); return `<section class="reel-card">
+      <div class="reel-figs">${figs(mm)}</div>
+      <div>
+        <div class="row" style="gap:6px;margin-bottom:8px">${kind === "best" ? `<span class="reel-best">${ic("star")}En iyi</span>` : ""}<span class="tag">${esc(equipOf(name))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
+        <h3 class="reel-name">${esc(name)}</h3>
+        <div class="reel-legend">${mm.p.length ? `<span><i class="p"></i>${esc(mm.p.join(", "))}</span>` : ""}${mm.s.length ? `<span><i class="s"></i>${esc(mm.s.join(", "))}</span>` : ""}</div>
+        <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}Nasıl yapılır</a>
+          <button class="btn primary" data-use="${esc(name)}">${ic("circle-plus")}${state.live ? "Antrenmana ekle" : "Kaydet"}</button></div>
+        ${i === 0 && list.length > 1 ? `<div class="reel-hint">${ic("chevron-down")}Kaydır</div>` : ""}
+      </div></section>`; }).join("")
+    + (progs.length ? `<section class="reel-card reel-progs"><h3 class="reel-name">Programlarında</h3>
+      ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(p.name)}</div><div class="ms muted small">${fmt(sets)} set bu kasa</div></div>
+        ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}Başla</button>`}</div>`).join("")}</section>` : "");
+  let el = $("#reel");
+  if (!el) { document.body.insertAdjacentHTML("beforeend", `<div class="reel hidden" id="reel" role="dialog" aria-modal="true"></div>`); el = $("#reel"); }
+  el.innerHTML = `<header class="reel-head"><button class="iconbtn" data-rclose title="Kapat">${ic("chevron-left")}</button><h2 class="grow">${esc(m)}</h2></header>
+    ${alts.length > 1 ? `<div class="fchips reel-alts">${alts.map(x => `<button class="fchip${x === m ? " on" : ""}" data-alt="${esc(x)}">${esc(x)}</button>`).join("")}</div>` : ""}
+    <div class="reel-scroll">${cards}</div>`;
+  el.classList.remove("hidden"); document.documentElement.classList.add("reel-open");
+  const close = () => { el.classList.add("hidden"); document.documentElement.classList.remove("reel-open"); removeEventListener("keydown", esc_); };
+  const esc_ = e => { if (e.key === "Escape") close(); };
+  addEventListener("keydown", esc_);
+  el.querySelector("[data-rclose]").onclick = close;
+  el.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => { close(); openMuscleReel(b.dataset.alt, alts); });
+  el.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { close(); useExercise(b.dataset.use); });
+  el.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { close(); startWorkout(b.dataset.pstart); });
 }

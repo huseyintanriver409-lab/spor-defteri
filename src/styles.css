@@ -310,8 +310,32 @@ summary span{color:var(--muted);font-weight:500}
 .exitem [data-more]{cursor:pointer}
 .exitem:not(.open) .more{display:none}
 .exitem.open .more{display:block;margin-top:4px}
-/* hareketin küçük kas resmi: ana kas koyu, yardımcı açık */
-.minimap{width:48px;height:48px;flex:none;margin-right:8px;border-radius:10px;background:var(--card2);padding:3px;--mini-p:var(--accent);--mini-s:color-mix(in srgb,var(--accent) 38%,var(--mz))}
+/* hareketin kas resmi (küçük liste resmi ve tam ekran kartlar): ana kas koyu, yardımcı açık */
+:root{--mini-p:var(--accent);--mini-s:color-mix(in srgb,var(--accent) 38%,var(--mz))}
+.reel{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
+html.reel-open,html.reel-open body{overflow:hidden}
+.reel-head{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 12px 4px}
+.reel-head h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.reel-alts{padding:0 16px 4px;margin:0}
+.reel-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+.reel-card{height:100%;box-sizing:border-box;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;gap:14px;padding:6px 20px calc(18px + env(safe-area-inset-bottom))}
+.reel-figs{flex:1;min-height:0;display:flex;justify-content:center;align-items:center;gap:2%}
+.reel-fig{height:100%;max-width:48%;stroke:var(--bg);stroke-width:3;stroke-linejoin:round}
+.reel-name{font-size:28px;font-weight:800;letter-spacing:-.025em;line-height:1.1;margin:0 0 10px}
+.reel-legend{display:flex;flex-direction:column;gap:5px;font-size:14px;color:var(--muted);margin-bottom:14px}
+.reel-legend span{display:flex;align-items:center;gap:8px}
+.reel-legend i{width:12px;height:12px;border-radius:3px;flex:none;background:var(--mini-p)}
+.reel-legend i.s{background:var(--mini-s)}
+.reel-btns{gap:8px}.reel-btns .btn{flex:1;justify-content:center;text-decoration:none}
+.reel-scroll::-webkit-scrollbar{display:none}
+.reel-best{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:2px 7px}
+.reel-best .ic{width:12px;height:12px}
+.reel-hint{display:flex;justify-content:center;align-items:center;gap:4px;margin-top:12px;color:var(--faint);font-size:12px;animation:reelbob 1.6s ease-in-out infinite}
+.reel-hint .ic{width:14px;height:14px}
+@keyframes reelbob{50%{transform:translateY(4px)}}
+.reel-progs{justify-content:flex-start;padding-top:24px}
+@media (prefers-reduced-motion:reduce){.reel-hint{animation:none}}
+.minimap{width:48px;height:48px;flex:none;margin-right:8px;border-radius:10px;background:var(--card2);padding:3px}
 .minimap{stroke:var(--card2);stroke-width:6;stroke-linejoin:round}
 
 /* ---------- Ana ekran ---------- */
