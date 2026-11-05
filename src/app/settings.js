@@ -89,6 +89,23 @@ if (/^https?:$/.test(location.protocol)) {
   [["manifest", "manifest.webmanifest"], ["apple-touch-icon", "icons/apple-touch-icon.png"]].forEach(([rel, href]) => {
     const l = document.createElement("link"); l.rel = rel; l.href = href; document.head.appendChild(l);
   });
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) {
+    // Telefonda uygulama çoğu zaman arka plandan geri gelir, sayfa yeniden yüklenmez; eski sürüm açık kalırdı.
+    // Uygulama öne her geldiğinde yeni sürüm aranır; yeni sürüm devreye girince sayfa kendini yeniler
+    // (bir alana yazılıyorsa yazma bitene ya da uygulama arka plana gidene kadar bekler; veriler zaten kayıtlı).
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register("sw.js").then(reg => {
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) reg.update().catch(() => {}); });
+    }).catch(() => {});
+    let reloading = false;
+    const reload = () => { if (!reloading) { reloading = true; location.reload(); } };
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController) return;  // ilk kurulum: zaten en yeni sürüm açık
+      const busy = () => { const a = document.activeElement; return a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName); };
+      if (document.hidden || !busy()) return reload();
+      document.addEventListener("focusout", () => setTimeout(() => { if (!busy()) reload(); }, 300));
+      document.addEventListener("visibilitychange", () => { if (document.hidden) reload(); });
+    });
+  }
 }
 }
