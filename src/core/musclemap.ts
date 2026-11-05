@@ -27,14 +27,16 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
   return r.sets >= HEAVY_DAY ? "asiri" : "yorgun";
 }
 
-// Tek antrenmanda kas başına etkili set: 4–8 verimli; 12 ve üstü toparlanmayı uzatır, fazlası boşa gider
-export type SessionTier = "yok" | "hafif" | "ideal" | "yuksek" | "asiri";
+// Tek antrenmanın kasa verdiği uyarı (etkili set; ana kas 1, yardımcı ½). Haftada 2-3 kez çalışılan kasa
+// 3 set zaten güçlü bir uyarıdır; 10 ve üstü tek günde fazladır (SESSION_TOO_MUCH, ayrıca uyarılır).
+export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "guclu";
 export const SESSION_TIERS: [SessionTier, string, string][] = [
-  ["hafif", "Hafif", "1–3 set"], ["ideal", "İdeal", "4–8 set"], ["yuksek", "Yüksek", "9–11 set"], ["asiri", "Aşırı", "12+ set"],
+  ["guclu", "Güçlü uyarı", "3+ set"], ["minimum", "Minimum gelişim", "2–3 set"], ["koruma", "Koruma dozu", "1–2 set"], ["dusuk", "Düşük aktivasyon", "yardımcı olarak, 1 setten az"],
 ];
+export const SESSION_TOO_MUCH = 10;
 export function sessionTier(sets: number): SessionTier {
   if (!(sets > 0)) return "yok";
-  return sets < 4 ? "hafif" : sets <= 8 ? "ideal" : sets < HEAVY_DAY ? "yuksek" : "asiri";
+  return sets < 1 ? "dusuk" : sets < 2 ? "koruma" : sets < 3 ? "minimum" : "guclu";
 }
 // Kas başına hangi hareketten kaç set geldiği (ana kas tam, yardımcı yarım); en yüklü kas önce
 export function sessionBreakdown(items: { ex: string; sets: number }[], musclesOf: MusclesOf): { muscle: string; sets: number; from: { ex: string; sets: number }[] }[] {

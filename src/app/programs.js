@@ -46,7 +46,7 @@ export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
 // Programın bir antrenmanda kaslara yükü: aynı kası çalıştıran hareketler üst üste binerse uyarır
 function openProgramMap(p){
   const html = sessionLoadHTML(p.items, { tap: true, small: false });
-  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">Bu antrenmanı bir kez yapınca kaslarına düşen etkili set (ana kas 1, yardımcı ½). Kasa dokun: hareketleri açılır.</p>
+  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">Bu antrenmanı bir kez yapınca her kasın aldığı uyarı (ana kas 1 set, yardımcı ½ set sayılır). Kasa dokun: hareketleri açılır.</p>
     ${html || `<p class="muted">Bu programdaki hareketler kas haritasına girmiyor (yoga, kardiyo ya da kendi hareketlerin).</p>`}`);
   bindBodyMap(body);
 }
@@ -54,7 +54,7 @@ function openProgramMap(p){
 export function renderEditorLoad(){
   const items = [...$("#pRows").children].map(d => ({ ex: d.querySelector(".pe").value.trim(), sets: Math.max(1, parseInt(d.querySelector(".ps").value) || 1) }));
   const html = liftOn() ? sessionLoadHTML(items) : "";
-  $("#pLoad").innerHTML = html ? `<div class="pk-head">Bu antrenman kaslarını ne kadar yorar</div>${html}` : "";
+  $("#pLoad").innerHTML = html ? `<div class="pk-head">Bu antrenman kaslarını ne kadar çalıştırır</div>${html}` : "";
 }
 export function renderProg(){
   $("#yogaCard").classList.toggle("hidden", !yogaOn()); $("#liftCard").classList.toggle("hidden", !liftOn());

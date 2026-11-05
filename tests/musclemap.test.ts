@@ -39,7 +39,7 @@ describe("vücut haritası", () => {
     ]);
   });
   it("tek antrenman kademeleri ve kas başına dağılım", () => {
-    expect([0, 3, 4, 8, 9, 11, 12].map(sessionTier)).toEqual(["yok", "hafif", "ideal", "ideal", "yuksek", "yuksek", "asiri"]);
+    expect([0, 0.5, 1, 1.5, 2, 2.5, 3, 12].map(sessionTier)).toEqual(["yok", "dusuk", "koruma", "koruma", "minimum", "minimum", "guclu", "guclu"]);
     const b = sessionBreakdown([{ ex: "Bench Press (Barbell)", sets: 4 }, { ex: "Close-Grip Bench Press", sets: 3 }], musclesOf);
     expect(b[0]).toEqual({ muscle: "Göğüs", sets: 5.5, from: [{ ex: "Bench Press (Barbell)", sets: 4 }, { ex: "Close-Grip Bench Press", sets: 1.5 }] });
   });

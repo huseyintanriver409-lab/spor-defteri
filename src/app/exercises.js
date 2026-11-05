@@ -62,8 +62,9 @@ export function musclesOf(name){
   if (_mCache[name]) return _mCache[name];
   const g = groupOf(name), n = name.toLowerCase();
   const def = GROUP_MUSCLES[g] ? { p: GROUP_MUSCLES[g][0], s: GROUP_MUSCLES[g][1] } : { p: [], s: [] };
-  // kardiyo, yoga ve özel ("Diğer") hareketlerde kurallar uygulanmaz; karında yalnız oblik kuralı
-  const r = g === "Karın & Core" ? CORE_RULES.find(([re]) => re.test(n)) : [CARDIO, YOGA, "Diğer"].includes(g) ? null : MUSCLE_RULES.find(([re]) => re.test(n));
+  // kardiyo ve yogada kurallar uygulanmaz; karında yalnız oblik kuralı. Listede olmayan ("Diğer") hareketler de
+  // adından tanınır (ör. "Dumbbell Overhead Press" → ön omuz); tanınmazsa kas haritasına girmez.
+  const r = g === "Karın & Core" ? CORE_RULES.find(([re]) => re.test(n)) : [CARDIO, YOGA].includes(g) ? null : MUSCLE_RULES.find(([re]) => re.test(n));
   return _mCache[name] = r ? { p: r[1], s: r[2] } : def;
 }
 export const EQUIPS = ["Barbell","Dumbbell","Kablo","Makine","Smith","Kettlebell","Vücut Ağırlığı","Diğer","Kardiyo"];

@@ -1,7 +1,7 @@
 // Vücut haritası: önden ve arkadan kaslar; renk kademesi core/musclemap.ts'ten. Kasa dokununca o kasın hareketleri açılır.
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
-import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../core/musclemap.ts";
+import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, SESSION_TOO_MUCH, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
 import { isCardio, musclesOf, pickableEx } from "./exercises.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
@@ -26,7 +26,7 @@ const SPLIT = {
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-dusuk": 1, "y-koruma": 2, "y-gelisim": 3, "y-asiri": 4,
-  "g-yok": 0, "g-hafif": 1, "g-ideal": 2, "g-yuksek": 3, "g-asiri": 4, sec: 1 };
+  "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-guclu": 4, sec: 1 };
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
 const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
@@ -93,16 +93,16 @@ export function bindBodyMap(root){
   });
 }
 
-// Tek antrenmanın kas yükü: harita, renk açıklaması ve fazla yüklenen kaslarda hangi hareketlerden geldiği
+// Tek antrenmanın kaslara verdiği uyarı: harita, renk açıklaması; tek günde fazla yüklenen kaslarda hangi hareketlerden geldiği
 export function sessionLoadHTML(items, { tap = false, small = true } = {}){
   const list = items.filter(i => i.ex), rows = sessionBreakdown(list, musclesOf);
   if (!rows.length) return "";
   const ms = Object.fromEntries(rows.map(r => [r.muscle, r.sets]));
-  const heavy = rows.filter(r => r.sets >= 9);
+  const heavy = rows.filter(r => r.sets >= SESSION_TOO_MUCH);
   return bodyMap(sessionTiers(ms), { tap, small }) + legend("session")
-    + heavy.map(r => `<div class="hint" style="margin-top:10px">${ic("battery-low")} <span><b>${esc(r.muscle)}: ${fmt(r.sets)} set</b> (${LABEL["g-" + sessionTier(r.sets)].toLocaleLowerCase("tr")})
-        <span class="muted small" style="display:block">${r.from.map(f => `${esc(f.ex)} ${fmt(f.sets)}`).join(" · ")}${r.sets >= 12 ? " · Bir hareketi çıkar ya da başka güne al." : ""}</span></span></div>`).join("")
-    + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets < 9).map(r => `<span class="chip">${esc(r.muscle)} · ${fmt(r.sets)}</span>`).join("")}</div>`;
+    + heavy.map(r => `<div class="hint" style="margin-top:10px">${ic("battery-low")} <span><b>${esc(r.muscle)}: ${fmt(r.sets)} set</b> (tek gün için fazla; fazlası gelişime pek katkı vermez, toparlanmayı uzatır)
+        <span class="muted small" style="display:block">${r.from.map(f => `${esc(f.ex)} ${fmt(f.sets)}`).join(" · ")} · Bir hareketi çıkar ya da başka güne al.</span></span></div>`).join("")
+    + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets < SESSION_TOO_MUCH).map(r => `<span class="chip"><i class="bm-dot" data-t="g-${sessionTier(r.sets)}"></i>${esc(r.muscle)} · ${fmt(r.sets)}</span>`).join("")}</div>`;
 }
 
 // Kasın hareketleri: en iyiler, sonra ana, sonra yardımcı çalıştıranlar

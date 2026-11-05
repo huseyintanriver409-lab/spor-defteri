@@ -74,7 +74,7 @@ export function openProgramDetail(p, days, onClose){
   let si = 0;
   const renderMap = () => {
     const html = sessionLoadHTML(p.sessions[si].items.map(([ex, sets]) => ({ ex, sets })));
-    $("#pdMap").innerHTML = html ? `<div class="pk-head">Bir antrenmanda kaslarını ne kadar yorar</div>
+    $("#pdMap").innerHTML = html ? `<div class="pk-head">Bir antrenman kaslarını ne kadar çalıştırır</div>
       ${p.sessions.length > 1 ? `<div class="fchips" style="margin:6px 0 4px">${p.sessions.map((x, i) => `<button class="fchip${i === si ? " on" : ""}" data-si="${i}">Antrenman ${esc(x.name)}</button>`).join("")}</div>` : ""}${html}` : "";
     $("#pdMap").querySelectorAll("[data-si]").forEach(b => b.onclick = () => { si = +b.dataset.si; renderMap(); buzz(5); });
   };
