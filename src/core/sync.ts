@@ -31,14 +31,21 @@ export interface SyncResult {
   uploaded: boolean;
 }
 
-export async function syncOnce(local: State, store: RemoteStore, now = Date.now()): Promise<SyncResult> {
+// firstSync: bu cihaz Drive ile hiç eşitlenmedi. O zaman buluttaki ayarlar kazanır; yoksa yeni kurulan
+// cihazın ilk açılış ayarları (cinsiyet sorusu gibi) daha yeni sayılır ve diğer cihazın planını, başlangıç
+// kilolarını, takvim ayarını ezer. Yalnız bu cihazda girilmiş cinsiyet bulutta boşsa korunur.
+export async function syncOnce(local: State, store: RemoteStore, now = Date.now(), { firstSync = false } = {}): Promise<SyncResult> {
   const raw = await store.read();
   let remote: State | null = null;
   if (raw != null) {
     try { remote = withDefaults(JSON.parse(raw)); }
     catch { throw new Error("Drive'daki eşitleme dosyası bozuk"); }
   }
-  const { state, stats } = remote ? mergeStates(local, remote) : { state: local, stats: { added: 0, updated: 0, removed: 0 } };
+  const base = remote && firstSync ? { ...local, settingsU: 0 } : local;
+  const { state, stats } = remote ? mergeStates(base, remote) : { state: local, stats: { added: 0, updated: 0, removed: 0 } };
+  if (base !== local && !state.profile?.sex && local.profile?.sex) {
+    state.profile = { ...state.profile, sex: local.profile.sex }; state.settingsU = now;
+  }
   const localChanged = canon(state) !== canon(local);
   const uploaded = !remote || canon(state) !== canon(remote);
   if (uploaded) await store.write(JSON.stringify({ ...toPayload(state), syncedAt: now, writer: local.deviceId }));

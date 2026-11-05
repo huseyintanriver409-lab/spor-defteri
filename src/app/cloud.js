@@ -42,10 +42,13 @@ export function runSync(interactive){
       if (tokenP) token = await tokenP;
       syncNeedsAuth = false;
       stampChanges();
-      const r = await syncOnce(state, driveStore(token));
+      const firstSync = !sync.last;
+      const r = await syncOnce(state, driveStore(token), Date.now(), { firstSync });
       if (r.localChanged) {
         // istek sürerken yapılan değişiklikler kaybolmasın: sonucu şimdiki veriyle bir kez daha birleştir
         stampChanges();
+        // ilk eşitlemede buluttaki ayarlar kazandı; ikinci birleştirmede yereldekiler geri gelmesin
+        if (firstSync) state.settingsU = 0;
         setState(mergeStates(state, r.state).state);
         for (const k in _mCache) delete _mCache[k];
         takeSnapshot(); save();

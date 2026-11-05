@@ -92,6 +92,21 @@ describe("syncOnce", () => {
     expect(merged.entries.map(e => e.id).sort()).toEqual(["eski", "uzak", "yeni"]);
   });
 
+  it("hiç eşitlenmemiş yeni cihaz buluttaki ayarları ezmez, programları alır; girdiği cinsiyet korunur", async () => {
+    const store = memStore();
+    const prog = { id: "p1", name: "Full Body · A", u: 5 };
+    await syncOnce(device("eski", { programs: [prog], baseline: { Deadlift: { kg: 125 } }, goal: 4, settingsU: 100 }), store);
+    // yeni telefon: ilk açılışta cinsiyet seçildi, ayar zamanı buluttakinden yeni
+    const fresh = device("yeni", { profile: { sex: "m", bw: "" }, settingsU: 999 });
+    const r = await syncOnce(fresh, store, 1000, { firstSync: true });
+    expect(r.state.programs.map(p => p.id)).toEqual(["p1"]);
+    expect(r.state).toMatchObject({ goal: 4, baseline: { Deadlift: { kg: 125 } }, profile: { sex: "m" } });
+    expect(JSON.parse(store.content()!)).toMatchObject({ goal: 4, baseline: { Deadlift: { kg: 125 } }, profile: { sex: "m" } });
+    // ilk eşitleme değilse son yazan kazanır (eski davranış)
+    const later = await syncOnce(device("yeni", { goal: 2, settingsU: 5000 }), store);
+    expect(later.state.goal).toBe(2);
+  });
+
   it("bozuk bulut dosyasında yereli ezmeden hata verir", async () => {
     const store = memStore("{bozuk");
     await expect(syncOnce(device("d", { entries: [entry("a")] }), store)).rejects.toThrow(/bozuk/);
