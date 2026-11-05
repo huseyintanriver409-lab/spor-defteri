@@ -2,7 +2,7 @@ import { ymd } from "./core/dates.ts";
 import { preload as preloadGoogle } from "./sync/google.ts";
 import { $, load, save, state } from "./app/store.js";
 import { isTimed } from "./app/exercises.js";
-import { keepAwake, showTab } from "./app/ui.js";
+import { keepAwake, restoreNav } from "./app/ui.js";
 import { refreshDatalist, resetEditor, restoreDraft } from "./app/log.js";
 import { resetProgEditor } from "./app/programs.js";
 import { renderLiveBar } from "./app/live.js";
@@ -35,7 +35,7 @@ resetProgEditor();
 if (state.live) { state.live.items ||= []; state.live.idx ||= 0; keepAwake(true); }
 // v3.1: süreli hareketlerde eskiden "tekrar" alanına yazılan saniyeleri sec alanına taşı
 { let moved = 0; state.entries.forEach(e => { if (isTimed(e.ex)) e.sets.forEach(x => { if (x.sec == null && +x.r > 0) { x.sec = +x.r; x.r = 0; delete x.rir; moved++; } }); }); if (moved) save(); }
-showTab("home"); renderLiveBar();
+restoreNav(); renderLiveBar();
 renderSyncStatus(); renderCalStatus();
 // Google betiği önceden yüklenir ki "bağlan" dokunuşu giriş penceresini doğrudan açabilsin
 if (syncCanRun() && (sync.on || calOn() || !state.onboarded)) preloadGoogle().catch(() => {});

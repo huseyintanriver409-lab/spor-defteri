@@ -103,11 +103,22 @@ export function openPicker(title, onPick){
 /* ---------- Navigation ---------- */
 export const TABS = ["home", "train", "history", "progress", "profile"];
 export let curTab = "home";
+// Sayfa yenilenince aynı sekme, bölüm ve kaydırma yerinde açılır. sessionStorage: uygulama yeniden açılınca Bugün'den başlar.
+const NAV_KEY = "sporDefteri.nav";
+const saveNav = () => { try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ tab: curTab, seg: segState, y: scrollY })); } catch(e){} };
+export function restoreNav(){
+  let n = null; try { n = JSON.parse(sessionStorage.getItem(NAV_KEY) || "null"); } catch(e){}
+  if (!n || !TABS.includes(n.tab)) return showTab("home");
+  for (const k in segState) if (n.seg && typeof n.seg[k] === "string") segState[k] = n.seg[k];
+  showTab(n.tab);
+  // içerik çizildikten sonra
+  if (n.y > 0) requestAnimationFrame(() => scrollTo(0, n.y));
+}
 export function showTab(t){
   curTab = t;
   document.querySelectorAll("nav.tabs button").forEach(b => { const on = b.dataset.tab === t; b.classList.toggle("on", on); b.setAttribute("aria-current", on ? "page" : "false"); });
   TABS.forEach(x => $("#tab-" + x).classList.toggle("hidden", x !== t));
-  renderTab(t); scrollTo(0, 0);
+  renderTab(t); scrollTo(0, 0); saveNav();
 }
 export function renderTab(t){
   if (t === "home") renderHome();
@@ -134,11 +145,14 @@ export function renderSeg(name){
   ({ week: renderWeek, hist: renderHistSelect, rec: renderRecords, rest: renderRecovery, power: renderPower, body: renderBody,
      prog: renderProg, log: () => { renderDay(); updateHint(); }, plan: renderPlan,
      settings: renderSettings, lib: renderLib, tools: renderTools, backup: renderBackup })[v]();
+  saveNav();
 }
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.live) keepAwake(true); });
+// kaydırma yeri yenilemeden hemen önce yazılır
+addEventListener("pagehide", saveNav);
 $("#bs").addEventListener("click", e => { if (e.target.id === "bs") closeSheet(); });
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
