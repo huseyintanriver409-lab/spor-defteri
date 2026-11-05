@@ -18,10 +18,10 @@ describe("vücut haritası", () => {
     expect(MUSCLES.filter(m => !BEST[m]?.length)).toEqual([]);
   });
   it("haftalık set kademeleri", () => {
-    expect([0, 2, 4, 9.5, 10, 20, 21].map(loadTier)).toEqual(["yok", "dusuk", "koruma", "koruma", "gelisim", "gelisim", "asiri"]);
+    expect([0, 2, 3.5, 4, 10, 10.5, 18, 19].map(loadTier)).toEqual(["yok", "baslangic", "baslangic", "verimli", "verimli", "orta", "orta", "dusukverim"]);
   });
   it("yorgunluk kademeleri: ağır günden sonra aşırı yorgun", () => {
-    const r = (pct: number, sets: number) => ({ date: "2026-01-01", sets, hrs: 0, need: 48, pct });
+    const r = (pct: number, sets: number) => ({ date: "2026-01-01", sets, fail: false, hrs: 0, need: 48, pct });
     expect(fatigueTier(undefined)).toBe("yok");
     expect(fatigueTier(r(1, 20))).toBe("hazir");
     expect(fatigueTier(r(.6, 20))).toBe("toparlaniyor");

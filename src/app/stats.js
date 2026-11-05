@@ -32,8 +32,9 @@ export function renderWeek(){
   const scale = Math.max(24, ...Object.values(ms));
   $("#musclesCard").classList.toggle("hidden", !liftOn());
   $("#wMuscles").innerHTML = lifts.length ? shown.map(m => {
-    const v = ms[m] || 0, cls = v >= 10 && v <= 20 ? "ok" : "";
-    return `<div class="mbar"><span>${m}</span><div class="track"><div class="zone" style="left:${10/scale*100}%;width:${10/scale*100}%"></div><i class="${cls}" style="width:${v/scale*100}%"></i></div><b>${fmt(v)}</b></div>`;
+    // yeşil bölge: en verimli aralık (4–10 set)
+    const v = ms[m] || 0, cls = v >= 4 ? "ok" : "";
+    return `<div class="mbar"><span>${m}</span><div class="track"><div class="zone" style="left:${4/scale*100}%;width:${6/scale*100}%"></div><i class="${cls}" style="width:${v/scale*100}%"></i></div><b>${fmt(v)}</b></div>`;
   }).join("") + muscleAdvice(ms) : `<div class="empty">Bu hafta kayıt yok</div>`;
 
   const byEx = {};
@@ -81,10 +82,11 @@ export function dayLoad(){
 }
 export function muscleAdvice(ms){
   const main = ["Göğüs","Lat","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır"];
-  const low = main.filter(m => (ms[m]||0) < 10), high = main.filter(m => (ms[m]||0) > 20);
+  // Pelland ve ark. 2025: haftada 4 set gelişim için en az etkili doz; 19 setten sonra her ek setin getirisi küçük
+  const low = main.filter(m => (ms[m]||0) < 4), high = main.filter(m => (ms[m]||0) > 18);
   let t = "";
-  if (low.length) t += `<div class="hint">${ic("arrow-down")} 10 setin altında: <b>${low.join(", ")}</b></div>`;
-  if (high.length) t += `<div class="hint">${ic("arrow-up")} 20 setin üstünde (toparlanmaya dikkat): <b>${high.join(", ")}</b></div>`;
+  if (low.length) t += `<div class="hint">${ic("arrow-down")} Haftada 4 setin altında (gelişim için en az doz): <b>${low.join(", ")}</b></div>`;
+  if (high.length) t += `<div class="hint">${ic("arrow-up")} 18 setin üstünde; ek setlerin getirisi azalıyor: <b>${high.join(", ")}</b></div>`;
   return t;
 }
 
@@ -198,8 +200,8 @@ export function renderRecovery(){
   // vücut haritası: şu anki yorgunluk ya da bu haftanın set yükü
   const week = segState.bm === "week", ws = week ? weekSets() : null;
   $("#bmView").querySelectorAll("button").forEach(x => x.classList.toggle("on", (x.dataset.v === "week") === week));
-  $("#bmNote").textContent = week ? "Bu haftaki etkili setler: ana kas 1, yardımcı kas ½ sayılır. Gelişim için kas başına haftada 10–20 set önerilir."
-    : "Büyük kaslar ~48 saat, küçük kaslar ~36 saat dinlenir; yoğun seanslarda daha uzun. Kasa dokun: hareketleri ve ayrıntısı açılır.";
+  $("#bmNote").textContent = week ? "Bu haftaki etkili setler: ana kas 1, yardımcı kas ½ sayılır. Araştırmaya göre kas başına haftada 4 set gelişimi başlatır, 4–10 set en verimli aralıktır; daha fazlası da işe yarar ama set başına getirisi azalır."
+    : "Bacak ve bel kasları ~48 saatte, üst vücut ~24 saatte toparlanır; o gün 8+ set ya da tükenişe kadar set yaptıysan her biri bir gün ekler. Kişiden kişiye değişir. Kasa dokun: ayrıntısı açılır.";
   $("#restMap").innerHTML = bodyMap(week ? loadTiers(ws) : fatigueTiers(R)) + legend(week ? "load" : "fatigue");
   bindBodyMap($("#restMap"));
   // en hazır programı öner: ana kasların ortalama toparlanması

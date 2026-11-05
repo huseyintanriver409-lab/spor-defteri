@@ -25,7 +25,7 @@ const SPLIT = {
 };
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
-const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-dusuk": 1, "y-koruma": 2, "y-gelisim": 3, "y-asiri": 4,
+const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-baslangic": 1, "y-verimli": 2, "y-orta": 3, "y-dusukverim": 4,
   "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-guclu": 4, sec: 1 };
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
@@ -100,7 +100,7 @@ export function sessionLoadHTML(items, { tap = false, small = true } = {}){
   const ms = Object.fromEntries(rows.map(r => [r.muscle, r.sets]));
   const heavy = rows.filter(r => r.sets >= SESSION_TOO_MUCH);
   return bodyMap(sessionTiers(ms), { tap, small }) + legend("session")
-    + heavy.map(r => `<div class="hint" style="margin-top:10px">${ic("battery-low")} <span><b>${esc(r.muscle)}: ${fmt(r.sets)} set</b> (tek gün için fazla; fazlası gelişime pek katkı vermez, toparlanmayı uzatır)
+    + heavy.map(r => `<div class="hint" style="margin-top:10px">${ic("battery-low")} <span><b>${esc(r.muscle)}: ${fmt(r.sets)} set</b> (tek antrenmanda ~11 setten sonra ek fayda ölçülemiyor; toparlanmayı da uzatır)
         <span class="muted small" style="display:block">${r.from.map(f => `${esc(f.ex)} ${fmt(f.sets)}`).join(" · ")} · Bir hareketi çıkar ya da başka güne al.</span></span></div>`).join("")
     + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets < SESSION_TOO_MUCH).map(r => `<span class="chip"><i class="bm-dot" data-t="g-${sessionTier(r.sets)}"></i>${esc(r.muscle)} · ${fmt(r.sets)}</span>`).join("")}</div>`;
 }

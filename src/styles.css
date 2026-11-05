@@ -202,11 +202,11 @@ button.chip{border:0;color:var(--text);font:inherit;font-size:13px;font-weight:6
 .bodymap.tap .bm-m path[data-m]{cursor:pointer}
 .bodymap.tap .bm-m path[data-m]:hover{opacity:.8}
 :is(.bm-m path,.bm-legend i,.bm-dot)[data-t]{fill:var(--mz);background:var(--mz)}
-:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=hazir],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-gelisim],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-koruma]{fill:var(--good);background:var(--good)}
-:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=toparlaniyor],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-koruma],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-minimum]{fill:var(--warn);background:var(--warn)}
-:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=yorgun],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-asiri],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-guclu]{fill:var(--danger);background:var(--danger)}
-:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=asiri]{fill:var(--over);background:var(--over)}
-:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-dusuk],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-dusuk]{fill:var(--teal);background:var(--teal)}
+:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=hazir],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-verimli],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-koruma]{fill:var(--good);background:var(--good)}
+:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=toparlaniyor],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-orta],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-minimum]{fill:var(--warn);background:var(--warn)}
+:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=yorgun],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-guclu]{fill:var(--danger);background:var(--danger)}
+:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=asiri],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-dusukverim]{fill:var(--over);background:var(--over)}
+:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=y-baslangic],:is(.bm-m path,.bm-legend i,.bm-dot)[data-t=g-dusuk]{fill:var(--teal);background:var(--teal)}
 :is(.bm-m path,.bm-legend i,.bm-dot)[data-t=sec]{fill:var(--accent-line);background:var(--accent-line)}
 .bm-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:12px;font-size:12.5px;font-weight:650}
 .bm-legend span{display:flex;align-items:center;gap:7px;flex-wrap:wrap}

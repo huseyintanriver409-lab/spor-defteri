@@ -4,14 +4,16 @@ import type { MuscleRecovery } from "./recovery.ts";
 export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omuz", "Arka Omuz", "Biceps", "Triceps", "Önkol", "Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır", "Karın", "Oblik", "Rotator Manşet"];
 type MusclesOf = (ex: string) => { p: string[]; s: string[] };
 
-// Haftalık etkili set: <4 düşük uyarı, 4–9 korur, 10–20 geliştirir, 20 üstü toparlanmayı aşar
-export type LoadTier = "yok" | "dusuk" | "koruma" | "gelisim" | "asiri";
+// Haftalık etkili set (ana kas 1, yardımcı ½). Pelland ve ark. 2025 (Sports Medicine), kas büyümesi:
+// 4 set en az etkili doz, 5–10 en verimli, 11–18 orta verim, 19+ düşük verim (zarar değil; ek setin getirisi azalır).
+export type LoadTier = "yok" | "baslangic" | "verimli" | "orta" | "dusukverim";
 export const LOAD_TIERS: [LoadTier, string, string][] = [
-  ["dusuk", "Düşük uyarı", "1–3 set"], ["koruma", "Koruma dozu", "4–9 set"], ["gelisim", "Gelişim", "10–20 set"], ["asiri", "Aşırı yük", "20+ set"],
+  ["baslangic", "Başlangıç", "1–3 set: gelişim için az"], ["verimli", "En verimli", "4–10 set"], ["orta", "Orta verim", "11–18 set: daha fazla gelişim, set başına daha az"], ["dusukverim", "Düşük verim", "19+ set: ek setin getirisi az"],
 ];
+export const MIN_EFFECTIVE_WEEK = 4;
 export function loadTier(sets: number): LoadTier {
   if (!(sets > 0)) return "yok";
-  return sets < 4 ? "dusuk" : sets < 10 ? "koruma" : sets <= 20 ? "gelisim" : "asiri";
+  return sets < MIN_EFFECTIVE_WEEK ? "baslangic" : sets <= 10 ? "verimli" : sets <= 18 ? "orta" : "dusukverim";
 }
 
 // Şu anki durum: toparlanma oranı ve son gün yapılan set sayısıyla
@@ -28,12 +30,13 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
 }
 
 // Tek antrenmanın kasa verdiği uyarı (etkili set; ana kas 1, yardımcı ½). Haftada 2-3 kez çalışılan kasa
-// 3 set zaten güçlü bir uyarıdır; 10 ve üstü tek günde fazladır (SESSION_TOO_MUCH, ayrıca uyarılır).
+// 3 set zaten güçlü bir uyarıdır. Remmert ve ark. 2025 (SportRxiv ön baskı): kas büyümesi için tek antrenmanda
+// ~11 setten sonra ek fayda ölçülemiyor (SESSION_TOO_MUCH, ayrıca uyarılır).
 export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "guclu";
 export const SESSION_TIERS: [SessionTier, string, string][] = [
   ["guclu", "Güçlü uyarı", "3+ set"], ["minimum", "Minimum gelişim", "2–3 set"], ["koruma", "Koruma dozu", "1–2 set"], ["dusuk", "Düşük aktivasyon", "yardımcı olarak, 1 setten az"],
 ];
-export const SESSION_TOO_MUCH = 10;
+export const SESSION_TOO_MUCH = 11;
 export function sessionTier(sets: number): SessionTier {
   if (!(sets > 0)) return "yok";
   return sets < 1 ? "dusuk" : sets < 2 ? "koruma" : sets < 3 ? "minimum" : "guclu";
