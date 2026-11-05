@@ -25,7 +25,8 @@ export function renderLib(){
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex]||0)+1);
   // özel hareket kütüphanedekiyle aynı olabilir (ör. "Conventional Deadlift" → "Deadlift"): birleştirme önerilir
   const libNames = Object.values(LIB).flat(), twin = n => matchExercise(n, libNames);
-  const open = q || eqf || home;
+  // yalnız aramada gruplar açık gelir; ekipman ve "Evde yapılabilir" filtresinde kapalı kalır, sayılar görünür
+  const open = !!q;
   // yoga pozları ağırlık hareketlerinden ayrı, kendi başlığıyla en altta
   const section = g => {
     const items = ex.filter(e => e.group===g); if (!items.length) return "";
