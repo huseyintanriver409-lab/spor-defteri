@@ -6,7 +6,7 @@ import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
 import { isCardio, musclesOf, pickableEx } from "./exercises.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
 import { resetEditor } from "./log.js";
-import { liveItems, openFocus } from "./live.js";
+import { liveItems, openFocus, startWorkout } from "./live.js";
 import { recoveryMap } from "./stats.js";
 import { ART } from "./bodyart.js";
 
@@ -40,8 +40,9 @@ function figure(side, tiers, caption){
   return `<figure><svg viewBox="${vb}" role="img" aria-label="${caption} görünüm"><g class="bm-m">${paths}</g></svg><figcaption>${caption}</figcaption></figure>`;
 }
 // tiers: kas → kademe (yorgunluk, "y-" haftalık ya da "g-" tek antrenman yükü)
-export const bodyMap = (tiers, { tap = true, small = false } = {}) =>
-  `<div class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}">${figure("front", tiers, "Ön")}${figure("back", tiers, "Arka")}</div>`;
+// large: ekran genişliğinde (Hareketler); plain: dokununca açılan pencerede yorgunluk bilgisi yok, yalnız hareketler
+export const bodyMap = (tiers, { tap = true, small = false, large = false, plain = false } = {}) =>
+  `<div class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}${large ? " large" : ""}"${plain ? " data-plain" : ""}>${figure("front", tiers, "Ön")}${figure("back", tiers, "Arka")}</div>`;
 export const legend = kind => `<div class="bm-legend">${KINDS[kind]
   .map(([k, l, d]) => `<span><i data-t="${k}"></i>${l}<small>${d}</small></span>`).join("")}</div>`;
 
@@ -69,7 +70,7 @@ function hitMuscle(svg, e){
 export function bindBodyMap(root){
   root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {
     const el = hitMuscle(svg, e); if (!el) return;
-    const ms = el.dataset.m.split("|"); openMuscleSheet(ms[0], ms);
+    const ms = el.dataset.m.split("|"); openMuscleSheet(ms[0], ms, { plain: svg.closest("[data-plain]") != null });
   });
 }
 
@@ -87,25 +88,34 @@ export function sessionLoadHTML(items, { tap = false, small = true } = {}){
 
 // Kasın hareketleri: en iyiler, sonra ana, sonra yardımcı çalıştıranlar
 // alts: aynı bölgedeki kaslar (omuz); üstte aralarında geçiş düğmeleri çıkar
-export function openMuscleSheet(m, alts = [m]){
+// plain: yorgunluk ve haftalık yük gösterilmez (Hareketler'den kas seçerken)
+export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
   const R = recoveryMap(), r = R[m], ft = fatigueTier(r), ws = weekSets()[m] || 0;
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
   const names = pickableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts);
   const TAG = { best: ["En iyi", "good"], ana: ["Ana kas", ""], yardimci: ["Yardımcı", "muted"] };
   const ago = r ? (r.hrs < 1 ? "az önce" : r.hrs < 24 ? `${Math.round(r.hrs)} sa önce` : `${Math.floor(r.hrs / 24)} gün önce`) : "";
+  // kullanıcının programlarından bu kası çalıştıranlar: bir antrenmanda kaç set (yardımcı kas yarım set)
+  const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
+    .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
   const body = openSheet(sheetHead(m),
     (alts.length > 1 ? `<div class="fchips" style="margin-bottom:10px">${alts.map(x => `<button class="fchip${x === m ? " on" : ""}" data-alt="${esc(x)}">${esc(x)}</button>`).join("")}</div>` : "") +
-    `<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:6px">
+    (plain ? "" : `<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:6px">
        <span class="chip"><i class="bm-dot" data-t="${ft}"></i>${r ? `${LABEL[ft]} · son: ${ago} (${shortDate(r.date)}), ${fmt(r.sets)} set` : "Henüz çalıştırılmadı"}</span>
        <span class="chip"><i class="bm-dot" data-t="y-${loadTier(ws)}"></i>Bu hafta ${fmt(ws)} set${ws ? " · " + LABEL["y-" + loadTier(ws)] : ""}</span></div>
-     ${ft === "yorgun" || ft === "asiri" ? `<div class="hint">${ic("battery-low")} Bu kas henüz toparlanmadı; ağır çalışmadan önce ${ft === "asiri" ? "en az bir gün daha" : "biraz daha"} dinlendir.</div>` : ""}
-     <p class="muted small" style="margin:8px 0 4px">Üstte en etkili hareketler; sonra bu kası ana olarak, en altta yardımcı olarak çalıştıranlar.</p>
+     ${ft === "yorgun" || ft === "asiri" ? `<div class="hint">${ic("battery-low")} Bu kas henüz toparlanmadı; ağır çalışmadan önce ${ft === "asiri" ? "en az bir gün daha" : "biraz daha"} dinlendir.</div>` : ""}`) +
+    (progs.length ? `<div class="pk-head" style="margin-top:4px">Programlarında</div>
+     ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(p.name)}</div><div class="ms muted small">${fmt(sets)} set bu kasa</div></div>
+       ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}Başla</button>`}</div>`).join("")}
+     <div class="pk-head">Hareketler</div>` : "") +
+    `<p class="muted small" style="margin:8px 0 4px">Üstte en etkili hareketler; sonra bu kası ana olarak, en altta yardımcı olarak çalıştıranlar.</p>
      ${list.map(({ name, kind }) => `<div class="exitem"><div class="grow"><div>${esc(name)}${counts[name] ? ` <span class="muted small">· ${counts[name]} kayıt</span>` : ""}</div>
        <div class="ms"><span class="tag ${TAG[kind][1]}">${TAG[kind][0]}</span></div></div>
        <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`).join("")}`);
-  body.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleSheet(b.dataset.alt, alts));
+  body.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleSheet(b.dataset.alt, alts, { plain }));
+  body.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { closeSheet(); startWorkout(b.dataset.pstart); });
   body.querySelectorAll("[data-use]").forEach(b => b.onclick = () => {
     const n = b.dataset.use; closeSheet();
     if (state.live) { const items = liveItems(); let i = items.findIndex(x => x.ex === n); if (i < 0) { items.push({ ex: n, sets: 3, reps: "" }); i = items.length - 1; } state.live.idx = i; save(); openFocus(); return; }

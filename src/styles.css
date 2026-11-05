@@ -193,6 +193,7 @@ button.chip{border:0;color:var(--text);font:inherit;font-size:13px;font-weight:6
 /* vücut haritası (bodymap.js) */
 .bodymap{display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:340px;margin:4px auto 0}
 .bodymap.small{max-width:220px}
+.bodymap.large{max-width:520px;gap:10px}
 .bodymap figure{margin:0;text-align:center}
 .bodymap svg{width:100%;height:auto;display:block}
 .bodymap figcaption{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:2px}
