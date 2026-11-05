@@ -119,11 +119,42 @@ function hitMuscles(svg, e){
     }
   return out.slice(0, 5);
 }
-export function bindBodyMap(root){
+// onTap verilirse dokunulan kaslar ona gider (ana sayfa: toparlanma analizi)
+export function bindBodyMap(root, onTap){
   root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {
     const ms = hitMuscles(svg, e); if (!ms.length) return;
-    if (svg.closest("[data-plain]")) openMuscleReel(ms[0], ms); else openMuscleSheet(ms[0], ms);
+    e.stopPropagation();
+    if (onTap) onTap(ms); else if (svg.closest("[data-plain]")) openMuscleReel(ms[0], ms); else openMuscleSheet(ms[0], ms);
   });
+}
+
+// Genel yorgunluk: son 4 günde çalışan kasların ortalama kalan yorgunluğu (1 − toparlanma oranı), 5 kademe.
+// Kas başına toparlanma core/recovery.ts'teki araştırmaya dayalı sürelerle; bu özet yalnız onların ortalaması.
+export const FATIGUE_LEVELS = ["Dinlenmiş", "Hafif", "Orta", "Yorucu", "Zorlayıcı", "Çok yorucu"];
+export function fatigueSummary(R = recoveryMap()){
+  const recent = Object.values(R).filter(r => r.hrs < 96);
+  const score = recent.length ? recent.reduce((a, r) => a + (1 - r.pct), 0) / recent.length : 0;
+  const lvl = score <= 0 ? 0 : Math.min(5, 1 + Math.floor(score * 5));
+  return { lvl, label: FATIGUE_LEVELS[lvl] };
+}
+export const levelBar = lvl => `<div class="lvlbar" data-l="${lvl}" aria-hidden="true">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= lvl ? "on" : ""}"></i>`).join("")}</div>`;
+
+// Toparlanma analizi: genel seviye, harita ve kas kas ne zaman hazır olacağı (hareket listesi yok)
+export function openRecoveryAnalysis(focus){
+  const R = recoveryMap(), { lvl, label } = fatigueSummary(R);
+  const rows = MUSCLES.filter(m => R[m]).map(m => ({ m, r: R[m], t: fatigueTier(R[m]) })).sort((a, b) => a.r.pct - b.r.pct || a.m.localeCompare(b.m, "tr"));
+  const left = r => r.pct >= 1 ? "Hazır" : (h => h < 1 ? "<1 sa" : h < 24 ? `~${h} sa` : `~${Math.floor(h / 24)} g ${h % 24} sa`)(Math.ceil(r.need - r.hrs));
+  const body = openSheet(sheetHead("Toparlanma analizi"),
+    `<div class="row" style="align-items:flex-end;margin-bottom:6px"><div class="grow"><div class="eyebrow">Genel yorgunluk</div>
+       <div style="font-size:26px;font-weight:800;letter-spacing:-.02em">${label}</div>${levelBar(lvl)}</div></div>
+     <p class="muted small" style="margin:8px 0 0">Son 4 günde çalışan kasların ortalaması.</p>
+     ${bodyMap(fatigueTiers(R), { tap: false })}${legend("fatigue")}
+     ${rows.length ? `<div class="pk-head" style="margin-top:14px">Kas kas</div>` + rows.map(({ m, r, t }) => `<div class="exitem rec-row${m === focus ? " hl" : ""}" data-rm="${esc(m)}">
+       <i class="bm-dot" data-t="${t}" style="margin-right:6px"></i><div class="grow"><div>${esc(m)}</div>
+       <div class="ms">${LABEL[t]} · ${shortDate(r.date)} · ${fmt(r.sets)} set${r.fail ? " · tükeniş" : ""}</div></div><b>${left(r)}</b></div>`).join("")
+     : `<p class="muted">Henüz kayıt yok.</p>`}`);
+  const f = focus && [...body.querySelectorAll("[data-rm]")].find(x => x.dataset.rm === focus);
+  if (f) setTimeout(() => f.scrollIntoView({ block: "center" }), 50);
 }
 
 // Tek antrenmanın kaslara verdiği uyarı: harita, renk açıklaması; tek günde fazla yüklenen kaslarda hangi hareketlerden geldiği

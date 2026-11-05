@@ -3,7 +3,7 @@ import { volume, work } from "../core/training.ts";
 import { $, esc, ic, state } from "./store.js";
 import { focus, isCardio, isYoga, liftOn, musclesOf } from "./exercises.js";
 import { applyProgram } from "./presets.js";
-import { bindBodyMap, bodyMap, fatigueTiers } from "./bodymap.js";
+import { bindBodyMap, bodyMap, fatigueSummary, fatigueTiers, levelBar, openRecoveryAnalysis } from "./bodymap.js";
 import { programById } from "../core/programs.ts";
 import { plannedOn } from "../core/calendar.ts";
 import { segState, showTab } from "./ui.js";
@@ -80,11 +80,16 @@ export function renderHome(){
   // spor ve yogayı birlikte kullananlara: kaslar yorgunken hafif yoga önerisi (aktif toparlanma)
   const yogaProg = state.programs.filter(x => x.items.length && x.items.every(i => isYoga(i.ex))).sort((a, b) => (b.lib === "yoga-aksam") - (a.lib === "yoga-aksam"))[0];
   const activeRest = focus() === "both" && tired.length && !state.live;
-  $("#homeRecovery").innerHTML = Object.keys(R).length && liftOn() ? `<div class="section-title">Toparlanma<span class="grow"></span></div><div class="card">
+  const fs = fatigueSummary(R);
+  // karta ya da haritaya dokununca hareketler değil, toparlanma analizi açılır
+  $("#homeRecovery").innerHTML = Object.keys(R).length && liftOn() ? `<div class="section-title">Toparlanma<span class="grow"></span></div><div class="card" id="recCard">
+    <div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">Yorgunluk</div><div style="font-size:22px;font-weight:800;letter-spacing:-.02em">${fs.label}</div>${levelBar(fs.lvl)}</div>
+      <button class="ghost" id="recOpen">Analiz${ic("chevron-right")}</button></div>
     ${bodyMap(fatigueTiers(R), { small: true })}
     ${tired.length ? `<div class="hint">${ic("battery-low")} <span>Dinlenmeli: <b>${esc(tired.join(", "))}</b></span></div>` : `<div class="hint good">${ic("battery-full")} Bütün kasların hazır.</div>`}
     ${activeRest ? `<button class="btn sm" id="homeYoga" style="margin-top:10px">${ic("leaf")}Hafif esneme: ${yogaProg ? esc(yogaProg.name) : "20 dk"}</button>` : ""}</div>` : "";
-  bindBodyMap($("#homeRecovery"));
+  bindBodyMap($("#homeRecovery"), ms => openRecoveryAnalysis(ms[0]));
+  if ($("#recCard")) $("#recCard").onclick = e => { if (!e.target.closest("#homeYoga")) openRecoveryAnalysis(); };
   if ($("#homeYoga")) $("#homeYoga").onclick = () => {
     // yoga programı yoksa "Akşam Esneme ve Rahatlama" programlara eklenir (plana dokunmadan) ve başlar
     if (!yogaProg) applyProgram(programById("yoga-aksam"), 3, false);

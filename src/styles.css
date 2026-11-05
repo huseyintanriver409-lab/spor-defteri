@@ -311,7 +311,8 @@ summary span{color:var(--muted);font-weight:500}
 .exitem:not(.open) .more{display:none}
 .exitem.open .more{display:block;margin-top:4px}
 /* hareketin kas resmi (küçük liste resmi ve tam ekran kartlar): ana kas koyu, yardımcı açık */
-:root{--mini-p:var(--accent);--mini-s:color-mix(in srgb,var(--accent) 38%,var(--mz))}
+/* ayrı renkler (aynı rengin tonları değil): ana kas kırmızı, yardımcı turkuaz */
+:root{--mini-p:var(--danger);--mini-s:var(--teal)}
 .reel{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
 html.reel-open,html.reel-open body{overflow:hidden}
 .reel-head{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 12px 4px}
@@ -335,6 +336,14 @@ html.reel-open,html.reel-open body{overflow:hidden}
 @keyframes reelbob{50%{transform:translateY(4px)}}
 .reel-progs{justify-content:flex-start;padding-top:24px}
 @media (prefers-reduced-motion:reduce){.reel-hint{animation:none}}
+/* yorgunluk seviyesi: 5 parçalı çubuk */
+.lvlbar{display:flex;gap:5px;margin-top:8px;max-width:180px}
+.lvlbar i{flex:1;height:6px;border-radius:3px;background:var(--card3)}
+.lvlbar[data-l="1"] i.on{background:var(--good)}.lvlbar[data-l="2"] i.on{background:var(--teal)}
+.lvlbar[data-l="3"] i.on{background:var(--warn)}.lvlbar[data-l="4"] i.on,.lvlbar[data-l="5"] i.on{background:var(--danger)}
+#recCard{cursor:pointer}
+.rec-row b{font-size:13px;white-space:nowrap}
+.rec-row.hl{background:var(--soft);border-radius:var(--r-sm)}
 .minimap{width:48px;height:48px;flex:none;margin-right:8px;border-radius:10px;background:var(--card2);padding:3px}
 .minimap{stroke:var(--card2);stroke-width:6;stroke-linejoin:round}
 
