@@ -117,6 +117,9 @@ describe("haftalık plan", () => {
     setPlan(s, [{ day: "MO", program: "AB · B" }], undefined, TODAY);
     expect(s.plan.mode).toBe("fixed");
     expect(() => setPlan(s, [{ day: "MO" }], undefined, TODAY, undefined, ["Yok"])).toThrow(/bulunamadı/);
+    // liste metin olarak gelse de anlaşılır
+    expect(setPlan(s, [{ day: "MO" }, { day: "FR" }], undefined, TODAY, undefined, '["AB · A","AB · B"]' as any).rotation).toEqual(["AB · A", "AB · B"]);
+    expect(setPlan(s, [{ day: "MO" }, { day: "FR" }], undefined, TODAY, undefined, "AB · B, AB · A" as any).rotation).toEqual(["AB · B", "AB · A"]);
   });
 
   it("hatalı gün, saat, tarih ve program reddedilir", () => {

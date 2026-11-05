@@ -117,7 +117,12 @@ export function setPlan(s: State, days: PlanDayInput[], until: string | undefine
   if (!Array.isArray(days)) throw new Error("Günler listesi gerekli.");
   if (days.length && !s.programs.length) throw new Error("Önce bir program ekle; plan programlara göre kurulur.");
   const prev: Plan = { ...s.plan, days: { ...s.plan.days } };
-  const order = (rotation || []).map(r => { const p = findProgram(s, String(r)); if (!p) throw new Error(`Program bulunamadı: ${r}`); return p.id; });
+  // araç tanımını eski hâliyle tutan istemciler listeyi metin olarak gönderebilir: '["A","B"]' ya da "A, B"
+  if (typeof rotation === "string") {
+    const t = String(rotation).trim();
+    try { rotation = JSON.parse(t); } catch { rotation = t ? t.split(",").map(x => x.trim()).filter(Boolean) : []; }
+  }
+  const order = (Array.isArray(rotation) ? rotation : []).map(r => { const p = findProgram(s, String(r)); if (!p) throw new Error(`Program bulunamadı: ${r}`); return p.id; });
   const keepRot = !order.length && rotation === undefined && isRot(prev) && days.every(d => !d.program);
   const old = s.plan.days, next: Record<string, { prog: string; time: string }> = {};
   const pool = [...new Set(Object.values(old).map((d: any) => d.prog).filter((id: string) => s.programs.some(p => p.id === id)))];
