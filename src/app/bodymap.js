@@ -65,23 +65,31 @@ export function weekSets(){
   const a = ymd(mondayOf(new Date()));
   return setsByMuscle(state.entries.filter(e => e.date >= a && !isCardio(e.ex)).map(e => ({ ex: e.ex, sets: work(e.sets).length })), musclesOf);
 }
-// Dokunulan kas: tam üstüne basılmadıysa en yakındaki kas seçilir (küçük bölgeler kolay ıskalanır)
-function hitMuscle(svg, e){
-  const own = e.target.closest("[data-m]"); if (own) return own;
-  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  const p = pt.matrixTransform(svg.getScreenCTM().inverse()), w = svg.viewBox.baseVal.width, els = [...svg.querySelectorAll("[data-m]")];
-  // dokunulan noktanın çevresinde genişleyen halkalarda ilk denk gelen kas
-  for (let r = w * .015; r <= w * .08; r += w * .015)
+// Dokunulan yerdeki kaslar, yakından uzağa: önce tam üstüne basılan, sonra parmak ucu kadar çevredekiler.
+// Telefonda küçük kalan bölgeler (rotator manşet, kalça fleksörü) parmakla tam tutturulamaz; yakındakiler pencerede düğme olur.
+const FINGER_PX = 22;
+function hitMuscles(svg, e){
+  const out = [], add = el => el.dataset.m.split("|").forEach(m => { if (!out.includes(m)) out.push(m); });
+  const own = e.target.closest("[data-m]"); if (own) add(own);
+  const ctm = svg.getScreenCTM(), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(ctm.inverse()), unit = 1 / Math.hypot(ctm.a, ctm.b), els = [...svg.querySelectorAll("[data-m]")];
+  for (let px = 3; px <= FINGER_PX; px += 3)
     for (let k = 0; k < 16; k++) {
-      const q = svg.createSVGPoint(); q.x = p.x + r * Math.cos(k * Math.PI / 8); q.y = p.y + r * Math.sin(k * Math.PI / 8);
-      const hit = els.find(el => el.isPointInFill(q)); if (hit) return hit;
+      const q = svg.createSVGPoint(); q.x = p.x + px * unit * Math.cos(k * Math.PI / 8); q.y = p.y + px * unit * Math.sin(k * Math.PI / 8);
+      els.forEach(el => { if (el.isPointInFill(q)) add(el); });
     }
-  return null;
+  // tam üstüne basılmadıysa en yakını açılır; yakında hiç kas yoksa daha geniş bakılır
+  if (!out.length) for (let px = FINGER_PX; px <= FINGER_PX * 2 && !out.length; px += 4)
+    for (let k = 0; k < 16; k++) {
+      const q = svg.createSVGPoint(); q.x = p.x + px * unit * Math.cos(k * Math.PI / 8); q.y = p.y + px * unit * Math.sin(k * Math.PI / 8);
+      const hit = els.find(el => el.isPointInFill(q)); if (hit) { add(hit); break; }
+    }
+  return out.slice(0, 5);
 }
 export function bindBodyMap(root){
   root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {
-    const el = hitMuscle(svg, e); if (!el) return;
-    const ms = el.dataset.m.split("|"); openMuscleSheet(ms[0], ms, { plain: svg.closest("[data-plain]") != null });
+    const ms = hitMuscles(svg, e); if (!ms.length) return;
+    openMuscleSheet(ms[0], ms, { plain: svg.closest("[data-plain]") != null });
   });
 }
 
