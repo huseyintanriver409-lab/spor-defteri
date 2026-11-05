@@ -103,7 +103,7 @@ export function openPicker(title, onPick){
 /* ---------- Navigation ---------- */
 export const TABS = ["home", "train", "history", "progress", "profile"];
 export let curTab = "home";
-// Sayfa yenilenince aynı sekme, bölüm ve kaydırma yerinde açılır. sessionStorage: uygulama yeniden açılınca Bugün'den başlar.
+// Sayfa yenilenince aynı sekme, bölüm ve kaydırma yerinde açılır. sessionStorage: uygulama yeniden açılınca ana sayfadan başlar.
 const NAV_KEY = "sporDefteri.nav";
 const saveNav = () => { try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ tab: curTab, seg: segState, y: scrollY })); } catch(e){} };
 export function restoreNav(){

@@ -14,7 +14,7 @@ import { dayLoad, recoveryMap } from "./stats.js";
 import { renderBackupBanner } from "./backup.js";
 import { flameHTML, streakNote, streakNow, streakOn } from "./streak.js";
 
-/* ---------- Home: Bugün ---------- */
+/* ---------- Ana sayfa ---------- */
 export const MONTHS_LONG = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 // sırayla planda da doğru program: core/plan.ts
 export const todayPlan = () => plannedOn(state.plan, state.programs, ymd(new Date()));
