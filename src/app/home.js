@@ -5,8 +5,9 @@ import { durText, focus, isCardio, isYoga, liftOn, musclesOf } from "./exercises
 import { applyProgram } from "./presets.js";
 import { bindBodyMap, bodyMap, fatigueTiers } from "./bodymap.js";
 import { programById } from "../core/programs.ts";
+import { plannedOn } from "../core/calendar.ts";
 import { segState, showTab } from "./ui.js";
-import { WEEKDAYS, ssLabels } from "./programs.js";
+import { ssLabels } from "./programs.js";
 import { elapsedText, liveItems, openFocus, startWorkout } from "./live.js";
 import { setCalMonth, setSelDay } from "./history.js";
 import { dayLoad, recoveryMap } from "./stats.js";
@@ -15,10 +16,8 @@ import { flameHTML, streakNote, streakNow, streakOn } from "./streak.js";
 
 /* ---------- Home: Bugün ---------- */
 export const MONTHS_LONG = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-export function todayPlan(){
-  const w = WEEKDAYS.find(x => x[2] === new Date().getDay()), d = w && state.plan.days[w[0]];
-  return d ? state.programs.find(p => p.id === d.prog) : null;
-}
+// sırayla planda da doğru program: core/plan.ts
+export const todayPlan = () => plannedOn(state.plan, state.programs, ymd(new Date()));
 export function weekProgress(){
   const load = dayLoad(), mon = mondayOf(new Date());
   let days = 0; for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(d.getDate() + i); if (load[ymd(d)]) days++; }

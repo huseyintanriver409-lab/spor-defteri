@@ -104,6 +104,21 @@ describe("haftalık plan", () => {
     expect(s.plan.until).toBe("");
   });
 
+  it("sirayla: programlar günlere hafta hafta döner; günler program yazılmadan değişince sıra sürer", () => {
+    const s = withProgs();
+    // 3 Kasım salı: sıradaki gün çarşamba A alır
+    const v = setPlan(s, [{ day: "MO" }, { day: "WE" }, { day: "FR" }], undefined, TODAY, undefined, ["AB · A", "AB · B"]);
+    expect(v).toMatchObject({ type: "sirayla", rotation: ["AB · A", "AB · B"] });
+    expect(v.next14.map(x => x.date.slice(8) + x.program.slice(-1))).toEqual(["04A", "06B", "09A", "11B", "13A", "16B"]);
+    setPlan(s, [{ day: "MO" }, { day: "WE" }, { day: "FR", time: "08:00" }], undefined, TODAY);
+    expect(s.plan.mode).toBe("rot");
+    expect(overview(s, TODAY).plan.next14[0]).toMatchObject({ date: "2026-11-04", program: "AB · A" });
+    // günlere program yazılırsa sabit plana döner
+    setPlan(s, [{ day: "MO", program: "AB · B" }], undefined, TODAY);
+    expect(s.plan.mode).toBe("fixed");
+    expect(() => setPlan(s, [{ day: "MO" }], undefined, TODAY, undefined, ["Yok"])).toThrow(/bulunamadı/);
+  });
+
   it("hatalı gün, saat, tarih ve program reddedilir", () => {
     const s = withProgs();
     expect(() => setPlan(s, [{ day: "Zz" }], undefined, TODAY)).toThrow(/Gün/);

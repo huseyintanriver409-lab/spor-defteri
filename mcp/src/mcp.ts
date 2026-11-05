@@ -12,6 +12,7 @@ const INSTRUCTIONS = `Spor Defteri, kullanıcının antrenman defteri uygulamas�
 - Kullanıcı hareketlerde çalıştığı kiloları söylerse programdaki hareketlere kg olarak yaz ya da baslangic_kaydet kullan: bunlar "Mevcut verilerim" olur, uygulama ilk antrenmanda kiloyu oradan önerir. Antrenman kaydı değildir.
 - Çok günlü program her gün için ayrı program olur ("Ad · Gün").
 - plan_kur haftalık planı baştan kurar; "6 Ocak'a kadar" gibi bitiş tarihi verilirse plan Google'a o güne kadar yazılır.
+- A/B gibi dönüşümlü programlarda (haftada 3 gün, 2 program) plan_kur'a sirayla ver: günler sıradaki programı alır, hafta hafta A-B-A, B-A-B döner. ozet'teki plan.next14 hangi tarihte hangi programın olduğunu gösterir.
 - Plan Google'da iki şekilde görünebilir (plan_kur'daki calendar): "gorev" = Google Görevler'de tikli, saatsiz görev; antrenman bitince kendiliğinden tiklenir. "etkinlik" = Google Takvim'de saatli, hatırlatmalı etkinlik. Kullanıcı görev, tik, yapılacak ya da saatsiz derse "gorev" kullan; saat sorma.
 - Spor planı için başka takvim ya da görev araçlarıyla (Google Takvim bağlayıcısı gibi) kendin etkinlik veya görev oluşturma: telefon planı kendisi yazar, sen de yazarsan her gün iki kez görünür.
 - Kullanıcı yaptığı antrenmanları (başka uygulamadan geçerken eski kayıtlarını da) anlatırsa antrenman_kaydet ile deftere yaz. Uzun geçmişi parçalara bölüp birkaç çağrıda gönder; aynı setler iki kez yazılmaz.
@@ -152,7 +153,7 @@ const TOOLS = [
   },
   {
     name: "plan_kur", title: "Haftalık planı kur",
-    description: "Haftalık antrenman planını baştan kurar (listede olmayan günler plandan çıkar). Her gün için program verilmezse o günün mevcut programı ya da plandaki programlar sırayla kullanılır. Telefon planı Google'a tarih tarih yazar: calendar ile görev (tikli, saatsiz) ya da etkinlik (saatli) seçilir. Boş days listesi planı temizler.",
+    description: "Haftalık antrenman planını baştan kurar (listede olmayan günler plandan çıkar). Her gün için program verilmezse o günün mevcut programı ya da plandaki programlar sırayla kullanılır. sirayla verilirse programlar günlere hafta hafta dönerek dağılır (A-B-A, sonraki hafta B-A-B). Telefon planı Google'a tarih tarih yazar: calendar ile görev (tikli, saatsiz) ya da etkinlik (saatli) seçilir. Boş days listesi planı temizler.",
     inputSchema: {
       type: "object", required: ["days"], additionalProperties: false,
       properties: {
@@ -165,11 +166,12 @@ const TOOLS = [
           },
         } },
         until: { type: "string", description: "Planın bitiş tarihi YYYY-AA-GG (en fazla bir yıl ileride). \"\" = süresiz; hiç verilmezse mevcut bitiş tarihi kalır." },
+        sirayla: { type: "array", minItems: 1, maxItems: 7, items: { type: "string" }, description: "Programlar sırayla dönsün: program kimlikleri ya da adları, sırasıyla (ör. [\"Full Body · A\", \"Full Body · B\"]). İlk antrenman günü listenin ilkini alır, sonra sıra takvime göre ilerler. Verilirse days'teki program yok sayılır. Verilmezse ve days'te program yazılmamışsa mevcut sırayla plan sürer." },
         calendar: { type: "string", enum: ["gorev", "etkinlik", "kapali"], description: "Plan Google'da nasıl görünsün: gorev = tikli, saatsiz Google görevi (antrenman bitince tiklenir); etkinlik = saatli, hatırlatmalı takvim etkinliği; kapali = Google'a yazılmaz. Verilmezse mevcut ayar kalır." },
       },
     },
     write: true,
-    run: (s: State, a: any, c: Ctx) => setPlan(s, a.days, a.until, c.today(), a.calendar),
+    run: (s: State, a: any, c: Ctx) => setPlan(s, a.days, a.until, c.today(), a.calendar, a.sirayla),
   },
 ];
 

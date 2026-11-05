@@ -7,6 +7,8 @@ import { bindBodyMap, sessionLoadHTML } from "./bodymap.js";
 import { refreshDatalist } from "./log.js";
 import { startWorkout } from "./live.js";
 import { shareProgram } from "./importer.js";
+import { dropProgram, fillWeek, isRot, keepRotation } from "../core/plan.ts";
+import { plannedDates } from "../core/calendar.ts";
 
 /* ---------- Programs ---------- */
 export let progEditId = null;
@@ -84,15 +86,15 @@ export function renderProg(){
   });
   $("#pList").querySelectorAll("[data-pdel]").forEach(b => b.onclick = async () => {
     const target = state.programs.find(x => x.id===b.dataset.pdel); if (!target) return;
-    const inPlan = Object.values(state.plan.days).some(d => d.prog === target.id);
+    const inPlan = Object.values(state.plan.days).some(d => d.prog === target.id) || (isRot(state.plan) && state.plan.rot.includes(target.id));
     if (!(await ask(`"${target.name}" programı silinsin mi?${inPlan ? "\nHaftalık plandaki günleri de boşalır." : ""}\nEski antrenman kayıtların silinmez.`))) return;
     const i = state.programs.findIndex(x => x.id===target.id), p = state.programs[i]; if (i < 0) return;
-    const days = JSON.parse(JSON.stringify(state.plan.days)), wasActive = state.active === p.id;
+    const plan = JSON.parse(JSON.stringify(state.plan)), wasActive = state.active === p.id;
     state.programs.splice(i, 1);
     if (wasActive) state.active = null;
-    for (const d in state.plan.days) if (state.plan.days[d].prog === p.id) delete state.plan.days[d];
+    dropProgram(state.plan, p.id, new Date());
     save(); renderProg(); buzz(15);
-    undoable(`"${p.name}" silindi`, () => { state.programs.splice(i, 0, p); state.plan.days = days; if (wasActive) state.active = p.id; save(); renderProg(); });
+    undoable(`"${p.name}" silindi`, () => { state.programs.splice(i, 0, p); state.plan = plan; if (wasActive) state.active = p.id; save(); renderProg(); });
   });
   renderPlan();
 }
@@ -122,10 +124,9 @@ export let calProg = null;
 export function openCalModal(p){
   calProg = p;
   // planda bu program bir güne atanmışsa o günün tarih ve saatini öner
-  const planned = WEEKDAYS.map(([code,,js]) => ({ js, d: state.plan.days[code] })).filter(x => x.d && x.d.prog === p.id)
-    .map(x => ({ date: nextDateFor(x.js), time: x.d.time })).sort((a,b) => a.date-b.date)[0];
+  const planned = plannedDates(state.plan, state.programs, new Date()).find(x => x.p.id === p.id);
   $("#calName").textContent = p.name + " · " + p.items.length + " hareket";
-  $("#calDate").value = ymd(planned ? planned.date : new Date());
+  $("#calDate").value = planned ? planned.date : ymd(new Date());
   $("#calTime").value = planned ? planned.time : "19:00";
   $("#calModal").classList.remove("hidden");
 }
@@ -158,24 +159,79 @@ export function describeSession(s){
 
 // "bitiş 6 Oca 2027"
 export const untilText = s => { const d = parse(s); return `bitiş ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+// kısa program adları: "Full Body · A", "Full Body · B" → "A", "B" (ortak ön ek atılır)
+function shortNames(ids){
+  const names = ids.map(id => (state.programs.find(p => p.id === id) || {}).name || "?");
+  const parts = names.map(n => n.split(" · "));
+  return names.length > 1 && parts.every(x => x.length > 1 && x[0] === parts[0][0]) ? parts.map(x => x.slice(1).join(" · ")) : names;
+}
+// sırayla planda bu hafta ve gelecek hafta hangi gün hangi program
+function rotPreview(P){
+  const mon = new Date(); mon.setHours(0,0,0,0); mon.setDate(mon.getDate() - (mon.getDay() + 6) % 7);
+  const end = new Date(mon); end.setDate(mon.getDate() + 13);
+  const short = Object.fromEntries(P.rot.map((id, i) => [id, shortNames(P.rot)[i]]));
+  const all = plannedDates({ ...P, until: ymd(end) }, state.programs, mon);
+  const week = off => all.filter(x => (parse(x.date) - mon) / 864e5 >= off * 7 && (parse(x.date) - mon) / 864e5 < off * 7 + 7)
+    .map(x => `${WEEKDAYS.find(w => w[0] === x.code)[1]} <b>${esc(short[x.p.id] || x.p.name)}</b>`).join(" · ");
+  return `<div class="muted small" style="margin-top:10px;line-height:1.8">Bu hafta: ${week(0)}<br>Gelecek hafta: ${week(1)}</div>`;
+}
 export function renderPlan(){
-  const P = state.plan;
+  const P = state.plan, rot = P.mode === "rot";
   $("#planDur").value = P.dur; $("#planRemind").value = P.remind;
   $("#planUntil").value = P.until || ""; $("#planUntil").min = ymd(new Date());
   $("#planUntilClear").classList.toggle("hidden", !P.until);
-  const opts = sel => `<option value="">— Dinlenme —</option>` + state.programs.map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(p.name)}</option>`).join("");
-  $("#planRows").innerHTML = WEEKDAYS.map(([code, name]) => {
-    const d = P.days[code] || {};
-    return `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span style="flex:0 0 34px;font-weight:600" class="small">${name}</span>
-      <select class="grow" data-pd="${code}">${opts(d.prog)}</select>
-      <input type="time" data-pt="${code}" value="${d.time||"19:00"}" style="flex:0 0 96px"${d.prog?"":" class=\"hidden\""}></div>`;
-  }).join("");
-  $("#planRows").querySelectorAll("[data-pd]").forEach(s => s.onchange = () => {
+  const opts = (sel, empty) => (empty ? `<option value="">${empty}</option>` : "") + state.programs.map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(p.name)}</option>`).join("");
+  const time = (code, on) => `<input type="time" data-pt="${code}" value="${(P.days[code] && P.days[code].time) || "19:00"}" style="flex:0 0 96px"${on ? "" : ` class="hidden"`}>`;
+  const mode = `<div class="fchips" id="planMode" style="margin-bottom:6px"><button class="fchip${rot ? "" : " on"}" data-mode="fixed">Sabit günler</button><button class="fchip${rot ? " on" : ""}" data-mode="rot">Sırayla</button></div>
+    <p class="muted small" style="margin:0 0 4px">${rot ? "Antrenman günlerini seç; programlar bu günlere sırayla dağılır. 3 gün ve A, B ile: bu hafta A-B-A, gelecek hafta B-A-B." : "Her gün kendi programını alır, her hafta aynı."}</p>`;
+  if (rot) {
+    const R = P.rot || [], n = Object.keys(P.days).length;
+    $("#planRows").innerHTML = mode + WEEKDAYS.map(([code, name]) =>
+      `<div class="row" style="margin-top:6px;flex-wrap:nowrap;min-height:44px"><label class="check row grow" style="gap:10px;flex-wrap:nowrap;margin:0"><input type="checkbox" data-pc="${code}"${P.days[code] ? " checked" : ""}><span class="small" style="font-weight:600">${name}</span></label>${time(code, !!P.days[code])}</div>`).join("")
+      + `<div class="pk-head" style="margin-top:14px">Sıra</div>`
+      + R.map((id, i) => `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span class="small" style="flex:0 0 22px;font-weight:700">${i + 1}.</span>
+          <select class="grow" data-pr="${i}">${opts(id)}</select>
+          <button class="iconbtn danger" data-prx="${i}" title="Sıradan çıkar" style="width:32px"${R.length < 2 ? " disabled" : ""}>${ic("x")}</button></div>`).join("")
+      + `<div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" id="planRotAdd">${ic("plus")}Sıraya program ekle</button>${R.length > 1 && n ? `<button class="btn sm quiet" id="planRotShift">${ic("arrow-left-right")}Sırayı bir kaydır</button>` : ""}</div>`
+      + (R.length && n ? rotPreview(P) : "");
+  } else {
+    $("#planRows").innerHTML = mode + WEEKDAYS.map(([code, name]) => {
+      const d = P.days[code] || {};
+      return `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span style="flex:0 0 34px;font-weight:600" class="small">${name}</span>
+        <select class="grow" data-pd="${code}">${opts(d.prog, "— Dinlenme —")}</select>${time(code, !!d.prog)}</div>`;
+    }).join("");
+  }
+  const rows = $("#planRows");
+  // sırayla planda değişiklik: sıradaki antrenman yine aynı program olsun (sıra kopmasın)
+  const change = fn => { const prev = JSON.parse(JSON.stringify(P)); fn(); keepRotation(P, prev, new Date()); save(); renderPlan(); };
+  rows.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => {
+    if ((b.dataset.mode === "rot") === rot) return;
+    if (b.dataset.mode === "rot") {
+      // sabit plandaki programlar gün sırasıyla sıraya girer (A-B-A → A, B); sıradaki antrenman değişmez
+      const prev = JSON.parse(JSON.stringify(P));
+      const used = [...new Set(WEEKDAYS.map(([c]) => P.days[c] && P.days[c].prog).filter(id => id && state.programs.some(p => p.id === id)))];
+      P.mode = "rot"; P.rot = used.length ? used : state.programs.slice(0, 2).map(p => p.id);
+      keepRotation(P, prev, new Date());
+    } else { fillWeek(P, new Date()); P.mode = "fixed"; }
+    save(); buzz(5); renderPlan();
+  });
+  rows.querySelectorAll("[data-pd]").forEach(s => s.onchange = () => {
     const c = s.dataset.pd;
     if (s.value) P.days[c] = { prog: s.value, time: (P.days[c] && P.days[c].time) || "19:00" }; else delete P.days[c];
     save(); renderPlan();
   });
-  $("#planRows").querySelectorAll("[data-pt]").forEach(t => t.onchange = () => { const d = P.days[t.dataset.pt]; if (d) { d.time = t.value || "19:00"; save(); } });
+  rows.querySelectorAll("[data-pc]").forEach(cb => cb.onchange = () => change(() => {
+    const c = cb.dataset.pc;
+    if (cb.checked) P.days[c] = { prog: P.rot[0] || "", time: "19:00" }; else delete P.days[c];
+  }));
+  rows.querySelectorAll("[data-pr]").forEach(s => s.onchange = () => change(() => { P.rot[+s.dataset.pr] = s.value; }));
+  rows.querySelectorAll("[data-prx]").forEach(b => b.onclick = () => change(() => { P.rot.splice(+b.dataset.prx, 1); }));
+  if ($("#planRotAdd")) $("#planRotAdd").onclick = () => {
+    const next = state.programs.find(p => !P.rot.includes(p.id)) || state.programs[0];
+    if (next) change(() => P.rot.push(next.id));
+  };
+  if ($("#planRotShift")) $("#planRotShift").onclick = () => { P.shift = (P.shift || 0) + 1; fillWeek(P, new Date()); save(); buzz(5); renderPlan(); };
+  rows.querySelectorAll("[data-pt]").forEach(t => t.onchange = () => { const d = P.days[t.dataset.pt]; if (d) { d.time = t.value || "19:00"; save(); } });
   const n = Object.keys(P.days).length;
   $("#planInfo").textContent = (state.programs.length ? (n ? `Haftada ${n} antrenman` + (P.until ? `, ${untilText(P.until)}` : "") : "Henüz gün seçilmedi") : "Önce bir program oluştur")
     + (state.gcal.plan && n ? " · Google Takvim'de kendiliğinden güncellenir" : "");
@@ -229,7 +285,14 @@ $("#planIcs").onclick = () => {
   const stamp = now.toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
   const L = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Spor Defteri//TR","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Antrenman Planı"];
   let n = 0;
-  WEEKDAYS.forEach(([code,, js]) => {
+  // sırayla planda her tarihin programı farklı: tekrarlayan etkinlik yerine tarih tarih etkinlik
+  if (isRot(P)) plannedDates(P, state.programs, now).forEach(x => {
+    const s = at(x.date, x.time), e = new Date(s.getTime() + P.dur*60000); n++;
+    L.push("BEGIN:VEVENT", `UID:sd-${x.date}@spor-defteri`, `DTSTAMP:${stamp}`, `DTSTART:${dt(s)}`, `DTEND:${dt(e)}`, `SUMMARY:${icsText("Antrenman: " + x.p.name)}`, `DESCRIPTION:${icsText(progDetails(x.p))}`);
+    if (P.remind > 0) L.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsText(x.p.name + " antrenmanı")}`,`TRIGGER:-PT${P.remind}M`,"END:VALARM");
+    L.push("END:VEVENT");
+  });
+  else WEEKDAYS.forEach(([code,, js]) => {
     const d = P.days[code], p = d && state.programs.find(x => x.id===d.prog); if (!p) return;
     const s = at(ymd(nextDateFor(js)), d.time), e = new Date(s.getTime() + P.dur*60000); n++;
     L.push("BEGIN:VEVENT", `UID:sd-${code}-${p.id}@spor-defteri`, `DTSTAMP:${stamp}`, `DTSTART:${dt(s)}`, `DTEND:${dt(e)}`,
@@ -242,6 +305,6 @@ $("#planIcs").onclick = () => {
   const blob = new Blob([L.map(fold).join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "antrenman-plani.ics";
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast(`Takvim dosyası indirildi (${n} haftalık antrenman)`, "calendar-days");
+  toast(isRot(P) ? `Takvim dosyası indirildi (${n} antrenman)` : `Takvim dosyası indirildi (${n} haftalık antrenman)`, "calendar-days");
 };
 }

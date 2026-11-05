@@ -7,6 +7,7 @@ import { syncCanRun, connectDrive } from "./cloud.js";
 import { openBaseline } from "./baseline.js";
 import { liftOn, yogaOn } from "./exercises.js";
 import { sessionLoadHTML } from "./bodymap.js";
+import { startRotation } from "../core/plan.ts";
 
 const LEVEL = { yeni: "Yeni başlayan", orta: "Orta seviye", ileri: "İleri seviye" };
 const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç", esneklik: "Esneklik, yoga" };
@@ -14,6 +15,10 @@ const EQUIP = { salon: "Spor salonu", ev: "Evde dumbbell", yok: "Ekipmansız" };
 const dayName = code => (WEEKDAYS.find(w => w[0] === code) || [code, code])[1];
 const chips = p => `<div class="row" style="gap:6px;margin:8px 0 4px;flex-wrap:wrap">${[...p.levels.map(l => LEVEL[l]), EQUIP[p.equip], p.days.join(" / ") + " gün/hafta"].map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>`;
 const list = arr => `<ul style="margin:6px 0 0;padding-left:20px;display:grid;gap:6px">${arr.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`;
+
+// Gün sayısı antrenman sayısına tam bölünmüyorsa (3 gün, A ve B) plan sırayla kurulur: A-B-A, sonraki hafta B-A-B.
+// Programın kendi haftalık düzeni varsa (4 günde A-B-A-B gibi) o kullanılır. Plan ekranından sabite çevrilebilir.
+const rotates = (p, days) => p.sessions.length > 1 && !(p.rotation && p.rotation[days]) && days % p.sessions.length !== 0;
 
 // Programın seanslarını kullanıcının programlarına ekler (aynısı varsa yeniden eklemez); istenirse haftalık plana yerleştirir.
 export function applyProgram(p, days, placeInPlan){
@@ -30,6 +35,8 @@ export function applyProgram(p, days, placeInPlan){
     const old = state.plan.days, next = {};
     for (const [code, i] of weeklyPlan(p, days)) next[code] = { prog: ids[i], time: (old[code] && old[code].time) || "19:00" };
     state.plan.days = next; state.goal = days;
+    if (rotates(p, days)) { state.plan.mode = "rot"; state.plan.rot = ids; startRotation(state.plan, new Date()); }
+    else state.plan.mode = "fixed";
   }
   save(); renderProg(); refreshAll(); buzz(15);
   toast(placeInPlan ? `${p.name} haftalık planına yerleşti` : `${p.name} programlarına eklendi`, "check");
@@ -38,7 +45,12 @@ export function applyProgram(p, days, placeInPlan){
 // Program ayrıntısı. onClose: ilk açılıştan gelindiyse kapanınca "ilk açılış tamam" işaretlemek için.
 export function openProgramDetail(p, days, onClose){
   let d = p.days.includes(days) ? days : p.days[0], place = true;
-  const planSummary = () => weeklyPlan(p, d).map(([c, i]) => `${dayName(c)}: ${p.sessions.length > 1 ? p.sessions[i].name : "antrenman"}`).join(" · ");
+  const planSummary = () => {
+    const w = weeklyPlan(p, d);
+    if (!rotates(p, d)) return w.map(([c, i]) => `${dayName(c)}: ${p.sessions.length > 1 ? p.sessions[i].name : "antrenman"}`).join(" · ");
+    const week = k => w.map(([c], j) => `${dayName(c)} ${p.sessions[(k * w.length + j) % p.sessions.length].name}`).join(" · ");
+    return `Sırayla: ${week(0)}; sonraki hafta ${week(1)}`;
+  };
   const hasPlan = Object.keys(state.plan.days).length > 0;
   openSheet(sheetHead(p.name),
     `<p class="muted" style="margin:0">${esc(p.short)}</p>${chips(p)}

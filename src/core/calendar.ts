@@ -16,6 +16,8 @@
    görevler okunup tarihlerine göre eşlenir (iki cihaz aynı anda yazsa da fazlası silinir). Son BACKFILL_DAYS
    içinde antrenman yapılmış (oturumu ya da kaydı olan) ama görevi olmayan günler tamamlanmış görev olarak eklenir. */
 import { pad, parse, ymd } from "./dates.ts";
+import { isRot, progIdOn, type Plan } from "./plan.ts";
+export type { Plan };
 
 export const CAL_SUMMARY = "Spor Defteri";
 export const CAL_DESCRIPTION = "Spor Defteri uygulamasının yazdığı antrenmanlar ve haftalık plan.";
@@ -66,7 +68,6 @@ export const planEventId = (dayCode: string) => eventId("sdplan", dayCode);
 // Yerel saatle "YYYY-MM-DDTHH:MM:00" (tekrarlayan etkinlikler saat dilimiyle birlikte bunu ister)
 export const localDateTime = (d: Date) => `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 
-export interface Plan { days: Record<string, { prog: string; time?: string }>; dur: number; remind: number; until?: string }
 export interface Program { id: string; name: string; items: { ex: string; sets: number; reps?: string }[] }
 
 // Takvimdeki planın neye göre yazıldığı. Bugünün tarihini içermez: aynı plan her gün yeniden yazılmaz.
@@ -76,7 +77,9 @@ export function planSignature(plan: Plan, programs: Program[]): string {
   return SIG_PREFIX + JSON.stringify([plan.dur, plan.remind, plan.until || "", WEEKDAYS.map(([code]) => {
     const d = plan.days[code], p = d && programs.find(x => x.id === d.prog);
     return p ? [code, d!.time || "19:00", p.name, p.items] : [code];
-  })]);
+  }),
+  // sırayla planda tarihlerin programı sıraya ve başlangıcına bağlı (sabit planın imzası eskisiyle aynı kalır)
+  ...(isRot(plan) ? [["rot", plan.anchor || "", plan.shift || 0, plan.rot!.map(id => { const p = programs.find(x => x.id === id); return p ? [p.name, p.items] : id; })]] : [])]);
 }
 
 export interface PlannedDay { date: string; code: string; time: string; p: Program }
@@ -89,7 +92,7 @@ export function plannedDates(plan: Plan, programs: Program[], today: Date): Plan
   const out: PlannedDay[] = [];
   for (; d <= end; d.setDate(d.getDate() + 1)) {
     const code = WEEKDAYS.find(([, js]) => js === d.getDay())![0];
-    const e = plan.days[code], p = e && programs.find(x => x.id === e.prog);
+    const e = plan.days[code], id = e && progIdOn(plan, ymd(d)), p = id && programs.find(x => x.id === id);
     if (p) out.push({ date: ymd(d), code, time: e.time || "19:00", p });
   }
   return out;
@@ -272,7 +275,6 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
 // O tarihte plana göre yapılacak program (planın bitiş tarihinden sonra yok). Uygulamadaki takvim için.
 export function plannedOn(plan: Plan, programs: Program[], date: string): Program | null {
   if (plan.until && date > plan.until) return null;
-  const code = WEEKDAYS.find(([, js]) => js === parse(date).getDay())![0];
-  const e = plan.days[code];
-  return (e && programs.find(p => p.id === e.prog)) || null;
+  const id = progIdOn(plan, date);
+  return (id && programs.find(p => p.id === id)) || null;
 }

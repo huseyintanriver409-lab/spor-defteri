@@ -19,7 +19,7 @@ const knownNames = () => allEx().map(e => e.name);
 function applyPlan(days, times, until){
   const old = state.plan.days, next = {};
   for (const [code, prog] of days) next[code] = { prog, time: times[code] || (old[code] && old[code].time) || "19:00" };
-  state.plan.days = next; state.goal = days.length; state.plan.until = until || "";
+  state.plan.days = next; state.plan.mode = "fixed"; state.goal = days.length; state.plan.until = until || "";
 }
 const calNote = () => state.gcal.plan ? "Google Takvim'e kendiliğinden yazılır."
   : "Google Takvim'e yazılması için Profil → Google Takvim'de \"Haftalık planı…\" seçeneğini aç.";

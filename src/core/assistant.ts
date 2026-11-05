@@ -8,7 +8,8 @@ import { CARDIO, LIB, YOGA } from "./library.ts";
 import { dayCode, matchExercise, normalize, parseDate, parseTime } from "./importer.ts";
 import { e1rm, work, volume } from "./training.ts";
 import { parse, ymd } from "./dates.ts";
-import { MAX_UNTIL_DAYS } from "./calendar.ts";
+import { MAX_UNTIL_DAYS, plannedDates } from "./calendar.ts";
+import { dropProgram, isRot, keepRotation, startRotation, type Plan } from "./plan.ts";
 import type { State, Stamped } from "./schema.ts";
 import { buildBaseline } from "./baseline.ts";
 
@@ -98,11 +99,8 @@ export function deleteProgram(s: State, ref: string) {
   const p = findProgram(s, ref);
   if (!p) throw new Error(`Program bulunamadı: ${ref}`);
   s.programs = s.programs.filter(x => x !== p);
-  const freed = Object.keys(s.plan.days).filter(c => s.plan.days[c].prog === p.id);
-  if (freed.length) {
-    s.plan.days = Object.fromEntries(Object.entries(s.plan.days).filter(([c]) => !freed.includes(c)));
-    s.goal = Object.keys(s.plan.days).length || s.goal;
-  }
+  const freed = dropProgram(s.plan, p.id, new Date());
+  if (freed.length) s.goal = Object.keys(s.plan.days).length || s.goal;
   return { name: p.name, freedDays: freed.map(c => DAY_NAMES[c]) };
 }
 
@@ -113,9 +111,14 @@ export interface PlanDayInput { day: string; program?: string; time?: string }
 // calendar: planın Google'da nasıl görüneceği ("gorev" tikli görev, "etkinlik" saatli etkinlik, "kapali");
 // verilmezse ayar değişmez. Yazma işini telefon yapar (izin ilk kez orada istenir).
 export const CALENDAR_MODES = ["gorev", "etkinlik", "kapali"];
-export function setPlan(s: State, days: PlanDayInput[], until: string | undefined, today: Date, calendar?: string) {
+// rotation: programlar sırayla dönsün (A, B → A-B-A, sonraki hafta B-A-B); verilince günlerdeki program yok sayılır,
+// ilk antrenman günü listenin ilkini alır. Verilmezse ve günlere program yazılmamışsa önceki sırayla plan sürer.
+export function setPlan(s: State, days: PlanDayInput[], until: string | undefined, today: Date, calendar?: string, rotation?: string[]) {
   if (!Array.isArray(days)) throw new Error("Günler listesi gerekli.");
   if (days.length && !s.programs.length) throw new Error("Önce bir program ekle; plan programlara göre kurulur.");
+  const prev: Plan = { ...s.plan, days: { ...s.plan.days } };
+  const order = (rotation || []).map(r => { const p = findProgram(s, String(r)); if (!p) throw new Error(`Program bulunamadı: ${r}`); return p.id; });
+  const keepRot = !order.length && rotation === undefined && isRot(prev) && days.every(d => !d.program);
   const old = s.plan.days, next: Record<string, { prog: string; time: string }> = {};
   const pool = [...new Set(Object.values(old).map((d: any) => d.prog).filter((id: string) => s.programs.some(p => p.id === id)))];
   if (!pool.length) pool.push(...s.programs.map(p => p.id));
@@ -154,13 +157,22 @@ export function setPlan(s: State, days: PlanDayInput[], until: string | undefine
   }
   // gün sırası haftaya göre
   s.plan.days = Object.fromEntries(WEEK.filter(c => next[c]).map(c => [c, next[c]]));
+  if (order.length) { s.plan.mode = "rot"; s.plan.rot = order; startRotation(s.plan, today); }
+  else if (keepRot && days.length) keepRotation(s.plan, prev, today);
+  else s.plan.mode = "fixed";
   if (days.length) s.goal = days.length;
-  return planView(s);
+  return planView(s, today);
 }
 
-export function planView(s: State) {
+export function planView(s: State, today: Date) {
+  const rot = isRot(s.plan);
   return {
-    days: WEEK.filter(c => s.plan.days[c]).map(c => ({ day: DAY_NAMES[c], code: c, time: s.plan.days[c].time || "19:00", program: progName(s, s.plan.days[c].prog) })),
+    type: rot ? "sirayla" : "sabit",
+    ...(rot ? { rotation: s.plan.rot!.map((id: string) => progName(s, id)) } : {}),
+    days: WEEK.filter(c => s.plan.days[c]).map(c => ({ day: DAY_NAMES[c], code: c, time: s.plan.days[c].time || "19:00", program: rot ? "sırayla" : progName(s, s.plan.days[c].prog) })),
+    // önümüzdeki iki hafta: sırayla planda hangi tarihte hangi program
+    next14: plannedDates(s.plan, s.programs as any, today).filter(x => x.date < ymd(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14)))
+      .map(x => ({ date: x.date, day: DAY_NAMES[x.code], program: x.p.name })),
     until: s.plan.until || "",
     durationMin: s.plan.dur, reminderMin: s.plan.remind,
     googleCalendar: !s.gcal?.plan ? "kapali" : s.gcal.mode === "task" ? "gorev (tikli, saatsiz)" : "etkinlik (saatli, hatırlatmalı)",
@@ -175,7 +187,7 @@ export function overview(s: State, today: Date, recent = 8) {
   return {
     today: ymd(today),
     programs: s.programs.map(p => ({ id: p.id, name: p.name, items: p.items.map((i: any) => ({ exercise: i.ex, sets: i.sets, reps: i.reps || "" })) })),
-    plan: planView(s),
+    plan: planView(s, today),
     weeklyGoal: s.goal,
     startingPoint: baselineView(s),
     totalWorkouts: dates.length,
