@@ -17,6 +17,12 @@ const REGION = {
   back: { trapezius: ["Trapez"], "upper-back": ["Lat"], "lower-back": ["Bel"], deltoids: ["Arka Omuz", "Yan Omuz"], triceps: ["Triceps"], forearm: ["Önkol"],
     gluteal: ["Kalça"], hamstring: ["Hamstring"], adductors: ["İç Bacak"], calves: ["Baldır"] },
 };
+// Çizimde ayrı bölgesi olmayan kaslar: bölgenin alt parçaları (çizimdeki sırasıyla) başka kasa verilir.
+// Arkada kürek kemiği üstündeki parçalar (infraspinatus, teres) rotator manşet; önde kasıktaki çapraz parça kalça fleksörü.
+const SPLIT = {
+  m: { back: { "upper-back": [[0, 2, 3, 4], ["Rotator Manşet"]] }, front: { adductors: [[0, 3], ["Kalça Fleksörü"]] } },
+  f: { back: { "upper-back": [[0, 2], ["Rotator Manşet"]] }, front: { adductors: [[1, 4], ["Kalça Fleksörü"]] } },
+};
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-dusuk": 1, "y-koruma": 2, "y-gelisim": 3, "y-asiri": 4,
@@ -28,10 +34,15 @@ const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k,
 export const bodySex = () => ["m", "f"].includes(state.profile.sex) ? state.profile.sex : state.prefs.body === "f" ? "f" : "m";
 
 function figure(side, tiers, caption){
-  const [vb, parts] = ART[bodySex()][side];
+  const sex = bodySex(), [vb, art] = ART[sex][side];
+  // bölünen bölgeler: parçalar kendi kaslarıyla ayrı bölge olur
+  const parts = art.flatMap(([slug, ds]) => {
+    const sp = SPLIT[sex][side] && SPLIT[sex][side][slug];
+    if (!sp) return [[slug, ds, REGION[side][slug]]];
+    return [[slug, ds.filter((_, i) => !sp[0].includes(i)), REGION[side][slug]], [slug, ds.filter((_, i) => sp[0].includes(i)), sp[1]]];
+  });
   const order = [...parts.filter(([s]) => !ON_TOP.includes(s)), ...parts.filter(([s]) => ON_TOP.includes(s))];
-  const paths = order.map(([slug, ds]) => {
-    const ms = REGION[side][slug];
+  const paths = order.map(([, ds, ms]) => {
     if (!ms) return ds.map(d => `<path class="bm-base" d="${d}"/>`).join("");
     const t = ms.map(m => tiers[m] || "yok").reduce((x, y) => RANK[y] > RANK[x] ? y : x);
     const title = ms.map(m => esc(m) + (LABEL[tiers[m]] ? " · " + LABEL[tiers[m]] : "")).join(", ");

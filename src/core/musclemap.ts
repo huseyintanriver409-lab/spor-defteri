@@ -1,7 +1,7 @@
 // Vücut haritası: kas başına yorgunluk ve yük kademeleri, kasa göre en iyi hareketler.
 import type { MuscleRecovery } from "./recovery.ts";
 
-export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omuz", "Arka Omuz", "Biceps", "Triceps", "Önkol", "Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır", "Karın", "Oblik"];
+export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omuz", "Arka Omuz", "Biceps", "Triceps", "Önkol", "Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır", "Karın", "Oblik", "Rotator Manşet", "Kalça Fleksörü"];
 type MusclesOf = (ex: string) => { p: string[]; s: string[] };
 
 // Haftalık etkili set: <4 düşük uyarı, 4–9 korur, 10–20 geliştirir, 20 üstü toparlanmayı aşar
@@ -70,6 +70,8 @@ export const BEST: Record<string, string[]> = {
   "Baldır": ["Standing Calf Raise", "Seated Calf Raise", "Leg Press Calf Raise", "Donkey Calf Raise"],
   "Karın": ["Cable Crunch", "Hanging Leg Raise", "Ab Wheel Rollout", "Crunch", "Plank"],
   "Oblik": ["Cable Woodchopper", "Pallof Press", "Side Plank", "Russian Twist", "Bicycle Crunch"],
+  "Rotator Manşet": ["Cable External Rotation", "Dumbbell External Rotation (Yan Yatarak)", "Face Pull", "Cuban Press"],
+  "Kalça Fleksörü": ["Hanging Leg Raise", "Captain's Chair Leg Raise", "Cable Hip Flexion", "Psoas March (Bant)", "L-Sit"],
 };
 
 // En iyiler (sırasıyla), sonra kası ana çalıştıranlar, en sonda yardımcı çalıştıranlar.
