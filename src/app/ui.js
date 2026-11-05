@@ -49,6 +49,21 @@ export function closeSheet(){
   const f = sheetOnClose; sheetOnClose = null; if (f) f();
 }
 export const sheetHead = title => `<div class="row" style="margin-bottom:12px"><h3 class="grow">${esc(title)}</h3><button class="iconbtn" data-close title="Kapat">${ic("x")}</button></div>`;
+// Açıklamalar ⓘ düğmesinin arkasında: kartın başlığındaki düğme o karttaki .help yazılarını açar/kapatır
+export const infoBtn = () => `<button class="infobtn" type="button" data-info aria-label="Açıklama" aria-expanded="false">${ic("info")}</button>`;
+function initHelp(){
+  document.querySelectorAll(".help").forEach(p => {
+    const card = p.closest(".card"), h = card && card.querySelector("h2");
+    if (h && !h.querySelector("[data-info]")) h.insertAdjacentHTML("beforeend", infoBtn());
+  });
+  // yakalama aşamasında: başlık bir <summary> içindeyse katlanır kart açılıp kapanmasın
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-info]"); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const card = b.closest(".card"), on = !card.classList.contains("help-open");
+    card.classList.toggle("help-open", on); b.setAttribute("aria-expanded", on);
+  }, true);
+}
 export const emptyHTML = (icon, title, text) => `<div class="empty">${ic(icon)}<b>${esc(title)}</b>${esc(text)}</div>`;
 
 /* ---------- Exercise picker ---------- */
@@ -150,6 +165,7 @@ export function renderSeg(name){
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
+initHelp();
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.live) keepAwake(true); });
 // kaydırma yeri yenilemeden hemen önce yazılır
 addEventListener("pagehide", saveNav);

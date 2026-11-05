@@ -2,7 +2,7 @@ import { ymd } from "../core/dates.ts";
 import { BADGES, FREEZES_PER_MONTH, WEEK_BADGES, WEEK_FREEZES_PER_MONTH, computeStreak, computeWeekStreak, earnedBadges, nextBadge } from "../core/streak.ts";
 import { $, ic, state } from "./store.js";
 import { dayLoad } from "./stats.js";
-import { buzz, closeSheet, openSheet } from "./ui.js";
+import { buzz, closeSheet, infoBtn, openSheet } from "./ui.js";
 
 /* ---------- Seri (Duolingo tarzı) ----------
    Hesap core/streak.ts'te. Kullanıcı seçer (Profil → Ayarlar → Seri): plan varsa günlük, haftalık ya da kapalı.
@@ -46,8 +46,8 @@ export function streakCardHTML(r){
     : "Planlı günleri kaçırmadıkça seri sürer; dinlenme günleri bozmaz.";
   const freeze = r.kind === "week" ? "eksik kalan hafta" : "kaçırılan gün";
   return `<div class="row" style="gap:14px;align-items:center">${flameHTML(r, "lg")}
-      <div class="grow"><b style="font-size:18px">${r.count} ${r.adj} seri</b><div class="muted small">En uzun: ${r.best} ${u}${next ? ` · sıradaki rozet ${next} ${u}` : ""}</div></div></div>
-    <div class="muted small" style="margin-top:10px">${rule} Ayda ${r.freezes} kez ${freeze} seriyi bozmaz (dondurma): bu ay <b>${r.freezesLeft}</b> hakkın kaldı.</div>
+      <div class="grow"><b style="font-size:18px">${r.count} ${r.adj} seri</b>${infoBtn()}<div class="muted small">En uzun: ${r.best} ${u}${next ? ` · sıradaki rozet ${next} ${u}` : ""}</div></div></div>
+    <div class="muted small help" style="margin-top:10px">${rule} Ayda ${r.freezes} kez ${freeze} seriyi bozmaz (dondurma): bu ay <b>${r.freezesLeft}</b> hakkın kaldı.</div>
     <div class="badges">${r.badges.map(b => `<span class="badge${got.has(b) ? " on" : ""}" title="${b} ${r.adj} seri">${ic("flame")}${b}</span>`).join("")}</div>`;
 }
 

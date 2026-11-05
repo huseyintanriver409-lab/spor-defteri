@@ -33,15 +33,19 @@ const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k,
 // erkek ya da kadın çizimi: profilde cinsiyet belirtildiyse o, değilse Ayarlar'daki seçim
 export const bodySex = () => ["m", "f"].includes(state.profile.sex) ? state.profile.sex : state.prefs.body === "f" ? "f" : "m";
 
-function figure(side, tiers, caption){
-  const sex = bodySex(), [vb, art] = ART[sex][side];
-  // bölünen bölgeler: parçalar kendi kaslarıyla ayrı bölge olur
+// Çizimin bölgeleri çizim sırasıyla: [anahtar, yollar, kaslar]; bölünen bölgenin ayrılan parçası "slug-x" anahtarıyla
+function regionParts(sex, side){
+  const art = ART[sex][side][1];
   const parts = art.flatMap(([slug, ds]) => {
     const sp = SPLIT[sex][side] && SPLIT[sex][side][slug];
     if (!sp) return [[slug, ds, REGION[side][slug]]];
-    return [[slug, ds.filter((_, i) => !sp[0].includes(i)), REGION[side][slug]], [slug, ds.filter((_, i) => sp[0].includes(i)), sp[1]]];
+    return [[slug, ds.filter((_, i) => !sp[0].includes(i)), REGION[side][slug]], [slug + "-x", ds.filter((_, i) => sp[0].includes(i)), sp[1]]];
   });
-  const order = [...parts.filter(([s]) => !ON_TOP.includes(s)), ...parts.filter(([s]) => ON_TOP.includes(s))];
+  const top = ([k]) => ON_TOP.includes(k);
+  return [...parts.filter(p => !top(p)), ...parts.filter(top)];
+}
+function figure(side, tiers, caption){
+  const [vb] = ART[bodySex()][side], order = regionParts(bodySex(), side);
   const paths = order.map(([, ds, ms]) => {
     if (!ms) return ds.map(d => `<path class="bm-base" d="${d}"/>`).join("");
     const t = ms.map(m => tiers[m] || "yok").reduce((x, y) => RANK[y] > RANK[x] ? y : x);
@@ -54,6 +58,34 @@ function figure(side, tiers, caption){
 // large: ekran genişliğinde (Hareketler); plain: dokununca açılan pencerede yorgunluk bilgisi yok, yalnız hareketler
 export const bodyMap = (tiers, { tap = true, small = false, large = false, plain = false } = {}) =>
   `<div class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}${large ? " large" : ""}"${plain ? " data-plain" : ""}>${figure("front", tiers, "Ön")}${figure("back", tiers, "Arka")}</div>`;
+// Hareket listesindeki küçük kas resmi: çizim bir kez <defs> içinde <g> olarak eklenir, her resim yalnız renkleri CSS
+// değişkeniyle verir; resmin viewBox'ı çizimin ilgili yarısını keser (--r-<bölge>). Ana kas koyu, yardımcı açık; ana kasların çoğu hangi yüzdeyse o yüz çizilir.
+const miniDone = new Set();
+function miniSymbol(sex, side){
+  const id = `mini-${sex}-${side}`;
+  if (!miniDone.has(id)) {
+    miniDone.add(id);
+    const paths = regionParts(sex, side).map(([k, ds, ms]) => ds.map(d => `<path d="${d}"${ms ? ` style="fill:var(--r-${k},var(--mz))"` : ` style="fill:var(--card3)"`}/>`).join("")).join("");
+    let box = $("#miniSymbols");
+    if (!box) { document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="miniSymbols"></defs></svg>`); box = $("#miniSymbols"); }
+    box.insertAdjacentHTML("beforeend", `<g id="${id}">${paths}</g>`);
+  }
+  return id;
+}
+export function miniMap(name){
+  const m = musclesOf(name); if (!m.p.length) return "";
+  const sex = bodySex(), hits = side => Object.values(REGION[side]).flat().filter(x => m.p.includes(x)).length
+    + (m.p.includes("Rotator Manşet") && side === "back" ? 1 : 0);
+  const hb = hits("back"), hf = hits("front"), firstBack = Object.values(REGION.back).flat().includes(m.p[0]) || m.p[0] === "Rotator Manşet";
+  const side = hb > hf || (hb === hf && firstBack) ? "back" : "front";
+  const vars = regionParts(sex, side).filter(([, , ms]) => ms).map(([k, , ms]) =>
+    ms.some(x => m.p.includes(x)) ? `--r-${k}:var(--mini-p)` : ms.some(x => m.s.includes(x)) ? `--r-${k}:var(--mini-s)` : "").filter(Boolean);
+  // yalnız üst ya da alt vücut çalışıyorsa o yarıya yakınlaştırılır
+  const LEGS = ["Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır"], legs = m.p.filter(x => LEGS.includes(x)).length;
+  const [x, y, w, h] = ART[sex][side][0].split(" ").map(Number);
+  const vb = !legs ? [x, y, w, h * .5] : legs === m.p.length ? [x, y + h * .42, w, h * .58] : [x, y, w, h];
+  return `<svg class="minimap" viewBox="${vb.join(" ")}" style="${vars.join(";")}" aria-hidden="true"><use href="#${miniSymbol(sex, side)}"/></svg>`;
+}
 export const legend = kind => `<div class="bm-legend">${KINDS[kind]
   .map(([k, l, d]) => `<span><i data-t="${k}"></i>${l}<small>${d}</small></span>`).join("")}</div>`;
 

@@ -31,7 +31,6 @@
     <div class="section-title">Bu hafta<span class="grow"></span></div>
     <div class="card"><div class="stats" id="homeWeek"></div><div id="homeGoal" style="margin-top:12px"></div></div>
     <div id="homeRecovery"></div>
-    <div id="homeLast"></div>
   </section>
 
   <!-- ==================== ANTRENMAN ==================== -->
@@ -44,7 +43,7 @@
       <div id="pList"></div>
       <div class="card" id="liftCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Hazır programlar</h2>
-        <p class="muted" style="margin-top:-4px">5×5, 3×5, GZCLP, tam vücut, ev ve ekipmansız programlar: kime uygun oldukları ve nasıl ilerleneceğiyle. Ya da yapay zekâya anlat, sana özel program bağlantısı versin.</p>
+        <p class="muted help" style="margin-top:-4px">5×5, 3×5, GZCLP, tam vücut, ev ve ekipmansız programlar: kime uygun oldukları ve nasıl ilerleneceğiyle. Ya da yapay zekâya anlat, sana özel program bağlantısı versin.</p>
         <div class="row">
           <button class="btn primary" id="recOpen"><svg class="ic" aria-hidden="true"><use href="#i-lightbulb"/></svg>Bana program öner</button>
           <button class="btn" id="libOpen"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Bütün programlar</button>
@@ -53,7 +52,7 @@
       </div>
       <div class="card" id="yogaCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span>Yoga ve esneme</h2>
-        <p class="muted" style="margin-top:-4px">Başlangıç yogası, sabah ve akşam akışları; pozlar süreyle tutulur, kilo girilmez. Bir mat yeterli.</p>
+        <p class="muted help" style="margin-top:-4px">Başlangıç yogası, sabah ve akşam akışları; pozlar süreyle tutulur, kilo girilmez. Bir mat yeterli.</p>
         <div class="row">
           <button class="btn primary" id="yogaProgs"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Yoga programları</button>
           <button class="btn" id="yogaMoves"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>Yoga hareketleri</button>
@@ -111,13 +110,13 @@
     <div id="train-plan" class="hidden">
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg></span>Haftalık plan</h2>
-        <p class="muted small" style="margin-top:-6px">Hangi gün hangi programı yapacağını seç. Ana sayfa buna göre açılır; istersen Google Takvim'e de aktarabilirsin.</p>
+        <p class="muted small help" style="margin-top:-6px">Hangi gün hangi programı yapacağını seç. Ana sayfa buna göre açılır; istersen Google Takvim'e de aktarabilirsin.</p>
         <div id="planRows"></div>
         <button class="btn" id="planAi" style="margin-top:12px;width:100%;justify-content:center"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile planla</button>
         <p class="muted small" id="planInfo" style="margin:12px 0 0"></p>
         <details class="planmore">
           <summary>Takvim seçenekleri</summary>
-          <p class="muted small" style="margin:8px 0 0">Google Takvim bağlıysa plan kendiliğinden eklenir (Profil → Yedek). Bağlı değilse takvim dosyası indirip kendin yükleyebilirsin.</p>
+          <p class="muted small help" style="margin:8px 0 0">Google Takvim bağlıysa plan kendiliğinden eklenir (Profil → Yedek). Bağlı değilse takvim dosyası indirip kendin yükleyebilirsin.</p>
           <div class="grid2" style="margin-top:10px">
             <div><label for="planDur">Süre (dk)</label><input type="number" inputmode="numeric" min="10" step="5" id="planDur"></div>
             <div><label for="planRemind">Hatırlatma (dk önce)</label><input type="number" inputmode="numeric" min="0" step="5" id="planRemind"></div>
@@ -140,7 +139,7 @@
     <div id="train-lib" class="hidden">
       <div class="card" id="libMapCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg></span>Kasa göre bul</h2>
-        <p class="muted small" style="margin-top:-6px">Bir kasa dokun: o kası en iyi çalıştıran hareketler sırayla açılır.</p>
+        <p class="muted small help" style="margin-top:-6px">Bir kasa dokun: o kası en iyi çalıştıran hareketler sırayla açılır.</p>
         <div id="libMap"></div>
       </div>
       <div class="card">
@@ -215,7 +214,7 @@
       </div>
       <div class="card" id="musclesCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg></span>Kas analizi</h2>
-        <p class="muted small" style="margin-top:-6px">Haftalık etkili set: ana kas 1, yardımcı kas ½ sayılır. Yeşil bölge önerilen 10–20 set aralığı.</p>
+        <p class="muted small help" style="margin-top:-6px">Haftalık etkili set: ana kas 1, yardımcı kas ½ sayılır. Yeşil bölge en verimli aralık: 4–10 set.</p>
         <div id="wMuscles"></div>
       </div>
       <div class="card">
@@ -252,7 +251,7 @@
       </div>
       <div class="card" id="baseCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg></span>Başlangıç noktan</h2>
-        <p class="muted small" style="margin-top:-6px">Uygulamadan önce hangi kiloları kaldırıyordun? Girersen ilerlemen oradan ölçülür.</p>
+        <p class="muted small help" style="margin-top:-6px">Uygulamadan önce hangi kiloları kaldırıyordun? Girersen ilerlemen oradan ölçülür.</p>
         <button class="btn" id="baseOpen"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg>Mevcut verilerim</button>
       </div>
       <div class="card">
@@ -264,7 +263,7 @@
     <div id="stats-rec" class="hidden">
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-trophy"/></svg></span>Rekor tablosu</h2>
-        <p class="muted small" style="margin-top:-6px">Her tekrar sayısında kaldırdığın en ağır kilo (ısınma hariç). Satıra dokun, geçmişi açılsın.</p>
+        <p class="muted small help" style="margin-top:-6px">Her tekrar sayısında kaldırdığın en ağır kilo (ısınma hariç). Satıra dokun, geçmişi açılsın.</p>
         <div class="tablewrap"><table id="recTable"></table></div>
       </div>
       <div class="card">
@@ -277,7 +276,7 @@
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-battery-medium"/></svg></span>Kaslar</h2>
         <div class="fchips" id="bmView" style="margin-bottom:6px"><button class="fchip on" data-v="now">Şu an</button><button class="fchip" data-v="week">Bu hafta</button></div>
-        <p class="muted small" id="bmNote" style="margin:6px 0 0"></p>
+        <p class="muted small help" id="bmNote" style="margin:6px 0 0"></p>
         <div id="restMap"></div>
         <div id="restSuggest" style="margin-top:12px"></div>
       </div>
@@ -296,12 +295,12 @@
           <div><label for="pfSex">Cinsiyet</label><select id="pfSex"><option value="">Belirtilmedi</option><option value="m">Erkek</option><option value="f">Kadın</option><option value="o">Diğer</option></select></div>
           <div><label for="pfBw">Vücut ağırlığı</label><input id="pfBw" type="number" inputmode="decimal" step="0.1" min="30"></div>
         </div>
-        <p class="muted small" id="pfBwNote" style="margin-bottom:0"></p>
+        <p class="muted small help" id="pfBwNote" style="margin-bottom:0"></p>
       </div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg></span>Temel hareketler</h2>
         <div id="pwLifts"></div>
-        <p class="muted small" style="margin-bottom:0">1–10 tekrarlık setlerden hesaplanan en iyi tahmini 1RM'in vücut ağırlığına oranı, cinsiyete göre yaklaşık güç standartlarıyla karşılaştırılır (20 Başlangıç, 40 Acemi, 60 Orta, 80 İleri, 100 Elit).</p>
+        <p class="muted small help" style="margin-bottom:0">1–10 tekrarlık setlerden hesaplanan en iyi tahmini 1RM'in vücut ağırlığına oranı, cinsiyete göre yaklaşık güç standartlarıyla karşılaştırılır (20 Başlangıç, 40 Acemi, 60 Orta, 80 İleri, 100 Elit).</p>
       </div>
     </div>
 
@@ -357,7 +356,7 @@
           <div><label for="setSex">Cinsiyet</label><select id="setSex"><option value="">Belirtmek istemiyorum</option><option value="m">Erkek</option><option value="f">Kadın</option><option value="o">Diğer</option></select></div>
           <div id="setBodyWrap"><label for="setBody">Vücut haritası çizimi</label><select id="setBody"><option value="m">Erkek vücudu</option><option value="f">Kadın vücudu</option></select></div>
         </div>
-        <p class="muted small" id="sexHelp" style="margin:8px 0 0"></p>
+        <p class="muted small help" id="sexHelp" style="margin:8px 0 0"></p>
       </div>
       <details class="card fold" id="goalCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span>Hedef ve seri</h2><span class="muted small" id="goalSum"></span></summary>
@@ -368,7 +367,7 @@
             <option value="week">Haftalık</option>
             <option value="off">Kapalı</option></select></div>
         </div>
-        <p class="muted small" id="streakHelp" style="margin:8px 0 0"></p>
+        <p class="muted small help" id="streakHelp" style="margin:8px 0 0"></p>
       </details>
       <details class="card fold">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg></span>Antrenman ayarları</h2><span class="muted small">Spor ya da yoga, dinlenme süresi, ekran, titreşim</span></summary>
@@ -376,7 +375,7 @@
             <option value="both">Spor ve yoga</option>
             <option value="lift">Sadece spor (ağırlık, kardiyo)</option>
             <option value="yoga">Sadece yoga ve esneme</option></select>
-          <p class="muted small" id="focusHelp" style="margin:6px 0 0"></p></div>
+          <p class="muted small help" id="focusHelp" style="margin:6px 0 0"></p></div>
         <div><label for="setRest">Varsayılan dinlenme</label><select id="setRest"></select></div>
         <div style="display:grid;gap:14px;margin-top:16px">
           <label class="check row" style="margin:0;gap:10px"><input type="checkbox" id="autoRest"> Set bitince dinlenme sayacı başlasın</label>
@@ -386,7 +385,7 @@
       </details>
       <details class="card fold" id="aiCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Yapay zekâ bağlantısı</h2><span class="muted small">Claude, ChatGPT, Gemini… bağla</span></summary>
-        <p class="muted" style="margin-top:-4px">Claude, ChatGPT ya da Gemini gibi bir yapay zekâ Spor Defteri'ne bağlanabilir: program kurar, planını ayarlar, antrenmanlarını kaydeder, geçmişine bakar. Bağlanırken kendi Google hesabınla giriş yaparsın; yapay zekâ yalnız senin verini görür. Değişiklikler telefona bir sonraki eşitlemede gelir (Google Drive bağlı olmalı). <a href="gizlilik.html" target="_blank" rel="noopener">Gizlilik politikası</a></p>
+        <p class="muted help" style="margin-top:-4px">Claude, ChatGPT ya da Gemini gibi bir yapay zekâ Spor Defteri'ne bağlanabilir: program kurar, planını ayarlar, antrenmanlarını kaydeder, geçmişine bakar. Bağlanırken kendi Google hesabınla giriş yaparsın; yapay zekâ yalnız senin verini görür. Değişiklikler telefona bir sonraki eşitlemede gelir (Google Drive bağlı olmalı). <a href="gizlilik.html" target="_blank" rel="noopener">Gizlilik politikası</a></p>
         <label for="mcpUrl">Bağlayıcı adresi</label>
         <div class="row" style="gap:8px;flex-wrap:nowrap"><input id="mcpUrl" readonly class="grow" style="min-width:0"><button class="btn" id="mcpCopy"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Kopyala</button></div>
         <div class="ai-steps" style="margin-top:12px">
@@ -403,10 +402,10 @@
             <li>Gemini CLI'da <code>/mcp auth spor-defteri</code> yaz, açılan sayfada giriş yap.</li>
             <li>Antigravity: MCP sunucuları ayarında aynı adresi ekle.</li></ol></details>
           <details><summary>Bağlayıcı desteklemeyenler (Gemini uygulaması…)</summary>
-            <p class="muted small">Bu yapay zekâlar verine doğrudan ulaşamaz, ama program ve plan hazırlayabilir: hazır isteği gönder, verdiği bağlantıya dokun.</p>
+            <p class="muted small help">Bu yapay zekâlar verine doğrudan ulaşamaz, ama program ve plan hazırlayabilir: hazır isteği gönder, verdiği bağlantıya dokun.</p>
             <button class="btn sm" id="aiSheetOpen"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Yapay zekâ ile program yap</button></details>
         </div>
-        <p class="muted small" style="margin:10px 0 0">Menü adları uygulamaların sürümüne göre biraz değişebilir.</p>
+        <p class="muted small help" style="margin:10px 0 0">Menü adları uygulamaların sürümüne göre biraz değişebilir.</p>
       </details>
     </div>
     <div id="profile-tools" class="hidden">
@@ -427,7 +426,7 @@
         <div class="plates" id="plVis"></div>
         <p id="plTxt" style="text-align:center;margin-bottom:0"></p>
         <h3 style="margin:16px 0 4px;font-size:15px">Salonundaki plakalar</h3>
-        <p class="muted small" style="margin:0 0 8px">Antrenmanda barlı bir harekette kilo girince, barın <b>her iki tarafına</b> hangi plakaları takacağın da bu hesapla gösterilir; ısınma setleri de öyle. Salonunda olmayanların işaretini kaldır.</p>
+        <p class="muted small help" style="margin:0 0 8px">Antrenmanda barlı bir harekette kilo girince, barın <b>her iki tarafına</b> hangi plakaları takacağın da bu hesapla gösterilir; ısınma setleri de öyle. Salonunda olmayanların işaretini kaldır.</p>
         <div class="fchips" id="plateChips" style="flex-wrap:wrap"></div>
       </div>
       <div class="card">
@@ -443,7 +442,7 @@
     <div id="profile-backup" class="hidden">
       <div class="card" id="syncCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-cloud"/></svg></span>Google Drive senkronizasyonu</h2>
-        <p class="muted" style="margin-top:-4px">Kayıtların Google Drive'ında gizli bir uygulama klasöründe saklanır; telefonun ve bilgisayarın kendiliğinden eşitlenir. Uygulama Drive'daki diğer dosyalarını göremez. <a href="gizlilik.html" target="_blank" rel="noopener">Gizlilik politikası</a></p>
+        <p class="muted help" style="margin-top:-4px">Kayıtların Google Drive'ında gizli bir uygulama klasöründe saklanır; telefonun ve bilgisayarın kendiliğinden eşitlenir. Uygulama Drive'daki diğer dosyalarını göremez. <a href="gizlilik.html" target="_blank" rel="noopener">Gizlilik politikası</a></p>
         <p id="syncStatus" class="small"></p>
         <div class="row">
           <button class="btn primary" id="syncConnect"><svg class="ic" aria-hidden="true"><use href="#i-cloud"/></svg>Google ile bağlan</button>
@@ -453,7 +452,7 @@
       </div>
       <div class="card hidden" id="calCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg></span>Google Takvim</h2>
-        <p class="muted" style="margin-top:-4px">Google Takvim'inde uygulamaya ait bir "Spor Defteri" takvimi oluşturulur ve yalnız ona yazılır. Uygulama diğer takvimlerini ve etkinliklerini göremez. Plan görev olarak konursa "Spor Defteri" görev listesine yazılır.</p>
+        <p class="muted help" style="margin-top:-4px">Google Takvim'inde uygulamaya ait bir "Spor Defteri" takvimi oluşturulur ve yalnız ona yazılır. Uygulama diğer takvimlerini ve etkinliklerini göremez. Plan görev olarak konursa "Spor Defteri" görev listesine yazılır.</p>
         <div style="display:grid;gap:14px;margin:4px 0 6px">
           <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="calLog"><span>Biten antrenmanları takvime yaz</span></label>
           <label class="check row" style="margin:0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="calPlan"><span>Haftalık planı takvime koy</span></label>
@@ -473,8 +472,8 @@
       </div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg></span>Yedekleme</h2>
-        <p class="muted" style="margin-top:-4px">Veriler bu tarayıcıda saklanır. Tarayıcı verisini silersen kayıtlar da silinir; ara sıra yedek al.</p>
-        <p class="muted small">Drive senkronizasyonu kullanmıyorsan telefon + bilgisayar için: bir cihazda yedeği indir, diğerinde Geri yükle → Birleştir de. Sonra aynısını ters yönde yaparsan iki cihaz eşitlenir.</p>
+        <p class="muted help" style="margin-top:-4px">Veriler bu tarayıcıda saklanır. Tarayıcı verisini silersen kayıtlar da silinir; ara sıra yedek al.</p>
+        <p class="muted small help">Drive senkronizasyonu kullanmıyorsan telefon + bilgisayar için: bir cihazda yedeği indir, diğerinde Geri yükle → Birleştir de. Sonra aynısını ters yönde yaparsan iki cihaz eşitlenir.</p>
         <div class="row">
           <button class="btn primary" id="exportBtn"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Yedeği indir</button>
           <button class="btn" id="importBtn"><svg class="ic" aria-hidden="true"><use href="#i-upload"/></svg>Geri yükle / birleştir</button>
@@ -484,7 +483,7 @@
       </div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-file-spreadsheet"/></svg></span>Excel'e aktar</h2>
-        <p class="muted" style="margin-top:-4px">Bütün setlerini Excel'de açılan bir tablo (CSV) olarak indirir.</p>
+        <p class="muted help" style="margin-top:-4px">Bütün setlerini Excel'de açılan bir tablo (CSV) olarak indirir.</p>
         <button class="btn" id="csvBtn"><svg class="ic" aria-hidden="true"><use href="#i-file-spreadsheet"/></svg>Tabloyu indir</button>
       </div>
     </div>
