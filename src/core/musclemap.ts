@@ -30,7 +30,7 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
 }
 
 // Tek antrenmanın (ya da tek hareketin) kasa verdiği uyarı, etkili setle (ana kas 1, yardımcı ½). Altı kademe,
-// her yerde aynı renk: mavi çok az, yeşil koruma, turuncu minimum gelişim, kırmızı iyi gelişim, kahverengi maksimum,
+// her yerde aynı renk: mavi çok az, yeşil koruma, turuncu minimum gelişim, kırmızı iyi gelişim, bordo maksimum,
 // mor kas hasarı. Haftada 2-3 kez çalışılan kasa 3 set zaten güçlü bir uyarıdır. Remmert ve ark. 2025 (SportRxiv
 // ön baskı): tek antrenmanda ~11 setten sonra ek büyüme ölçülemiyor, yorgunluk ve hasar artmaya devam ediyor.
 // Yorum (araştırmada ayrı eşik yok): 3–11 arası verimli aralık ikiye bölündü; 6+ set "maksimum", 11'i aşınca "kas hasarı".

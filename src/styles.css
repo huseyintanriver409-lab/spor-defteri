@@ -15,7 +15,7 @@
   --shadow:none; --overlay:rgba(0,0,0,.6);
   --mz:#3b3b42; --teal:#2dd4bf; --over:#d946ef;
   /* kas çalıştırma ölçeği (tek antrenman / tek hareket): mavi çok az → mor kas hasarı */
-  --g-dusuk:#4c8dff; --g-koruma:var(--good); --g-minimum:#ff8a3d; --g-iyi:var(--danger); --g-maksimum:#b47a4a; --g-hasar:#a78bfa;
+  --g-dusuk:#4c8dff; --g-koruma:var(--good); --g-minimum:#ff8a3d; --g-iyi:var(--danger); --g-maksimum:#a8203f; --g-hasar:#a78bfa;
   --r-lg:18px; --r:14px; --r-sm:10px;
   --font:"InterV",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --ease:cubic-bezier(.2,.8,.2,1);
@@ -29,7 +29,7 @@
     --good:#15a34a; --goodsoft:rgba(21,163,74,.1); --warn:#c27a00; --warnsoft:rgba(194,122,0,.1); --danger:#dc2626; --dangersoft:rgba(220,38,38,.08);
     --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.04); --overlay:rgba(10,10,12,.45);
     --mz:#cfcfd5; --teal:#0d9488; --over:#a21caf;
-    --g-dusuk:#2563eb; --g-minimum:#ea580c; --g-maksimum:#8b5a2b; --g-hasar:#7c3aed;
+    --g-dusuk:#2563eb; --g-minimum:#ea580c; --g-maksimum:#7f1d1d; --g-hasar:#7c3aed;
     color-scheme:light;
   }
 }
@@ -40,7 +40,7 @@
   --good:#15a34a; --goodsoft:rgba(21,163,74,.1); --warn:#c27a00; --warnsoft:rgba(194,122,0,.1); --danger:#dc2626; --dangersoft:rgba(220,38,38,.08);
   --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.04); --overlay:rgba(10,10,12,.45);
   --mz:#cfcfd5; --teal:#0d9488; --over:#a21caf;
-  --g-dusuk:#2563eb; --g-minimum:#ea580c; --g-maksimum:#8b5a2b; --g-hasar:#7c3aed;
+  --g-dusuk:#2563eb; --g-minimum:#ea580c; --g-maksimum:#7f1d1d; --g-hasar:#7c3aed;
   color-scheme:light;
 }
 
