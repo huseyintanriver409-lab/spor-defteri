@@ -1,7 +1,7 @@
 // Spor Defteri service worker: uygulamayı çevrimdışı çalıştırır.
 // Sayfa için önce ağ denenir (güncellemeler hemen gelsin), ağ yoksa önbellekteki sürüm açılır.
 // Yeni bir sürüm yayınlarken CACHE adını artır ki eski önbellek temizlensin.
-const CACHE = "spor-defteri-v47";
+const CACHE = "spor-defteri-v48";
 const ASSETS = [
   "./",
   "./spor-defteri.html",

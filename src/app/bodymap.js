@@ -23,9 +23,6 @@ const SPLIT = {
   m: { back: { "upper-back": [[0, 3], ["Rotator Manşet"]] }, front: {} },
   f: { back: { "upper-back": [[0, 2], ["Rotator Manşet"]] }, front: {} },
 };
-// Çizimde hiç olmayan kaslar: yanındaki kaslara dokununca pencerede düğme olarak çıkar.
-// Kalça fleksörü (iliopsoas) kasığın derininde; çizimde karşılığı yok.
-const NEARBY = { "Kalça Fleksörü": ["Quadriceps", "İç Bacak"] };
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-dusuk": 1, "y-koruma": 2, "y-gelisim": 3, "y-asiri": 4,
@@ -69,7 +66,7 @@ export function weekSets(){
   return setsByMuscle(state.entries.filter(e => e.date >= a && !isCardio(e.ex)).map(e => ({ ex: e.ex, sets: work(e.sets).length })), musclesOf);
 }
 // Dokunulan yerdeki kaslar, yakından uzağa: önce tam üstüne basılan, sonra parmak ucu kadar çevredekiler.
-// Telefonda küçük kalan bölgeler (rotator manşet, kalça fleksörü) parmakla tam tutturulamaz; yakındakiler pencerede düğme olur.
+// Telefonda küçük kalan bölgeler (rotator manşet gibi) parmakla tam tutturulamaz; yakındakiler pencerede düğme olur.
 const FINGER_PX = 22;
 function hitMuscles(svg, e){
   const out = [], add = el => el.dataset.m.split("|").forEach(m => { if (!out.includes(m)) out.push(m); });
@@ -87,9 +84,7 @@ function hitMuscles(svg, e){
       const q = svg.createSVGPoint(); q.x = p.x + px * unit * Math.cos(k * Math.PI / 8); q.y = p.y + px * unit * Math.sin(k * Math.PI / 8);
       const hit = els.find(el => el.isPointInFill(q)); if (hit) { add(hit); break; }
     }
-  const res = out.slice(0, 5);
-  for (const [m, near] of Object.entries(NEARBY)) if (!res.includes(m) && res.some(x => near.includes(x))) res.push(m);
-  return res;
+  return out.slice(0, 5);
 }
 export function bindBodyMap(root){
   root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {

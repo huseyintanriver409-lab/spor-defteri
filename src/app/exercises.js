@@ -25,7 +25,6 @@ export const MUSCLE_RULES = [
   [/external rotation|cuban/, ["Rotator Manşet"], ["Arka Omuz"]],
   [/face pull/, ["Arka Omuz"], ["Trapez","Rotator Manşet"]],
   [/rear delt|reverse pec/, ["Arka Omuz"], ["Trapez"]],
-  [/hip flexion|psoas/, ["Kalça Fleksörü"], ["Quadriceps"]],
   [/front raise/, ["Ön Omuz"], []],
   [/shoulder press|overhead press|arnold|push press|handstand|standing dumbbell press/, ["Ön Omuz"], ["Yan Omuz","Triceps"]],
   [/close-grip bench|jm press|diamond|dips \(triceps\)|bench dips/, ["Triceps"], ["Göğüs","Ön Omuz"]],
@@ -56,11 +55,8 @@ export const GROUP_MUSCLES = {
   "Karın & Core":[["Karın"],[]]
 };
 // karın hareketleri: yan karın (oblik) ağırlıklı olanlar ayrı
-// bacak kaldırmada bacağı kaldıran kalça fleksörüdür: asılı ve sandalyede ana kas, yerde yardımcı
-const CORE_RULES = [[/twist|side plank|woodchop|side bend|bicycle|pallof|windshield/, ["Oblik"], ["Karın"]],
-  [/hanging (leg|knee) raise|captain|l-sit/, ["Karın","Kalça Fleksörü"], []],
-  [/leg raise|knee raise|v-up|mountain|dragon flag|hollow/, ["Karın"], ["Kalça Fleksörü"]]];
-export const MUSCLE_ORDER = ["Göğüs","Lat","Trapez","Bel","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Önkol","Quadriceps","Hamstring","Kalça","İç Bacak","Baldır","Karın","Oblik","Rotator Manşet","Kalça Fleksörü"];
+const CORE_RULES = [[/twist|side plank|woodchop|side bend|bicycle|pallof|windshield/, ["Oblik"], ["Karın"]]];
+export const MUSCLE_ORDER = ["Göğüs","Lat","Trapez","Bel","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Önkol","Quadriceps","Hamstring","Kalça","İç Bacak","Baldır","Karın","Oblik","Rotator Manşet"];
 export const _mCache = {};
 export function musclesOf(name){
   if (_mCache[name]) return _mCache[name];
