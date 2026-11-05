@@ -7,7 +7,7 @@ import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
 import { liveItems, openFocus } from "./live.js";
 import { chart } from "./stats.js";
-import { bindBodyMap, bodyMap, miniMap } from "./bodymap.js";
+import { EX_SETS, bindBodyMap, bodyMap, exerciseLevels, miniMap } from "./bodymap.js";
 import { MUSCLES } from "../core/musclemap.ts";
 
 /* ---------- Library ---------- */
@@ -32,7 +32,7 @@ export function renderLib(){
     const items = ex.filter(e => e.group===g); if (!items.length) return "";
     return `<details ${open ? "open" : ""}${g === YOGA ? ' id="libYoga"' : ""}><summary>${esc(g)} <span>(${items.length})</span></summary>` + items.map(e =>
       `<div class="exitem">${miniMap(e.name)}<div class="grow" data-more><div>${esc(e.name)}${counts[e.name] ? ` <span class="muted small">· ${counts[e.name]} kayıt</span>` : ""}</div>
-        <div class="ms"><span class="tag">${e.eq}</span><span class="more">${e.m.p.length ? `<b>${e.m.p.join(", ")}</b>` : ""}${e.m.s.length ? ` · yardımcı: ${e.m.s.join(", ")}` : ""}</span></div>
+        <div class="ms"><span class="tag">${e.eq}</span><span class="more">${EX_SETS} sette: ${exerciseLevels(e.m).map(([k, l, ms]) => `<span class="lv"><i class="bm-dot" data-t="g-${k}"></i><b>${l}</b> ${esc(ms.join(", "))}</span>`).join("")}</span></div>
         ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">“${esc(twin(e.name))}” ile birleştir</button>` : ""}</div>
        ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="Başka bir hareketle birleştir">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="Listeden kaldır">${ic("trash-2")}</button>` : ""}
        <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>

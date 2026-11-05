@@ -26,7 +26,7 @@ const SPLIT = {
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-baslangic": 1, "y-verimli": 2, "y-orta": 3, "y-dusukverim": 4,
-  "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-guclu": 4, sec: 1 };
+  "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-iyi": 4, "g-maksimum": 5, "g-hasar": 6, sec: 1 };
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
 const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
@@ -72,9 +72,23 @@ function miniSymbol(sex, side){
   }
   return id;
 }
-// bir yüzün bölgelerine renk: ana kas koyu, yardımcı açık (CSS değişkeniyle, çizim <defs>'te bir kez)
-const paint = (sex, side, m) => regionParts(sex, side).filter(([, , ms]) => ms).map(([k, , ms]) =>
-  ms.some(x => m.p.includes(x)) ? `--r-${k}:var(--mini-p)` : ms.some(x => m.s.includes(x)) ? `--r-${k}:var(--mini-s)` : "").filter(Boolean).join(";");
+// Tek hareketin kaslara verdiği uyarı, programdaki ölçekle aynı: ana kas set kadar, yardımcı yarısı kadar etkili set.
+// Hareket listesinde ve kartlarda varsayılan 3 set (kartta değiştirilebilir).
+export const EX_SETS = 3;
+const RANKED = SESSION_TIERS.map(([k]) => k).reverse();  // hasar → dusuk
+export function exerciseTiers(m, sets = EX_SETS){
+  const t = {}; m.p.forEach(x => t[x] = sessionTier(sets)); m.s.forEach(x => { if (!t[x]) t[x] = sessionTier(sets / 2); });
+  return t;
+}
+// kademeye göre gruplu: [[kademe, ad, kaslar], …] en yüksek kademe önce
+export const exerciseLevels = (m, sets = EX_SETS) => { const t = exerciseTiers(m, sets);
+  return RANKED.map(k => [k, LABEL["g-" + k], Object.keys(t).filter(x => t[x] === k)]).filter(([, , ms]) => ms.length); };
+// bir yüzün bölgelerine kademe rengi (CSS değişkeniyle, çizim <defs>'te bir kez); birden çok kaslı bölge en yükseğini alır
+const paint = (sex, side, m, sets = EX_SETS) => { const t = exerciseTiers(m, sets);
+  return regionParts(sex, side).filter(([, , ms]) => ms).map(([k, , ms]) => {
+    const best = ms.map(x => t[x]).filter(Boolean).sort((a, b) => RANKED.indexOf(a) - RANKED.indexOf(b))[0];
+    return best ? `--r-${k}:var(--g-${best})` : "";
+  }).filter(Boolean).join(";"); };
 export function miniMap(name){
   const m = musclesOf(name); if (!m.p.length) return "";
   const sex = bodySex(), hits = side => Object.values(REGION[side]).flat().filter(x => m.p.includes(x)).length
@@ -162,11 +176,11 @@ export function sessionLoadHTML(items, { tap = false, small = true } = {}){
   const list = items.filter(i => i.ex), rows = sessionBreakdown(list, musclesOf);
   if (!rows.length) return "";
   const ms = Object.fromEntries(rows.map(r => [r.muscle, r.sets]));
-  const heavy = rows.filter(r => r.sets >= SESSION_TOO_MUCH);
+  const heavy = rows.filter(r => r.sets > SESSION_TOO_MUCH);
   return bodyMap(sessionTiers(ms), { tap, small }) + legend("session")
     + heavy.map(r => `<div class="hint" style="margin-top:10px">${ic("battery-low")} <span><b>${esc(r.muscle)}: ${fmt(r.sets)} set</b> (tek antrenmanda ~11 setten sonra ek fayda ölçülemiyor; toparlanmayı da uzatır)
         <span class="muted small" style="display:block">${r.from.map(f => `${esc(f.ex)} ${fmt(f.sets)}`).join(" · ")} · Bir hareketi çıkar ya da başka güne al.</span></span></div>`).join("")
-    + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets < SESSION_TOO_MUCH).map(r => `<span class="chip"><i class="bm-dot" data-t="g-${sessionTier(r.sets)}"></i>${esc(r.muscle)} · ${fmt(r.sets)}</span>`).join("")}</div>`;
+    + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets <= SESSION_TOO_MUCH).map(r => `<span class="chip"><i class="bm-dot" data-t="g-${sessionTier(r.sets)}"></i>${esc(r.muscle)} · ${fmt(r.sets)}</span>`).join("")}</div>`;
 }
 
 // Kasın hareketleri: en iyiler, sonra ana, sonra yardımcı çalıştıranlar
@@ -209,7 +223,12 @@ function useExercise(n){
 }
 
 // Hareketler'deki haritada kasa dokununca: o kasın hareketleri tam ekran, aşağı kaydırarak birer birer.
-// Her kartta hareketin önden ve arkadan çalıştırdığı kaslar boyalı (ana koyu, yardımcı açık).
+// Her kartta hareketin önden ve arkadan çalıştırdığı kaslar, kaç set yapıldığına göre kademe rengiyle boyalı;
+// renklerin anlamı yazılı (İyi gelişim: Göğüs…). Set sayısı kartta değiştirilir, renkler hemen güncellenir.
+let reelSets = EX_SETS;
+const levelLegend = (mm, sets) => exerciseLevels(mm, sets).map(([k, l, ms]) =>
+  `<span><i data-t="g-${k}"></i><b>${l}</b><em>${esc(ms.join(", "))}</em></span>`).join("");
+const SCALE = `<div class="reel-scale" aria-hidden="true">${SESSION_TIERS.map(([k, l]) => `<span><i data-t="g-${k}"></i>${l}</span>`).join("")}</div>`;
 const youtube = name => `https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}`;
 export function openMuscleReel(m, alts = [m]){
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
@@ -217,13 +236,15 @@ export function openMuscleReel(m, alts = [m]){
   const list = rankForMuscle(m, names, musclesOf, counts), sex = bodySex();
   const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
-  const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm)}" role="img" aria-label="${side === "front" ? "Ön" : "Arka"}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
-  const cards = list.map(({ name, kind }, i) => { const mm = musclesOf(name); return `<section class="reel-card">
+  const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${side === "front" ? "Ön" : "Arka"}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
+  const cards = list.map(({ name, kind }, i) => { const mm = musclesOf(name); return `<section class="reel-card" data-ex="${esc(name)}">
       <div class="reel-figs">${figs(mm)}</div>
       <div>
         <div class="row" style="gap:6px;margin-bottom:8px">${kind === "best" ? `<span class="reel-best">${ic("star")}En iyi</span>` : ""}<span class="tag">${esc(equipOf(name))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
         <h3 class="reel-name">${esc(name)}</h3>
-        <div class="reel-legend">${mm.p.length ? `<span><i class="p"></i>${esc(mm.p.join(", "))}</span>` : ""}${mm.s.length ? `<span><i class="s"></i>${esc(mm.s.join(", "))}</span>` : ""}</div>
+        <div class="reel-sets"><span class="muted small">Bu hareketten</span><button class="iconbtn" data-sets="-1" title="Bir set az">${ic("minus")}</button><b data-n>${reelSets} set</b><button class="iconbtn" data-sets="1" title="Bir set fazla">${ic("plus")}</button></div>
+        <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
+        ${SCALE}
         <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}Nasıl yapılır</a>
           <button class="btn primary" data-use="${esc(name)}">${ic("circle-plus")}${state.live ? "Antrenmana ekle" : "Kaydet"}</button></div>
         ${i === 0 && list.length > 1 ? `<div class="reel-hint">${ic("chevron-down")}Kaydır</div>` : ""}
@@ -244,4 +265,12 @@ export function openMuscleReel(m, alts = [m]){
   el.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => { close(); openMuscleReel(b.dataset.alt, alts); });
   el.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { close(); useExercise(b.dataset.use); });
   el.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { close(); startWorkout(b.dataset.pstart); });
+  // set sayısı değişince o kartın resmi ve açıklaması yeniden boyanır (sonraki kartlar da aynı sayıyla açılır)
+  el.querySelectorAll("[data-sets]").forEach(b => b.onclick = () => {
+    reelSets = Math.min(15, Math.max(1, reelSets + +b.dataset.sets));
+    const card = b.closest(".reel-card"), mm = musclesOf(card.dataset.ex);
+    card.querySelector("[data-n]").textContent = `${reelSets} set`;
+    card.querySelectorAll(".reel-fig").forEach(f => f.setAttribute("style", paint(sex, f.dataset.side, mm, reelSets)));
+    card.querySelector(".reel-legend").innerHTML = levelLegend(mm, reelSets);
+  });
 }

@@ -29,17 +29,20 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
   return r.sets >= HEAVY_DAY ? "asiri" : "yorgun";
 }
 
-// Tek antrenmanın kasa verdiği uyarı (etkili set; ana kas 1, yardımcı ½). Haftada 2-3 kez çalışılan kasa
-// 3 set zaten güçlü bir uyarıdır. Remmert ve ark. 2025 (SportRxiv ön baskı): kas büyümesi için tek antrenmanda
-// ~11 setten sonra ek fayda ölçülemiyor (SESSION_TOO_MUCH, ayrıca uyarılır).
-export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "guclu";
+// Tek antrenmanın (ya da tek hareketin) kasa verdiği uyarı, etkili setle (ana kas 1, yardımcı ½). Altı kademe,
+// her yerde aynı renk: mavi çok az, yeşil koruma, turuncu minimum gelişim, kırmızı iyi gelişim, kahverengi maksimum,
+// mor kas hasarı. Haftada 2-3 kez çalışılan kasa 3 set zaten güçlü bir uyarıdır. Remmert ve ark. 2025 (SportRxiv
+// ön baskı): tek antrenmanda ~11 setten sonra ek büyüme ölçülemiyor, yorgunluk ve hasar artmaya devam ediyor.
+// Yorum (araştırmada ayrı eşik yok): 3–11 arası verimli aralık ikiye bölündü; 6+ set "maksimum", 11'i aşınca "kas hasarı".
+export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "iyi" | "maksimum" | "hasar";
 export const SESSION_TIERS: [SessionTier, string, string][] = [
-  ["guclu", "Güçlü uyarı", "3+ set"], ["minimum", "Minimum gelişim", "2–3 set"], ["koruma", "Koruma dozu", "1–2 set"], ["dusuk", "Düşük aktivasyon", "yardımcı olarak, 1 setten az"],
+  ["dusuk", "Çok az", "1 setten az"], ["koruma", "Koruma düzeyi", "1–2 set"], ["minimum", "Minimum gelişim", "2–3 set"],
+  ["iyi", "İyi gelişim", "3–6 set"], ["maksimum", "Maksimum gelişim", "6–11 set"], ["hasar", "Kas hasarı", "11+ set: ek gelişim yok"],
 ];
 export const SESSION_TOO_MUCH = 11;
 export function sessionTier(sets: number): SessionTier {
   if (!(sets > 0)) return "yok";
-  return sets < 1 ? "dusuk" : sets < 2 ? "koruma" : sets < 3 ? "minimum" : "guclu";
+  return sets < 1 ? "dusuk" : sets < 2 ? "koruma" : sets < 3 ? "minimum" : sets < 6 ? "iyi" : sets <= SESSION_TOO_MUCH ? "maksimum" : "hasar";
 }
 // Kas başına hangi hareketten kaç set geldiği (ana kas tam, yardımcı yarım); en yüklü kas önce
 export function sessionBreakdown(items: { ex: string; sets: number }[], musclesOf: MusclesOf): { muscle: string; sets: number; from: { ex: string; sets: number }[] }[] {
