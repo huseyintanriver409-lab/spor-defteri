@@ -128,9 +128,9 @@ export function openAiSheet(){
     `<p class="muted" style="margin:0">Kullandığın yapay zekâya (Claude, ChatGPT, Gemini…) ne istediğini anlat; sana bir program ya da haftalık plan ve uygulamaya ekleme bağlantısı versin. Plan Google Takvim'e de yazılır.</p>
      <div class="pk-head">1 · İsteğin (isteğe bağlı)</div>
      <input id="clWish" placeholder="ör. pazartesi, çarşamba, cumartesi 18:00, 6 Ocak'a kadar">
-     ${canShare ? `<button class="btn primary" id="clShare" style="margin-top:10px;width:100%;justify-content:center">${ic("share-2")}Yapay zekâ uygulamana gönder</button>
+     ${canShare ? `<button class="btn" id="clShare" style="margin-top:10px;width:100%;justify-content:center">${ic("share-2")}Yapay zekâ uygulamana gönder</button>
      <p class="muted small" style="margin:6px 0 0">Açılan menüden telefonundaki yapay zekâyı seç.</p>` : ""}
-     <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${AIS.map(([n], i) => `<button class="btn sm${canShare ? "" : " primary"}" data-ai="${i}">${ic("sparkles")}${n}</button>`).join("")}
+     <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${AIS.map(([n], i) => `<button class="btn sm" data-ai="${i}">${ic("sparkles")}${n}</button>`).join("")}
        <button class="btn sm quiet" id="clCopy">${ic("copy")}Kopyala</button></div>
      <p class="muted small" style="margin:6px 0 0">İstek panoya da kopyalanır; yapay zekâ boş açılırsa yapıştırıp gönder. Başka bir yapay zekâ kullanıyorsan kopyalayıp ona yapıştır.</p>
      <div class="pk-head">2 · Yapay zekânın verdiği bağlantı</div>

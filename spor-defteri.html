@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0b">
+<meta name="theme-color" content="#0B0B0B">
 <title>Spor Defteri</title>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,13 +23,13 @@
   <!-- ==================== BUGÜN ==================== -->
   <section id="tab-home">
     <div class="card hidden" id="backupBanner" style="border-color:var(--warn)">
-      <div class="row"><span class="grow small" id="backupMsg"></span><button class="ghost" id="backupLater">Sonra</button><button class="btn primary sm" id="backupNow"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Yedek al</button></div>
+      <div class="row"><span class="grow small" id="backupMsg"></span><button class="ghost" id="backupLater">Sonra</button><button class="btn sm" id="backupNow"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Yedek al</button></div>
     </div>
     <div class="hero"><div class="row" style="align-items:center"><div class="eyebrow grow" id="homeDate"></div><span id="homeStreak"></span></div><h2 id="homeTitle"></h2><p id="homeSub"></p>
       <p class="streak-note hidden" id="homeStreakNote"></p></div>
-    <div id="homeMain"></div>
     <div class="section-title">Bu hafta<span class="grow"></span></div>
     <div class="card"><div class="stats" id="homeWeek"></div><div id="homeGoal" style="margin-top:12px"></div></div>
+    <div id="homeMain"></div>
     <div id="homeRecovery"></div>
   </section>
 
@@ -39,7 +39,7 @@
     <div class="seg" data-seg="train"><button data-v="prog" class="on">Programlar</button><button data-v="log">Elle kayıt</button><button data-v="plan">Plan</button><button data-v="lib">Hareketler</button></div>
 
     <div id="train-prog">
-      <button class="btn primary xl" id="startEmpty" style="margin-bottom:12px"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Boş antrenman başlat</button>
+      <button class="btn xl" id="startEmpty" style="margin-bottom:12px"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Boş antrenman başlat</button>
       <div id="pList"></div>
       <div class="card" id="liftCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg></span>Hazır programlar</h2>
@@ -54,7 +54,7 @@
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span>Yoga ve esneme</h2>
         <p class="muted help" style="margin-top:-4px">Başlangıç yogası, sabah ve akşam akışları; pozlar süreyle tutulur, kilo girilmez. Bir mat yeterli.</p>
         <div class="row">
-          <button class="btn primary" id="yogaProgs"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Yoga programları</button>
+          <button class="btn" id="yogaProgs"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Yoga programları</button>
           <button class="btn" id="yogaMoves"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>Yoga hareketleri</button>
         </div>
       </div>
@@ -90,7 +90,7 @@
           <div class="setrow head"><span>Set</span><span id="hW">kg</span><span id="hR">tekrar</span><span id="hRir">RIR</span><span></span></div>
           <div id="setRows" style="display:grid;gap:8px"></div>
         </div>
-        <div class="muted small" style="margin:-4px 0 12px">Set numarasına dokun: <b style="color:var(--warn)">I</b> ısınma, <b style="color:var(--accent)">D</b> drop set, <b style="color:var(--danger)">T</b> tükeniş. RIR: kaç tekrar daha yapabilirdin.</div>
+        <div class="muted small" style="margin:-4px 0 12px">Set numarasına dokun: <b style="color:var(--warn)">I</b> ısınma, <b style="color:var(--text);font-weight:800">D</b> drop set, <b style="color:var(--danger)">T</b> tükeniş. RIR: kaç tekrar daha yapabilirdin.</div>
         <input id="logNote" placeholder="Seans notu (isteğe bağlı)" aria-label="Seans notu" style="margin-bottom:12px">
         <div class="row">
           <button class="btn" id="addSet"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>Set</button>
@@ -466,7 +466,7 @@
         </div>
         <p id="calStatus" class="small"></p>
         <div class="row">
-          <button class="btn primary" id="calAuth"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg>Bu cihazda izin ver</button>
+          <button class="btn" id="calAuth"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg>Bu cihazda izin ver</button>
           <button class="btn quiet" id="calOpen">Google Takvim'i aç</button>
         </div>
       </div>
@@ -475,7 +475,7 @@
         <p class="muted help" style="margin-top:-4px">Veriler bu tarayıcıda saklanır. Tarayıcı verisini silersen kayıtlar da silinir; ara sıra yedek al.</p>
         <p class="muted small help">Drive senkronizasyonu kullanmıyorsan telefon + bilgisayar için: bir cihazda yedeği indir, diğerinde Geri yükle → Birleştir de. Sonra aynısını ters yönde yaparsan iki cihaz eşitlenir.</p>
         <div class="row">
-          <button class="btn primary" id="exportBtn"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Yedeği indir</button>
+          <button class="btn" id="exportBtn"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>Yedeği indir</button>
           <button class="btn" id="importBtn"><svg class="ic" aria-hidden="true"><use href="#i-upload"/></svg>Geri yükle / birleştir</button>
           <input type="file" id="importFile" accept=".json,application/json" class="hidden">
         </div>
@@ -497,7 +497,7 @@
   <div class="f-top">
     <button class="iconbtn" id="fMin" title="Küçült"><svg class="ic" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
     <div class="f-clock"><span class="dot"></span><span id="fElapsed">0:00</span></div>
-    <button class="btn sm primary" id="fEnd">Bitir</button>
+    <button class="btn sm" id="fEnd">Bitir</button>
   </div>
   <div class="f-list" id="fList"></div>
   <div class="f-body" id="fBody"></div>
@@ -515,7 +515,7 @@
 
 <button class="fab" id="fab" title="Dinlenme sayacı"><svg class="ic" aria-hidden="true"><use href="#i-timer"/></svg><span id="fabTxt"></span></button>
 <div class="sheet hidden" id="sheet">
-  <div class="row"><b class="grow" style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Dinlenme</b><button class="iconbtn" id="shClose" title="Kapat"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="row"><b class="grow" style="font-size:13px;font-weight:600;color:var(--muted)">Dinlenme</b><button class="iconbtn" id="shClose" title="Kapat"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
   <div class="clock" id="clock">1:30</div>
   <div class="presets" id="presets"></div>
   <div class="row">

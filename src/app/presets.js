@@ -159,7 +159,7 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
 }
 
 export function setup(){
-  $("#recOpen").onclick = () => openRecommender();
+  $("#liftCard #recOpen").onclick = () => openRecommender();
   $("#libOpen").onclick = () => openLibrary();
   $("#yogaProgs").onclick = () => openLibrary(true);
 }

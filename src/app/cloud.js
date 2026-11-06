@@ -119,7 +119,7 @@ export function renderAccount(){
   } else {
     html = `<div class="row" style="gap:14px;align-items:center"><span class="avatar">${ic("user")}</span>
       <div class="grow"><b>Hesap bağlı değil</b><div class="muted small">Veriler yalnız bu cihazda. Google ile bağlanınca telefon ve bilgisayar aynı verileri görür.</div></div></div>
-      ${syncCanRun() ? `<button class="btn primary" id="acctConnect" style="margin-top:12px">${ic("cloud")}Google ile bağlan</button>` : ""}`;
+      ${syncCanRun() ? `<button class="btn" id="acctConnect" style="margin-top:12px">${ic("cloud")}Google ile bağlan</button>` : ""}`;
   }
   el.innerHTML = html;
   // fotoğraf yüklenemezse baş harf görünür

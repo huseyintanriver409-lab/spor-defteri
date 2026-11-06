@@ -31,7 +31,13 @@ export function pRow(it = {ex:"", sets:3, reps:"10"}){
   return div;
 }
 // program formu yalnız "Kendi programını oluştur" ya da Düzenle ile açılır
-function showEditor(on){ $("#pEditor").classList.toggle("hidden", !on); $("#pNew").classList.toggle("hidden", on); }
+function showEditor(on){ $("#pEditor").classList.toggle("hidden", !on); $("#pNew").classList.toggle("hidden", on); syncPrimary(); }
+// aynı görünümde tek "primary": editör açıkken ana düğme #pSave; kapalıyken program varsa #startEmpty, yoksa #recOpen
+function syncPrimary(){
+  const editing = !$("#pEditor").classList.contains("hidden"), hasPrograms = state.programs.length > 0;
+  $("#startEmpty").classList.toggle("primary", !editing && hasPrograms);
+  $("#liftCard #recOpen").classList.toggle("primary", !editing && !hasPrograms);
+}
 export function resetProgEditor(){
   progEditId = null; $("#pTitle").textContent = "Yeni program"; $("#pName").value = "";
   $("#pRows").innerHTML = ""; pRow(); showEditor(false);
@@ -59,6 +65,7 @@ export function renderEditorLoad(){
 }
 export function renderProg(){
   $("#yogaCard").classList.toggle("hidden", !yogaOn()); $("#liftCard").classList.toggle("hidden", !liftOn());
+  syncPrimary();
   $("#pList").innerHTML = state.programs.length ? state.programs.map(p => {
     const ms = setsByMuscle(p.items.filter(i => i.ex), musclesOf);
     const top = Object.entries(ms).sort((a,b) => b[1]-a[1]).slice(0,4).map(([m]) => m).join(" · ");
@@ -67,7 +74,7 @@ export function renderProg(){
       <div class="eyebrow">${p.items.length} hareket · ${total} set${top ? ` · <button class="linkbtn" data-pmap="${p.id}" title="Kas haritasında gör">${ic("activity")}${esc(top)}</button>` : ""}</div>
       <h3>${esc(p.name)}</h3>
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " sn" : ""}</span></li>`).join("")}</ol>
-      <div class="row"><button class="btn primary" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
+      <div class="row"><button class="btn" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="Bağlantıyla paylaş">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
     </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, yapay zekâyla oluştur ya da kendin kur.")}</div>`;
   const find = id => state.programs.find(p => p.id===id);

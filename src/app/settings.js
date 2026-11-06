@@ -43,7 +43,7 @@ export function applyTheme(){
   if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
   $("#themeBtn").innerHTML = ic(THEMES[theme][0]); $("#themeBtn").title = THEMES[theme][1]; $("#themeBtn").setAttribute("aria-label", THEMES[theme][1]);
   const dark = theme === "dark" || (theme === "system" && darkMq.matches);
-  document.querySelector('meta[name="theme-color"]').content = dark ? "#0a0a0b" : "#f3f3f4";
+  document.querySelector('meta[name="theme-color"]').content = dark ? "#0B0B0B" : "#F4F1EA";
 }
 export function setTheme(t){
   theme = t; try { localStorage.setItem(THEME_KEY, t); } catch(e){}
