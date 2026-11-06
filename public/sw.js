@@ -1,7 +1,7 @@
 // Spor Defteri service worker: uygulamayı çevrimdışı çalıştırır.
 // Sayfa için önce ağ denenir (güncellemeler hemen gelsin), ağ yoksa önbellekteki sürüm açılır.
 // Yeni bir sürüm yayınlarken CACHE adını artır ki eski önbellek temizlensin.
-const CACHE = "spor-defteri-v60";
+const CACHE = "spor-defteri-v61";
 const ASSETS = [
   "./",
   "./spor-defteri.html",
@@ -10,6 +10,8 @@ const ASSETS = [
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
   "./icons/apple-touch-icon.png",
+  "./icon.svg",
+  "./icons/favicon-32.png",
 ];
 
 self.addEventListener("install", e => {

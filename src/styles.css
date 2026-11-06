@@ -527,7 +527,8 @@ body.focus-open .toast,body.focus-open .snack{bottom:calc(160px + env(safe-area-
 .modal h2{margin:0 0 8px;font-size:20px;font-weight:800;letter-spacing:-.01em}
 .fab{position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom));z-index:6;display:inline-flex;align-items:center;gap:6px;height:52px;min-width:52px;justify-content:center;
   color:var(--text);font:inherit;font-weight:800;padding:0 15px;cursor:pointer;font-variant-numeric:tabular-nums}
-.fab .ic{width:22px;height:22px}
+.fab .ic{width:22px;height:22px;display:block}
+.fab #fabTxt:empty{display:none}
 .fab.run{--fill:var(--accent);--bd:var(--accent);--cut:10px;color:var(--accent-ink)}
 .fab.run:active{--fill:var(--accent-press);--bd:var(--accent-press)}
 body.focus-open .fab,body.has-livebar .fab{display:none}
