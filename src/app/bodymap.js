@@ -1,7 +1,7 @@
 // Vücut haritası: önden ve arkadan kaslar; renk kademesi core/musclemap.ts'ten. Kasa dokununca o kasın hareketleri açılır.
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
-import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, SESSION_TOO_MUCH, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../core/musclemap.ts";
+import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, SESSION_TOO_MUCH, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MAIN_SHARE } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
 import { equipOf, isCardio, musclesOf, pickableEx } from "./exercises.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
@@ -77,7 +77,8 @@ function miniSymbol(sex, side){
 export const EX_SETS = 3;
 const RANKED = SESSION_TIERS.map(([k]) => k).reverse();  // hasar → dusuk
 export function exerciseTiers(m, sets = EX_SETS){
-  const t = {}; m.p.forEach(x => t[x] = sessionTier(sets)); m.s.forEach(x => { if (!t[x]) t[x] = sessionTier(sets / 2); });
+  // her kasa set × hareketin o kasa payı (araştırmadan) kadar etkili set düşer
+  const t = {}; for (const [x, w] of Object.entries(weightsOf(m))) t[x] = sessionTier(sets * w);
   return t;
 }
 // kademeye göre gruplu: [[kademe, ad, kaslar], …] en yüksek kademe önce
@@ -183,7 +184,19 @@ export function sessionLoadHTML(items, { tap = false, small = true } = {}){
     + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets <= SESSION_TOO_MUCH).map(r => `<span class="chip"><i class="bm-dot" data-t="g-${sessionTier(r.sets)}"></i>${esc(r.muscle)} · ${fmt(r.sets)}</span>`).join("")}</div>`;
 }
 
-// Kasın hareketleri: en iyiler, sonra ana, sonra yardımcı çalıştıranlar
+// Kanıt etiketleri (araştırma: arastirma/ klasörü). Aynı gruptakiler arasında fark gösterilmedi: sıralama değil, eşit seçenekler.
+const LEVEL = { "güçlü": ["Kanıt güçlü", "good", "Kası büyüttüğü birden çok antrenman çalışmasıyla ölçüldü"],
+  "orta": ["Kanıt orta", "", "Büyüme ölçüldü ama çalışma az ya da küçük; veya dolaylı kanıt"],
+  "zayıf": ["Kanıt zayıf", "muted", "Yalnız kas aktivitesi ölçüldü; büyüme ölçülmedi"],
+  "yok": ["Çalışma yok", "muted", "Bu hareket ölçülmedi; benzer hareketlerden tahmin"] };
+const share = w => String(Math.round(w * 100) / 100).replace(".", ",");
+const kindTag = ({ kind, level, w }) => kind === "kanit" ? `<span class="tag ${LEVEL[level][1]}">${LEVEL[level][0]}</span>`
+  : `<span class="tag ${kind === "ana" ? "" : "muted"}">${kind === "ana" ? "Ana kas" : "Yardımcı"}</span>`;
+const shareText = w => w >= .999 ? "" : `<span class="muted small">1 set = ${share(w)} set bu kasa</span>`;
+const groupNote = (m, g) => (EVIDENCE[m] || [])[g]?.note || "";
+const evidenceHelp = `<details class="ev-help"><summary class="muted small">Kanıt düzeyleri ne demek?</summary>${Object.values(LEVEL).map(([l, , d]) => `<div class="small"><b>${l}:</b> ${d}</div>`).join("")}</details>`;
+
+// Kasın hareketleri: önce kanıt grupları (eşit seçenekler), sonra ana, sonra yardımcı çalıştıranlar
 // alts: aynı bölgedeki kaslar (omuz); üstte aralarında geçiş düğmeleri çıkar
 // plain: yorgunluk ve haftalık yük gösterilmez (Hareketler'den kas seçerken)
 export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
@@ -191,7 +204,6 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
   const names = pickableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts);
-  const TAG = { best: ["En iyi", "good"], ana: ["Ana kas", ""], yardimci: ["Yardımcı", "muted"] };
   const ago = r ? (r.hrs < 1 ? "az önce" : r.hrs < 24 ? `${Math.round(r.hrs)} sa önce` : `${Math.floor(r.hrs / 24)} gün önce`) : "";
   // kullanıcının programlarından bu kası çalıştıranlar: bir antrenmanda kaç set (yardımcı kas yarım set)
   const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
@@ -206,11 +218,13 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
      ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(p.name)}</div><div class="ms muted small">${fmt(sets)} set bu kasa</div></div>
        ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}Başla</button>`}</div>`).join("")}
      <div class="pk-head">Hareketler</div>` : "") +
-    `<p class="muted small" style="margin:8px 0 4px">Üstte en etkili hareketler; sonra bu kası ana olarak, en altta yardımcı olarak çalıştıranlar.</p>
-     ${list.map(({ name, kind }) => `<div class="exitem"><div class="grow"><div>${esc(name)}${counts[name] ? ` <span class="muted small">· ${counts[name]} kayıt</span>` : ""}</div>
-       <div class="ms"><span class="tag ${TAG[kind][1]}">${TAG[kind][0]}</span></div></div>
+    `${SUMMARY[m] ? `<p class="small" style="margin:8px 0 4px">${esc(SUMMARY[m])}</p>` : ""}${evidenceHelp}
+     ${list.map((x, i) => { const { name, kind, group } = x, head = kind === "kanit" ? (i === 0 || list[i - 1].group !== group) : kind !== list[i - 1]?.kind;
+       return (head ? `<div class="pk-head">${kind === "kanit" ? `Eşit seçenekler${groupNote(m, group) ? `<span class="muted small" style="display:block;font-weight:400;text-transform:none;letter-spacing:0">${esc(groupNote(m, group))}</span>` : ""}` : kind === "ana" ? "Bu kası ana olarak çalıştıran diğerleri" : "Yardımcı olarak çalıştıranlar"}</div>` : "")
+       + `<div class="exitem"><div class="grow"><div>${esc(name)}${counts[name] ? ` <span class="muted small">· ${counts[name]} kayıt</span>` : ""}</div>
+       <div class="ms">${kindTag(x)}${shareText(x.w)}</div></div>
        <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}">${ic("circle-play")}</a>
-       <button class="iconbtn" data-use="${esc(name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`).join("")}`);
+       <button class="iconbtn" data-use="${esc(name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`; }).join("")}`);
   body.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleSheet(b.dataset.alt, alts, { plain }));
   body.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { closeSheet(); startWorkout(b.dataset.pstart); });
   body.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { closeSheet(); useExercise(b.dataset.use); });
@@ -237,11 +251,12 @@ export function openMuscleReel(m, alts = [m]){
   const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
   const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${side === "front" ? "Ön" : "Arka"}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
-  const cards = list.map(({ name, kind }, i) => { const mm = musclesOf(name); return `<section class="reel-card" data-ex="${esc(name)}">
+  const cards = list.map((x, i) => { const { name, kind, group } = x, mm = musclesOf(name), note = kind === "kanit" ? groupNote(m, group) : ""; return `<section class="reel-card" data-ex="${esc(name)}">
       <div class="reel-figs">${figs(mm)}</div>
       <div>
-        <div class="row" style="gap:6px;margin-bottom:8px">${kind === "best" ? `<span class="reel-best">${ic("star")}En iyi</span>` : ""}<span class="tag">${esc(equipOf(name))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
+        <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x)}<span class="tag">${esc(equipOf(name))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
         <h3 class="reel-name">${esc(name)}</h3>
+        ${i === 0 && SUMMARY[m] ? `<p class="reel-note">${esc(SUMMARY[m])}</p>` : ""}${note ? `<p class="reel-note">${ic("info")}${esc(note)}</p>` : ""}${x.w < .999 ? `<p class="reel-note muted">${kind === "yardimci" ? "Bu kası yardımcı olarak çalıştırır: " : ""}1 set = ${share(x.w)} set ${esc(m)}</p>` : ""}
         <div class="reel-sets"><span class="muted small">Bu hareketten</span><button class="iconbtn" data-sets="-1" title="Bir set az">${ic("minus")}</button><b data-n>${reelSets} set</b><button class="iconbtn" data-sets="1" title="Bir set fazla">${ic("plus")}</button></div>
         <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
         ${SCALE}

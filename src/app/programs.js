@@ -1,5 +1,6 @@
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
+import { setsByMuscle } from "../core/musclemap.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, liftOn, setLabel, yogaOn } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, openSheet, sheetHead, undoable } from "./ui.js";
@@ -59,7 +60,7 @@ export function renderEditorLoad(){
 export function renderProg(){
   $("#yogaCard").classList.toggle("hidden", !yogaOn()); $("#liftCard").classList.toggle("hidden", !liftOn());
   $("#pList").innerHTML = state.programs.length ? state.programs.map(p => {
-    const ms = {}; p.items.forEach(i => { const m = musclesOf(i.ex); m.p.forEach(x => ms[x] = (ms[x]||0) + i.sets); m.s.forEach(x => ms[x] = (ms[x]||0) + i.sets/2); });
+    const ms = setsByMuscle(p.items.filter(i => i.ex), musclesOf);
     const top = Object.entries(ms).sort((a,b) => b[1]-a[1]).slice(0,4).map(([m]) => m).join(" · ");
     const L = ssLabels(p.items), total = p.items.reduce((a,i) => a + i.sets, 0);
     return `<div class="card progcard">

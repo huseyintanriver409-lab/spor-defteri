@@ -4,6 +4,7 @@
 // aynı hacimde bile toparlanmayı 24–48 sa uzatır.
 import { parse } from "./dates.ts";
 import { work, type WorkSet } from "./training.ts";
+import { MAIN_SHARE, weightsOf, type Muscles } from "./musclemap.ts";
 
 export const LOWER_BODY = ["Quadriceps", "Hamstring", "Kalça", "Bel", "İç Bacak", "Baldır"];
 // bir günde kasa bu kadar etkili set düştüyse dinlenme uzar
@@ -15,8 +16,8 @@ export interface RecoveryInput {
   entries: { ex: string; date: string; sets: WorkSet[] }[];
   sessions: { date: string; end: number }[];
   isCardio: (ex: string) => boolean;
-  // p: ana çalışan kaslar (tam set sayılır), s: yardımcı kaslar (yarım set sayılır)
-  musclesOf: (ex: string) => { p: string[]; s: string[] };
+  // w: hareketin kaslara payı (set × pay); yoksa p ana kaslar (tam set), s yardımcılar (yarım set)
+  musclesOf: (ex: string) => Muscles;
   now?: number;
 }
 export interface MuscleRecovery { date: string; sets: number; fail: boolean; hrs: number; need: number; pct: number }
@@ -35,8 +36,8 @@ export function recoveryMap({ entries, sessions, isCardio, musclesOf, now = Date
       const d = ((days[mu] ||= {})[e.date] ||= { sets: 0, fail: false });
       d.sets += v; d.fail ||= f;
     };
-    // tükeniş yalnız ana kası yorar sayılır
-    m.p.forEach(mu => add(mu, n, fail)); m.s.forEach(mu => add(mu, n / 2, false));
+    // tükeniş yalnız ana kası (pay ≥ 0,75) yorar sayılır
+    for (const [mu, w] of Object.entries(weightsOf(m))) add(mu, n * w, fail && w >= MAIN_SHARE);
   });
   const res: Record<string, MuscleRecovery> = {};
   for (const mu in days) {

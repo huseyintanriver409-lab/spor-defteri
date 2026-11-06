@@ -1,6 +1,7 @@
 import { MONTHS, mondayOf, niceDate, parse, shortDate, ymd } from "../core/dates.ts";
 import { e1rm, liftScore, volume, work } from "../core/training.ts";
 import { recoveryMap as recoveryMapCore } from "../core/recovery.ts";
+import { setsByMuscle } from "../core/musclemap.ts";
 import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, groupShown, isCardio, isTimed, isYoga, liftOn, musclesOf, yogaOn } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
@@ -27,7 +28,7 @@ export function renderWeek(){
 
   // kas analizi
   const ms = {};
-  lifts.forEach(e => { const n = work(e.sets).length, m = musclesOf(e.ex); m.p.forEach(x => ms[x] = (ms[x]||0) + n); m.s.forEach(x => ms[x] = (ms[x]||0) + n/2); });
+  Object.assign(ms, setsByMuscle(lifts.map(e => ({ ex: e.ex, sets: work(e.sets).length })), musclesOf));
   const shown = MUSCLE_ORDER.filter(m => ms[m] || ["Göğüs","Lat","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Quadriceps","Hamstring","Kalça","Baldır","Karın"].includes(m));
   const scale = Math.max(24, ...Object.values(ms));
   $("#musclesCard").classList.toggle("hidden", !liftOn());

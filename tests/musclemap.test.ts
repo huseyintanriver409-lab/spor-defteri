@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BEST, MUSCLES, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../src/core/musclemap.ts";
+import { EVIDENCE, MUSCLES, WEIGHTS, SUMMARY, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../src/core/musclemap.ts";
 import { LIB } from "../src/core/library.ts";
 
 const allNames = new Set(Object.values(LIB).flat());
@@ -13,9 +13,17 @@ const M: Record<string, { p: string[]; s: string[] }> = {
 const musclesOf = (n: string) => M[n] || { p: [], s: [] };
 
 describe("vücut haritası", () => {
-  it("en iyi hareket listeleri kütüphanede var ve her kasın listesi dolu", () => {
-    expect(Object.values(BEST).flat().filter(n => !allNames.has(n))).toEqual([]);
-    expect(MUSCLES.filter(m => !BEST[m]?.length)).toEqual([]);
+  it("araştırma verisi: hareketler kütüphanede, paylar 0–1, her kasın kanıt grupları ve özeti var", () => {
+    expect(Object.keys(WEIGHTS).filter(n => !allNames.has(n))).toEqual([]);
+    expect(Object.values(EVIDENCE).flat().flatMap(g => g.ex).filter(n => !allNames.has(n))).toEqual([]);
+    expect(Object.values(WEIGHTS).flatMap(w => Object.entries(w)).filter(([m, v]) => !MUSCLES.includes(m) || !(v > 0 && v <= 1))).toEqual([]);
+    expect(MUSCLES.filter(m => !EVIDENCE[m]?.length || !SUMMARY[m])).toEqual([]);
+  });
+  it("araştırma düzeltmeleri: bilek hareketi trapez değil, tibialis baldır değil, squat iç bacağı ve kalçayı çalıştırır", () => {
+    expect(WEIGHTS["Wrist Curl"]["Trapez"]).toBeUndefined();
+    expect(WEIGHTS["Tibialis Raise"]?.["Baldır"]).toBeUndefined();
+    expect(WEIGHTS["Back Squat"]["Kalça"]).toBeGreaterThanOrEqual(.75);
+    expect(WEIGHTS["Back Squat"]["İç Bacak"]).toBeGreaterThan(0);
   });
   it("haftalık set kademeleri", () => {
     expect([0, 2, 3.5, 4, 10, 10.5, 18, 19].map(loadTier)).toEqual(["yok", "baslangic", "baslangic", "verimli", "verimli", "orta", "orta", "dusukverim"]);
@@ -28,15 +36,17 @@ describe("vücut haritası", () => {
     expect(fatigueTier(r(.2, 6))).toBe("yorgun");
     expect(fatigueTier(r(.2, 12))).toBe("asiri");
   });
-  it("set sayımı: ana kas tam, yardımcı yarım", () => {
+  it("set sayımı: pay yoksa ana kas tam, yardımcı yarım; pay varsa set × pay", () => {
     expect(setsByMuscle([{ ex: "Bench Press (Barbell)", sets: 4 }], musclesOf)).toEqual({ "Göğüs": 4, "Ön Omuz": 2, "Triceps": 2 });
+    const w = () => ({ p: ["Göğüs"], s: ["Ön Omuz"], w: { "Göğüs": 1, "Ön Omuz": .6, "Triceps": .1 } });
+    expect(setsByMuscle([{ ex: "x", sets: 5 }], w)).toEqual({ "Göğüs": 5, "Ön Omuz": 3, "Triceps": .5 });
   });
-  it("sıralama: en iyiler, sonra ana, sonra yardımcı; çok yapılan önce", () => {
+  it("sıralama: önce kanıt grupları (eşit seçenekler), sonra ana, sonra yardımcı (payı büyük önce)", () => {
     const r = rankForMuscle("Göğüs", Object.keys(M), musclesOf, { "Dumbbell Fly": 3 });
-    expect(r).toEqual([
-      { name: "Bench Press (Barbell)", kind: "best" }, { name: "Cable Crossover", kind: "best" },
-      { name: "Dumbbell Fly", kind: "ana" }, { name: "Close-Grip Bench Press", kind: "yardimci" },
+    expect(r.map(x => [x.name, x.kind])).toEqual([
+      ["Bench Press (Barbell)", "kanit"], ["Dumbbell Fly", "kanit"], ["Cable Crossover", "kanit"], ["Close-Grip Bench Press", "yardimci"],
     ]);
+    expect(r[0].level).toBe(EVIDENCE["Göğüs"][0].level);
   });
   it("tek antrenman kademeleri ve kas başına dağılım", () => {
     expect([0, 0.5, 1, 1.5, 2, 2.5, 3, 5.5, 6, 11, 12].map(sessionTier)).toEqual(["yok", "dusuk", "koruma", "koruma", "minimum", "minimum", "iyi", "iyi", "maksimum", "maksimum", "hasar"]);

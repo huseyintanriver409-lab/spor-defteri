@@ -1,4 +1,6 @@
 import { CARDIO, LIB, YOGA, fmt, state } from "./store.js";
+import { WEIGHTS } from "../core/muscledata.ts";
+import { MAIN_SHARE } from "../core/musclemap.ts";
 
 /* ---------- Exercise metadata ---------- */
 export function allEx(){
@@ -17,6 +19,8 @@ export const liftOn = () => focus() !== "yoga";
 export const groupShown = g => g === YOGA ? yogaOn() : liftOn() || g === CARDIO || g === "Diğer";
 export const pickableEx = () => allEx().filter(e => groupShown(e.group));
 
+// Kütüphanedeki hareketlerin kas payları araştırmadan gelir (src/core/muscledata.ts). Aşağıdaki kurallar yalnız
+// kütüphanede olmayan (kullanıcının eklediği) hareketler içindir: ana kas 1, yardımcı ½ sayılır.
 // [desen, ana kaslar, yardımcı kaslar] — ilk eşleşen kural geçerli
 export const MUSCLE_RULES = [
   [/calf|tibialis/, ["Baldır"], []],
@@ -58,8 +62,13 @@ export const GROUP_MUSCLES = {
 const CORE_RULES = [[/twist|side plank|woodchop|side bend|bicycle|pallof|windshield/, ["Oblik"], ["Karın"]]];
 export const MUSCLE_ORDER = ["Göğüs","Lat","Trapez","Bel","Ön Omuz","Yan Omuz","Arka Omuz","Biceps","Triceps","Önkol","Quadriceps","Hamstring","Kalça","İç Bacak","Baldır","Karın","Oblik","Rotator Manşet"];
 export const _mCache = {};
+// p: ana kaslar (pay ≥ 0,75), s: yardımcı kaslar (gösterim için pay ≥ 0,2), w: tüm paylar (set sayımı bunu kullanır)
+const SHOW_MIN = .2;
 export function musclesOf(name){
   if (_mCache[name]) return _mCache[name];
+  const w = WEIGHTS[name];
+  if (w) { const ms = Object.keys(w);
+    return _mCache[name] = { p: ms.filter(m => w[m] >= MAIN_SHARE), s: ms.filter(m => w[m] < MAIN_SHARE && w[m] >= SHOW_MIN), w }; }
   const g = groupOf(name), n = name.toLowerCase();
   const def = GROUP_MUSCLES[g] ? { p: GROUP_MUSCLES[g][0], s: GROUP_MUSCLES[g][1] } : { p: [], s: [] };
   // kardiyo ve yogada kurallar uygulanmaz; karında yalnız oblik kuralı. Listede olmayan ("Diğer") hareketler de
