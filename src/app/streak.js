@@ -29,24 +29,24 @@ export const flameHTML = (r, cls = "") => `<span class="streak${r.count ? "" : "
 // Ana sayfadaki hatırlatma satırı
 export function streakNote(r){
   if (r.kind === "week") {
-    if (r.goalMet) return r.weeks > 1 ? `Bu haftanın hedefi tamam. Serin ${r.weeks} hafta.` : "Bu haftanın hedefi tamam. Serin başladı!";
-    if (r.atRisk) return `Haftalık hedefe yetişmek için bugün antrenman gerek (${r.thisWeek}/${state.goal}).`;
+    if (r.goalMet) return r.weeks > 1 ? `Hedef tamam · ${r.weeks} hafta` : "Hedef tamam";
+    if (r.atRisk) return `Bugün antrenman · ${r.thisWeek}/${state.goal}`;
     return "";
   }
-  if (r.doneToday) return r.days > 1 ? `Serin ${r.days} gün. Bugünü de kurtardın.` : "Serin başladı. Yarın da devam!";
-  if (r.atRisk) return r.days ? `Bugün antrenman günü: ${r.days} günlük serini koru.` : "Bugün antrenman günü: yeni bir seri başlat.";
+  if (r.doneToday) return "";
+  if (r.atRisk) return r.days ? "Bugün antrenman · seriyi koru" : "Bugün antrenman · seri başlat";
   return "";
 }
 
 // Profil: seri, en uzun, dondurma, rozetler
 export function streakCardHTML(r){
-  const got = new Set(earnedBadges(r.best, r.badges)), next = nextBadge(r.count, r.badges), u = r.unit;
+  const got = new Set(earnedBadges(r.best, r.badges)), u = r.unit;
   const rule = r.kind === "week"
     ? `Haftalık hedefini (${state.goal} gün) tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.${streakMode() === "auto" ? " Haftalık plan kurarsan seri planlı günlerine göre günlük işler." : ""}`
     : "Planlı günleri kaçırmadıkça seri sürer; dinlenme günleri bozmaz.";
   const freeze = r.kind === "week" ? "eksik kalan hafta" : "kaçırılan gün";
   return `<div class="row" style="gap:14px;align-items:center">${flameHTML(r, "lg")}
-      <div class="grow"><b style="font-size:18px">${r.count} ${r.adj} seri</b>${infoBtn()}<div class="muted small">En uzun: ${r.best} ${u}${next ? ` · sıradaki rozet ${next} ${u}` : ""}</div></div></div>
+      <div class="grow"><b style="font-size:18px">${r.count} ${r.adj} seri</b>${infoBtn()}<div class="muted small">En uzun ${r.best} ${u}</div></div></div>
     <div class="muted small help" style="margin-top:10px">${rule} Ayda ${r.freezes} kez ${freeze} seriyi bozmaz (dondurma): bu ay <b>${r.freezesLeft}</b> hakkın kaldı.</div>
     <div class="badges">${r.badges.map(b => `<span class="badge${got.has(b) ? " on" : ""}" title="${b} ${r.adj} seri">${ic("flame")}${b}</span>`).join("")}</div>`;
 }

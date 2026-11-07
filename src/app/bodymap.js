@@ -102,8 +102,20 @@ export function miniMap(name){
   const vb = !legs ? [x, y, w, h * .5] : legs === m.p.length ? [x, y + h * .42, w, h * .58] : [x, y, w, h];
   return `<svg class="minimap" viewBox="${vb.join(" ")}" style="${paint(sex, side, m)}" aria-hidden="true"><use href="#${miniSymbol(sex, side)}"/></svg>`;
 }
+// (i) düğmesi arkasında açılan açıklama (sayfa içeriği .card olmadığı için <details>)
+const infoTip = inner => `<details class="ev-help i-help"><summary class="muted small" aria-label="Açıklama">${ic("info")}</summary>${inner}</details>`;
 export const legend = kind => `<div class="bm-legend">${KINDS[kind]
-  .map(([k, l, d]) => `<span><i data-t="${k}"></i>${l}<small>${d}</small></span>`).join("")}</div>`;
+  .map(([k, l]) => `<span><i data-t="${k}"></i>${l}</span>`).join("")}</div>`
+  + infoTip(KINDS[kind].map(([, l, d]) => `<div class="small"><b>${l}:</b> ${d}</div>`).join(""));
+// ilk cümle görünür, gerisi "Ayrıntı" arkasında ("vb.", "ör." gibi kısaltmalarda bölünmez)
+const ABBR = /(?:vb|vs|ör|bkz|yak|sn|dk)\.$/i;
+function firstSentence(t){
+  const re = /[.!?](?=\s+[A-ZÇĞİÖŞÜ0-9])/g; let m;
+  while ((m = re.exec(t))) { const head = t.slice(0, m.index + 1); if (!ABBR.test(head)) return [head, t.slice(m.index + 1).trim()]; }
+  return [t, ""];
+}
+const summaryHTML = (m, cls) => { if (!SUMMARY[m]) return ""; const [a, b] = firstSentence(SUMMARY[m]);
+  return `<p class="${cls}">${esc(a)}</p>` + (b ? `<details class="ev-help"><summary class="muted small">Ayrıntı</summary><p class="${cls}">${esc(b)}</p></details>` : ""); };
 
 export const fatigueTiers = (R = recoveryMap()) => Object.fromEntries(MUSCLES.map(m => [m, fatigueTier(R[m])]));
 export const loadTiers = ms => Object.fromEntries(MUSCLES.map(m => [m, "y-" + loadTier(ms[m] || 0)]));
@@ -160,13 +172,13 @@ export function openRecoveryAnalysis(focus){
   const rows = MUSCLES.filter(m => R[m]).map(m => ({ m, r: R[m], t: fatigueTier(R[m]) })).sort((a, b) => a.r.pct - b.r.pct || a.m.localeCompare(b.m, "tr"));
   const left = r => r.pct >= 1 ? "Hazır" : (h => h < 1 ? "<1 sa" : h < 24 ? `~${h} sa` : `~${Math.floor(h / 24)} g ${h % 24} sa`)(Math.ceil(r.need - r.hrs));
   const body = openSheet(sheetHead("Toparlanma analizi"),
-    `<div class="row" style="align-items:flex-end;margin-bottom:6px"><div class="grow"><div class="eyebrow">Genel yorgunluk</div>
+    `<div class="row" style="align-items:flex-end;margin-bottom:6px"><div class="grow">
        <div style="font-size:26px;font-weight:800;letter-spacing:-.02em">${label}</div>${levelBar(lvl)}</div></div>
-     <p class="muted small" style="margin:8px 0 0">Son 4 günde çalışan kasların ortalaması.</p>
+     ${infoTip(`<p class="muted small" style="margin:4px 0">Son 4 günde çalışan kasların ortalaması.</p>`)}
      ${bodyMap(fatigueTiers(R), { tap: false })}${legend("fatigue")}
-     ${rows.length ? `<div class="pk-head" style="margin-top:14px">Kas kas</div>` + rows.map(({ m, r, t }) => `<div class="exitem rec-row${m === focus ? " hl" : ""}" data-rm="${esc(m)}">
-       <i class="bm-dot" data-t="${t}" style="margin-right:6px"></i><div class="grow"><div>${esc(m)}</div>
-       <div class="ms">${LABEL[t]} · ${shortDate(r.date)} · ${fmt(r.sets)} set${r.fail ? " · tükeniş" : ""}</div></div><b>${left(r)}</b></div>`).join("")
+     ${rows.length ? `<div style="margin-top:14px">` + rows.map(({ m, r, t }) => `<div class="exitem rec-row${m === focus ? " hl" : ""}" data-rm="${esc(m)}">
+       <i class="bm-dot" data-t="${t}" role="img" aria-label="${LABEL[t]}" title="${LABEL[t]}" style="margin-right:6px"></i><div class="grow"><div>${esc(m)}</div>
+       <div class="ms">${fmt(r.sets)} set · ${shortDate(r.date)}${r.fail ? " · tükeniş" : ""}</div></div><b>${left(r)}</b></div>`).join("") + `</div>`
      : `<p class="muted">Henüz kayıt yok.</p>`}`);
   const f = focus && [...body.querySelectorAll("[data-rm]")].find(x => x.dataset.rm === focus);
   if (f) setTimeout(() => f.scrollIntoView({ block: "center" }), 50);
@@ -185,12 +197,12 @@ export function sessionLoadHTML(items, { tap = false, small = true } = {}){
 }
 
 // Kanıt etiketleri (araştırma: arastirma/ klasörü). Aynı gruptakiler arasında fark gösterilmedi: sıralama değil, eşit seçenekler.
-const LEVEL = { "güçlü": ["Kanıt güçlü", "good", "Kası büyüttüğü birden çok antrenman çalışmasıyla ölçüldü"],
-  "orta": ["Kanıt orta", "", "Büyüme ölçüldü ama çalışma az ya da küçük; veya dolaylı kanıt"],
-  "zayıf": ["Kanıt zayıf", "muted", "Yalnız kas aktivitesi ölçüldü; büyüme ölçülmedi"],
+const LEVEL = { "güçlü": ["Güçlü", "good", "Kası büyüttüğü birden çok antrenman çalışmasıyla ölçüldü"],
+  "orta": ["Orta", "", "Büyüme ölçüldü ama çalışma az ya da küçük; veya dolaylı kanıt"],
+  "zayıf": ["Zayıf", "muted", "Yalnız kas aktivitesi ölçüldü; büyüme ölçülmedi"],
   "yok": ["Çalışma yok", "muted", "Bu hareket ölçülmedi; benzer hareketlerden tahmin"] };
 const share = w => String(Math.round(w * 100) / 100).replace(".", ",");
-const kindTag = ({ kind, level, w }) => kind === "kanit" ? `<span class="tag ${LEVEL[level][1]}">${LEVEL[level][0]}</span>`
+const kindTag = ({ kind, level, w }, labeled = false) => kind === "kanit" ? `<span class="tag ${LEVEL[level][1]}">${labeled && level !== "yok" ? "Kanıt · " : ""}${LEVEL[level][0]}</span>`
   : `<span class="tag ${kind === "ana" ? "" : "muted"}">${kind === "ana" ? "Ana kas" : "Yardımcı"}</span>`;
 const shareText = w => w >= .999 ? "" : `<span class="muted small">1 set = ${share(w)} set bu kasa</span>`;
 const groupNote = (m, g) => (EVIDENCE[m] || [])[g]?.note || "";
@@ -200,7 +212,7 @@ const evidenceHelp = `<details class="ev-help"><summary class="muted small">Kan�
 // alts: aynı bölgedeki kaslar (omuz); üstte aralarında geçiş düğmeleri çıkar
 // plain: yorgunluk ve haftalık yük gösterilmez (Hareketler'den kas seçerken)
 export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
-  const R = recoveryMap(), r = R[m], ft = fatigueTier(r), ws = weekSets()[m] || 0;
+  const R = recoveryMap(), r = R[m], ft = fatigueTier(r);
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
   const names = pickableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts);
@@ -211,20 +223,19 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
   const body = openSheet(sheetHead(m),
     (alts.length > 1 ? `<div class="fchips" style="margin-bottom:10px">${alts.map(x => `<button class="fchip${x === m ? " on" : ""}" data-alt="${esc(x)}">${esc(x)}</button>`).join("")}</div>` : "") +
     (plain ? "" : `<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:6px">
-       <span class="chip"><i class="bm-dot" data-t="${ft}"></i>${r ? `${LABEL[ft]} · son: ${ago} (${shortDate(r.date)}), ${fmt(r.sets)} set` : "Henüz çalıştırılmadı"}</span>
-       <span class="chip"><i class="bm-dot" data-t="y-${loadTier(ws)}"></i>Bu hafta ${fmt(ws)} set${ws ? " · " + LABEL["y-" + loadTier(ws)] : ""}</span></div>
-     ${ft === "yorgun" || ft === "asiri" ? `<div class="hint">${ic("battery-low")} Bu kas henüz toparlanmadı; ağır çalışmadan önce ${ft === "asiri" ? "en az bir gün daha" : "biraz daha"} dinlendir.</div>` : ""}`) +
+       <span class="chip"><i class="bm-dot" data-t="${ft}"></i>${r ? `${LABEL[ft]} · ${ago}` : "Henüz çalıştırılmadı"}</span></div>
+     ${ft === "yorgun" || ft === "asiri" ? `<div class="hint">${ic("battery-low")} Toparlanmadı · ${Math.max(1, Math.ceil((r.need - r.hrs) / 24))} gün dinlen</div>` : ""}`) +
     (progs.length ? `<div class="pk-head" style="margin-top:4px">Programlarında</div>
      ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(p.name)}</div><div class="ms muted small">${fmt(sets)} set bu kasa</div></div>
        ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}Başla</button>`}</div>`).join("")}
      <div class="pk-head">Hareketler</div>` : "") +
-    `${SUMMARY[m] ? `<p class="small" style="margin:8px 0 4px">${esc(SUMMARY[m])}</p>` : ""}${evidenceHelp}
+    `${summaryHTML(m, "small")}${evidenceHelp}
      ${list.map((x, i) => { const { name, kind, group } = x, head = kind === "kanit" ? (i === 0 || list[i - 1].group !== group) : kind !== list[i - 1]?.kind;
-       return (head ? `<div class="pk-head">${kind === "kanit" ? `Eşit seçenekler${groupNote(m, group) ? `<span class="muted small" style="display:block;font-weight:400;text-transform:none;letter-spacing:0">${esc(groupNote(m, group))}</span>` : ""}` : kind === "ana" ? "Bu kası ana olarak çalıştıran diğerleri" : "Yardımcı olarak çalıştıranlar"}</div>` : "")
+       return (head ? `<div class="pk-head">${kind === "kanit" ? `Eşit seçenekler${i === 0 ? `<span class="muted small" style="float:right;font-weight:400">Kanıt</span>` : ""}${groupNote(m, group) ? `<span class="muted small" style="display:block;font-weight:400;text-transform:none;letter-spacing:0">${esc(groupNote(m, group))}</span>` : ""}` : kind === "ana" ? "Bu kası ana olarak çalıştıran diğerleri" : "Yardımcı olarak çalıştıranlar"}</div>` : "")
        + `<div class="exitem"><div class="grow"><div>${esc(name)}${counts[name] ? ` <span class="muted small">· ${counts[name]} kayıt</span>` : ""}</div>
        <div class="ms">${kindTag(x)}${shareText(x.w)}</div></div>
        <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}">${ic("circle-play")}</a>
-       <button class="iconbtn" data-use="${esc(name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`; }).join("")}`);
+       <button class="iconbtn" data-use="${esc(name)}" title="Ekle" aria-label="Ekle: ${esc(name)}">${ic("circle-plus")}</button></div>`; }).join("")}`);
   body.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleSheet(b.dataset.alt, alts, { plain }));
   body.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { closeSheet(); startWorkout(b.dataset.pstart); });
   body.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { closeSheet(); useExercise(b.dataset.use); });
@@ -254,9 +265,9 @@ export function openMuscleReel(m, alts = [m]){
   const cards = list.map((x, i) => { const { name, kind, group } = x, mm = musclesOf(name), note = kind === "kanit" ? groupNote(m, group) : ""; return `<section class="reel-card" data-ex="${esc(name)}">
       <div class="reel-figs">${figs(mm)}</div>
       <div>
-        <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x)}<span class="tag">${esc(equipOf(name))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
+        <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x, true)}<span class="tag">${esc(equipOf(name))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
         <h3 class="reel-name">${esc(name)}</h3>
-        ${i === 0 && SUMMARY[m] ? `<p class="reel-note">${esc(SUMMARY[m])}</p>` : ""}${note ? `<p class="reel-note">${ic("info")}${esc(note)}</p>` : ""}${x.w < .999 ? `<p class="reel-note muted">${kind === "yardimci" ? "Bu kası yardımcı olarak çalıştırır: " : ""}1 set = ${share(x.w)} set ${esc(m)}</p>` : ""}
+        ${i === 0 ? summaryHTML(m, "reel-note") : ""}${note ? `<p class="reel-note">${ic("info")}${esc(note)}</p>` : ""}${x.w < .999 ? `<p class="reel-note muted">${kind === "yardimci" ? "Bu kası yardımcı olarak çalıştırır: " : ""}1 set = ${share(x.w)} set ${esc(m)}</p>` : ""}
         <div class="reel-sets"><span class="muted small">Bu hareketten</span><button class="iconbtn" data-sets="-1" title="Bir set az">${ic("minus")}</button><b data-n>${reelSets} set</b><button class="iconbtn" data-sets="1" title="Bir set fazla">${ic("plus")}</button></div>
         <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
         ${SCALE}

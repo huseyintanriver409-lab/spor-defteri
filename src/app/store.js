@@ -27,7 +27,7 @@ export function load(){
 export function save(){
   stampChanges();
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
-  catch(e){ toast("Kaydedilemedi! Yedek al."); }
+  catch(e){ toast("Kaydedilemedi · yedek al"); }
   // plan ya da programlar değiştiyse takvimdeki planı birkaç saniye sonra güncelle (art arda değişiklikler tek seferde)
   if (state.gcal.plan || state.gcal.planSig || state.gcal.taskSig) calSoon();
 }
@@ -43,7 +43,7 @@ export function choose(msg, choices){
     $("#modal").onclick = e => { if (e.target.id === "modal") done(null); };
   });
 }
-export const ask = (msg, yes = "Evet, sil") => choose(msg, [{ label: "Vazgeç", value: false }, { label: yes, value: true, primary: true }]).then(v => !!v);
+export const ask = (msg, yes = "Sil") => choose(msg, [{ label: "Vazgeç", value: false }, { label: yes, value: true, primary: true }]).then(v => !!v);
 export function toast(msg, icon = "info"){ const t=$("#toast"); t.innerHTML = ic(icon) + "<span>" + esc(msg) + "</span>"; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
 
 // başka modüllerden atanabilmesi için

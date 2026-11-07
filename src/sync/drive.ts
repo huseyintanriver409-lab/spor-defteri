@@ -13,7 +13,7 @@ export function driveStore(token: string, fetchFn: typeof fetch = fetch): Remote
   let fileId: string | null = null;
   const call = async (url: string, init: RequestInit = {}) => {
     const res = await fetchFn(url, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) } });
-    if (res.status === 401 || res.status === 403) throw new AuthError(`Drive erişimi reddedildi (${res.status})`);
+    if (res.status === 401 || res.status === 403) throw new AuthError(`Drive erişimi yok (${res.status})`);
     if (!res.ok) throw new Error(`Drive hatası (${res.status})`);
     return res;
   };
@@ -47,7 +47,7 @@ export function driveStore(token: string, fetchFn: typeof fetch = fetch): Remote
 export interface Account { name: string; email: string; photo: string }
 export async function driveAccount(token: string, fetchFn: typeof fetch = fetch): Promise<Account> {
   const res = await fetchFn(`https://www.googleapis.com/drive/v3/about?fields=user(displayName,emailAddress,photoLink)`, { headers: { Authorization: `Bearer ${token}` } });
-  if (res.status === 401 || res.status === 403) throw new AuthError(`Drive erişimi reddedildi (${res.status})`);
+  if (res.status === 401 || res.status === 403) throw new AuthError(`Drive erişimi yok (${res.status})`);
   if (!res.ok) throw new Error(`Drive hatası (${res.status})`);
   const u = ((await res.json()) as any).user || {};
   return { name: String(u.displayName || ""), email: String(u.emailAddress || ""), photo: String(u.photoLink || "") };

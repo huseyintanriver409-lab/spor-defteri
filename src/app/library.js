@@ -1,7 +1,7 @@
 import { shortDate, ymd } from "../core/dates.ts";
 import { $, LIB, YOGA, ask, esc, fmt, ic, save, state, toast } from "./store.js";
 import { EQUIPS, HOME, allEx, equipOf, groupShown, liftOn, musclesOf, yogaOn } from "./exercises.js";
-import { emptyHTML, openPicker, renderSeg, segState, showTab, undoable } from "./ui.js";
+import { emptyHTML, openPicker, refreshAll, renderSeg, segState, showTab, undoable } from "./ui.js";
 import { matchExercise } from "../core/importer.ts";
 import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
@@ -34,13 +34,16 @@ export function renderLib(){
       `<div class="exitem">${miniMap(e.name)}<div class="grow" data-more><div>${esc(e.name)}${counts[e.name] ? ` <span class="muted small">· ${counts[e.name]} kayıt</span>` : ""}</div>
         <div class="ms"><span class="tag">${e.eq}</span><span class="more">${EX_SETS} sette: ${exerciseLevels(e.m).map(([k, l, ms]) => `<span class="lv"><i class="bm-dot" data-t="g-${k}"></i><b>${l}</b> ${esc(ms.join(", "))}</span>`).join("")}</span></div>
         ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">“${esc(twin(e.name))}” ile birleştir</button>` : ""}</div>
-       ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="Başka bir hareketle birleştir">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="Listeden kaldır">${ic("trash-2")}</button>` : ""}
+       ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="Başka bir hareketle birleştir">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="Listeden çıkar">${ic("trash-2")}</button>` : ""}
        <a class="iconbtn" title="Nasıl yapılır? (internet gerekir)" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>
-       <button class="iconbtn" data-use="${esc(e.name)}" title="${state.live ? "Antrenmana ekle" : "Bu hareketi kaydet"}">${ic("circle-plus")}</button></div>`).join("") + `</details>`;
+       <button class="iconbtn" data-use="${esc(e.name)}" title="Ekle" aria-label="Ekle: ${esc(e.name)}">${ic("circle-plus")}</button></div>`).join("") + `</details>`;
   };
   const main = groups().filter(g => g !== YOGA).map(section).join(""), yoga = yogaOn() ? section(YOGA) : "";
   $("#libList").innerHTML = (main && yoga ? `<div class="pk-head" style="margin:0 0 6px">${liftOn() ? "Ağırlık ve kondisyon" : "Kardiyo ve kendi hareketlerin"}</div>` : "") + main
-    + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">Yoga ve esneme</div>${yoga}` : "") || emptyHTML("search", "Sonuç yok", "Başka bir kelimeyle ara ya da filtreleri kaldır.");
+    + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">Yoga ve esneme</div>${yoga}` : "") || emptyHTML("search", "Sonuç yok", "") + `<button class="btn sm quiet" data-clear style="margin-top:8px">Filtreleri temizle</button>`;
+  // filtreleri temizle: arama, ekipman ve "Evde" filtresini sıfırlar (yogaMoves ile aynı sıfırlama)
+  const clearBtn = $("#libList").querySelector("[data-clear]");
+  if (clearBtn) clearBtn.onclick = () => { $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false; renderLib(); };
   // kas adları resmin yerine geçmez: harekete dokununca açılır
   $("#libList").querySelectorAll("[data-more]").forEach(g => g.onclick = e => { if (!e.target.closest("button")) g.parentElement.classList.toggle("open"); });
   $("#libList").querySelectorAll("[data-use]").forEach(b => b.onclick = () => {
@@ -56,21 +59,19 @@ export function renderLib(){
   });
   $("#libList").querySelectorAll("[data-rm]").forEach(b => b.onclick = async () => {
     const n = b.dataset.rm;
-    if (!(await ask(`"${n}" hareketi listeden kaldırılsın mı?\nBu hareketle girdiğin eski kayıtlar silinmez.`, "Kaldır"))) return;
+    if (!(await ask(`"${n}" çıkarılsın mı? Kayıtların kalır.`, "Çıkar"))) return;
     const i = state.custom.findIndex(c => c.name === n); if (i < 0) return;
     const [c] = state.custom.splice(i, 1);
     save(); refreshDatalist(); renderLib();
-    undoable(`"${n}" kaldırıldı`, () => { state.custom.splice(i, 0, c); save(); refreshDatalist(); renderLib(); });
+    undoable(`"${n}" çıkarıldı`,() => { state.custom.splice(i, 0, c); save(); refreshDatalist(); renderLib(); });
   });
 }
 
 // Eski adın bütün kayıtları, programları, başlangıç verisi ve notları yeni ada taşınır (core/merge.ts)
 async function mergeInto(from, to){
   if (from === to) return toast("Aynı hareket seçildi");
-  const n = state.entries.filter(e => e.ex === from).length;
-  if (!(await ask(`“${from}” → “${to}”
-
-${n ? `${n} kayıt, ` : ""}programlar, başlangıç verisi ve notlar “${to}” adına taşınır. “${from}” listeden kalkar.`, "Birleştir"))) return;
+  if (!(await ask(`“${from}” → “${to}” birleştirilsin mi?
+Kayıtlar “${to}” adına taşınır.`, "Birleştir"))) return;
   const before = JSON.stringify(state);
   const r = mergeExercise(state, from, to);
   save(); refreshDatalist(); renderLib();
@@ -86,6 +87,10 @@ const has = v => v != null && v !== "";
 export function renderBody(){
   if (!$("#bDate").value) $("#bDate").value = ymd(new Date());
   $("#flexFields").classList.toggle("hidden", !yogaOn());
+  // cinsiyet erkek/kadınsa vücut haritası ona göre; değilse çizim burada seçilir
+  const sx = state.profile.sex || "", given = sx === "m" || sx === "f";
+  $("#bSex").value = sx; $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
+  $("#bBodyWrap").classList.toggle("hidden", given);
   const cur = $("#bMetric").value;
   $("#bMetric").innerHTML = bodyKeys().map(([k,l,u]) => `<option value="${k}">${l} (${u})</option>`).join("");
   $("#bMetric").value = bodyKeys().some(([k]) => k === cur) ? cur : "weight";
@@ -98,7 +103,7 @@ export function renderBody(){
   const cols = bodyKeys().filter(([k]) => list.some(b => has(b[k])));
   $("#bTable").innerHTML = list.length ? `<tr><th>Tarih</th>${cols.map(([,l]) => `<th>${l}</th>`).join("")}<th></th></tr>` +
     list.slice().reverse().map(b => `<tr><td>${shortDate(b.date)}</td>${cols.map(([k]) => `<td>${has(b[k]) ? fmt(b[k]) : "–"}</td>`).join("")}<td><button class="iconbtn danger" data-bdel="${b.date}" title="Sil">${ic("trash-2")}</button></td></tr>`).join("")
-    : `<tr><td>${emptyHTML("ruler", "Henüz ölçü yok", "Yukarıdan ilk ölçünü kaydet.")}</td></tr>`;
+    : `<tr><td>${emptyHTML("ruler", "Kayıt yok", "")}</td></tr>`;
   $("#bTable").querySelectorAll("[data-bdel]").forEach(btn => btn.onclick = async () => {
     if (!(await ask(`${shortDate(btn.dataset.bdel)} tarihli ölçü silinsin mi?`))) return;
     const i = state.body.findIndex(b => b.date === btn.dataset.bdel); if (i < 0) return;
@@ -122,17 +127,19 @@ $("#yogaMoves").onclick = () => {
   const y = $("#libYoga"); y.open = true; y.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 $("#cAdd").onclick = () => {
-  const name = $("#cName").value.trim(); if (!name) return toast("Hareketin adını yaz");
+  const name = $("#cName").value.trim(); if (!name) return toast("Ad gir");
   if (allEx().some(e => e.name.toLocaleLowerCase("tr")===name.toLocaleLowerCase("tr"))) return toast("Bu hareket zaten var");
   state.custom.push({ name, group: $("#cGroup").value }); save(); refreshDatalist();
   $("#cName").value = ""; toast("Eklendi", "check"); renderLib();
 };
 $("#bMetric").onchange = renderBody;
+$("#bSex").onchange = () => { state.profile.sex = $("#bSex").value; save(); refreshAll(); renderBody(); };
+$("#bBody").onchange = () => { state.prefs.body = $("#bBody").value; save(); refreshAll(); };
 $("#bSave").onclick = () => {
   const date = $("#bDate").value; if (!date) return toast("Tarih seç");
   const rec = { date }; let any = false;
   BODY.forEach(([k]) => { const v = parseFloat($("#b_"+k).value); if (k === "reach" ? Number.isFinite(v) : v > 0) { rec[k] = v; any = true; } });
-  if (!any) return toast("En az bir ölçü gir");
+  if (!any) return toast("Ölçü gir");
   const ex = state.body.find(b => b.date===date);
   if (ex) Object.assign(ex, rec); else state.body.push(rec);
   save(); BODY.forEach(([k]) => $("#b_"+k).value = ""); toast("Ölçü kaydedildi", "check"); renderBody();

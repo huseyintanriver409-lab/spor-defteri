@@ -36,7 +36,7 @@ export function renderWeek(){
     // yeşil bölge: en verimli aralık (4–10 set)
     const v = ms[m] || 0, cls = v >= 4 ? "ok" : "";
     return `<div class="mbar"><span>${m}</span><div class="track"><div class="zone" style="left:${4/scale*100}%;width:${6/scale*100}%"></div><i class="${cls}" style="width:${v/scale*100}%"></i></div><b>${fmt(v)}</b></div>`;
-  }).join("") + muscleAdvice(ms) : `<div class="empty">Bu hafta kayıt yok</div>`;
+  }).join("") + muscleAdvice(ms) : `<div class="empty">Kayıt yok</div>`;
 
   const byEx = {};
   list.forEach(e => {
@@ -49,7 +49,7 @@ export function renderWeek(){
         ? `<tr><td>${esc(n)}</td><td>${o.sets}</td><td colspan="3">${fmt(o.mins)} dk${o.km ? " · "+fmt(o.km)+" km" : ""}</td></tr>`
         : o.timed ? `<tr><td>${esc(n)}</td><td>${o.sets}</td><td colspan="3">${fmtSec(o.secs)} toplam${o.max ? ` · +${fmt(o.max)} kg` : ""}</td></tr>`
         : `<tr><td>${esc(n)}</td><td>${o.sets}</td><td>${o.reps}</td><td>${fmt(o.max)}</td><td>${fmt(o.vol)}</td></tr>`).join("")
-    : `<tr><td class="empty">Bu hafta kayıt yok</td></tr>`;
+    : `<tr><td class="empty">Kayıt yok</td></tr>`;
 
   let html = "";
   for (let i=0;i<7;i++){
@@ -57,7 +57,7 @@ export function renderWeek(){
     const es = list.filter(e => e.date===k).sort((x,y) => x.ts-y.ts);
     if (es.length) html += `<h3 style="font-size:14px;margin:14px 0 2px">${niceDate(k)}</h3>` + es.map(e => entryHTML(e,false)).join("");
   }
-  $("#wDays").innerHTML = html || `<div class="empty">Bu hafta antrenman yok</div>`;
+  $("#wDays").innerHTML = html || `<div class="empty">Kayıt yok</div>`;
 }
 // Yoga özeti: toplam tutuş süresi, farklı poz, en uzun tutuş ve geçen haftayla fark
 const yogaSecs = es => es.reduce((t, e) => t + work(e.sets).reduce((u, s) => u + (+s.sec || 0), 0), 0);
@@ -97,7 +97,7 @@ export function renderHistSelect(){
   const sel = $("#histEx"), cur = sel.value;
   // seçilen kullanım türünde gizli gruplar (ör. sadece yogada ağırlık hareketleri) listede çıkmaz
   const names = [...new Set(state.entries.map(e => e.ex))].filter(n => groupShown(groupOf(n))).sort((a,b) => a.localeCompare(b,"tr"));
-  sel.innerHTML = names.length ? names.map(n => `<option>${esc(n)}</option>`).join("") : `<option value="">Henüz kayıt yok</option>`;
+  sel.innerHTML = names.length ? names.map(n => `<option>${esc(n)}</option>`).join("") : `<option value="">Kayıt yok</option>`;
   if (names.includes(cur)) sel.value = cur;
   renderHist();
 }
@@ -117,7 +117,7 @@ export function renderHist(){
   const metric = tm ? document.querySelector('input[name=hMetricT]:checked').value : document.querySelector('input[name=hMetric]:checked').value;
   const list = state.entries.filter(e => e.ex===ex).sort((a,b) => a.date.localeCompare(b.date));
   const pts = list.map(e => ({ date:e.date, v: sessionValue(e, metric, c) })).filter(p => p.v > 0);
-  $("#hChartTitle").textContent = c ? "Gelişim (seans süresi, dk)" : tm ? (metric === "sum" ? "Gelişim (seanstaki toplam süre, sn)" : "Gelişim (en uzun tutuş, sn)") : ({w:"Gelişim (seanstaki en ağır set, kg)", e:"Gelişim (tahmini 1RM, kg)", v:"Gelişim (seans hacmi, kg)"})[metric];
+  $("#hChartTitle").textContent = c ? "Seans süresi (dk)" : tm ? (metric === "sum" ? "Toplam süre (sn)" : "En uzun tutuş (sn)") : ({w:"En ağır set (kg)", e:"Tahmini 1RM (kg)", v:"Seans hacmi (kg)"})[metric];
   $("#hMax").nextElementSibling.textContent = tm ? "rekor süre" : "rekor kg";
 
   // gelişim tahmini: son 8 seansın tahmini 1RM eğilimi
@@ -129,9 +129,9 @@ export function renderHist(){
       const slope = ep.reduce((a,p)=>a+(p.t-mx)*(p.v-my),0) / ep.reduce((a,p)=>a+(p.t-mx)**2,0);
       const last = ep[n-1].t, pred = my + slope*(last+28-mx);
       if (slope > 0.005) {
-        fc.innerHTML = `${ic("trending-up")} Son ${n} seansa göre tahmini 1RM'in haftada ortalama <b>+${fmt(slope*7)} kg</b> artıyor. Bu hızla 4 hafta sonra tahmini 1RM: <b>${fmt(pred)} kg</b>.`;
+        fc.innerHTML = `${ic("trending-up")} Haftada <b>+${fmt(slope*7)} kg</b> · 4 haftada <b>${fmt(pred)} kg</b><details class="small i-help"><summary class="muted small" aria-label="Açıklama">${ic("info")}</summary>Son ${n} seansın tahmini 1RM eğilimi üzerinden hesaplanır.</details>`;
         if (metric === "e") { const d = new Date(last*864e5); d.setDate(d.getDate()+28); proj = { date: ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate())), v: pred }; }
-      } else fc.innerHTML = `${ic("activity")} Son ${n} seansta tahmini 1RM artmıyor. Plato olabilir: tekrar aralığını, set sayısını ya da programı değiştirmeyi düşünebilirsin.`;
+      } else fc.innerHTML = `${ic("activity")} Plato: ${n} seanstır artış yok<details class="small i-help"><summary class="muted small" aria-label="Açıklama">${ic("info")}</summary>Tekrar aralığını, set sayısını ya da programı değiştirmeyi düşünebilirsin.</details>`;
       fc.classList.remove("hidden");
     }
   }
@@ -179,7 +179,7 @@ export function renderRecords(){
   const names = Object.keys(by).sort((a,b) => groupOf(a).localeCompare(groupOf(b),"tr") || a.localeCompare(b,"tr"));
   $("#recTable").innerHTML = names.length
     ? `<tr><th>Hareket</th>${REP_COLS.map(n => `<th>${n}T</th>`).join("")}<th>1RM≈</th></tr>` + names.map(n => `<tr class="click" data-ex="${esc(n)}"><td>${esc(n)}</td>${REP_COLS.map(c => `<td>${by[n].reps[c] ? fmt(by[n].reps[c]) : "–"}</td>`).join("")}<td><b>${by[n].e1 ? fmt(by[n].e1) : "–"}</b></td></tr>`).join("")
-    : `<tr><td class="empty">Henüz kayıt yok</td></tr>`;
+    : `<tr><td class="empty">Kayıt yok</td></tr>`;
   $("#recTable").querySelectorAll("[data-ex]").forEach(tr => tr.onclick = () => {
     segState.stats = "hist"; renderSeg("stats"); $("#histEx").value = tr.dataset.ex; renderHist(); scrollTo(0,0);
   });
@@ -191,7 +191,7 @@ export function renderRecords(){
   });
   $("#recRecent").innerHTML = events.length ? events.slice(-10).reverse().map(ev => `<div class="entry"><div class="row"><div class="grow"><div class="t">${ic("trophy", "acc")} ${esc(ev.ex)}</div><div class="g">${niceDate(ev.date)}</div></div>
     <div style="text-align:right"><b>${fmt(ev.w)} kg</b><div class="g">+${fmt(ev.w - ev.prev)} kg</div></div></div></div>`).join("")
-    : `<div class="empty">Henüz kırılan rekor yok. İlk kayıttan sonraki her ağırlık rekoru burada görünür.</div>`;
+    : `<div class="empty">Rekor yok</div>`;
 }
 
 /* ---------- Recovery ---------- */
@@ -231,13 +231,14 @@ export const LEVELS = ["Yeni başlayan","Başlangıç","Acemi","Orta","İleri","
 export const latestWeight = () => { const b = state.body.filter(x => x.weight).sort((a,b) => b.date.localeCompare(a.date))[0]; return b ? b.weight : null; };
 export const bodyweight = () => latestWeight() || parseFloat(state.profile.bw) || 0;
 export function renderPower(keepInput){
-  $("#pfSex").value = state.profile.sex;
+  // cinsiyet tek yerden (İlerleme > Vücut, #bSex) seçilir; güç skoru state.profile.sex'i okur
+  const sexNote = state.profile.sex ? "" : " · Cinsiyeti Vücut'ta seç";
   const lw = latestWeight();
   if (!keepInput) $("#pfBw").value = lw || state.profile.bw || "";
   $("#pfBw").disabled = !!lw;
   $("#pfBwNote").textContent = lw ? `Vücut takibindeki son kilon kullanılıyor (${fmt(lw)} kg). Değiştirmek için Diğer → Vücut'a yeni ölçü gir.` : "İpucu: Diğer → Vücut'ta kilonu kaydedersen buradaki değer otomatik güncellenir.";
   const bw = bodyweight(), std = STD[bodySex()];
-  if (!bw) { $("#pwScore").textContent = "–"; $("#pwLevel").textContent = "Güç skoru"; $("#pwSub").textContent = "Skor için vücut ağırlığını gir."; $("#pwLifts").innerHTML = ""; return; }
+  if (!bw) { $("#pwScore").textContent = "–"; $("#pwLevel").textContent = "Güç skoru"; $("#pwSub").textContent = "Vücut ağırlığını gir" + sexNote; $("#pwLifts").innerHTML = ""; return; }
   const res = LIFTS.map(L => {
     let best = 0, date = "";
     state.entries.forEach(e => { if (L.names.includes(e.ex)) work(e.sets).forEach(s => {
@@ -254,11 +255,11 @@ export function renderPower(keepInput){
     const avg = done.reduce((a,r)=>a+r.s,0)/done.length;
     $("#pwScore").textContent = Math.round(avg);
     $("#pwLevel").textContent = LEVELS[Math.min(5, Math.floor(avg/20))];
-    $("#pwSub").textContent = `${done.length}/${LIFTS.length} temel hareketten · ${fmt(bw)} kg vücut ağırlığı`;
-  } else { $("#pwScore").textContent = "–"; $("#pwLevel").textContent = "Henüz veri yok"; $("#pwSub").textContent = "Aşağıdaki hareketlerden 1–10 tekrarlık set kaydet."; }
+    $("#pwSub").textContent = `${done.length}/${LIFTS.length} temel hareketten · ${fmt(bw)} kg vücut ağırlığı${sexNote}`;
+  } else { $("#pwScore").textContent = "–"; $("#pwLevel").textContent = "Kayıt yok"; $("#pwSub").textContent = "1–10 tekrar set kaydet"; }
   $("#pwLifts").innerHTML = res.map(r => r.best ? `<div class="lift">
       <div class="row"><b class="grow">${r.L.label}</b><span class="lv">${LEVELS[r.lv]}</span><b style="font-variant-numeric:tabular-nums">${Math.round(r.s)}</b></div>
-      <div class="muted small">Tahmini 1RM ${fmt(r.best)} kg · ${fmt(r.ratio)}× vücut ağırlığı · ${shortDate(r.date)}${r.lv<5 ? ` · sonraki seviye: ${fmt(std[r.L.key][r.lv]*bw)} kg` : ""}</div>
+      <div class="muted small">${fmt(r.best)} kg · ${fmt(r.ratio)}×${r.lv<5 ? ` · sonraki ${fmt(std[r.L.key][r.lv]*bw)} kg` : ""}</div>
       <div class="pb"><i style="width:${r.s}%"></i></div></div>`
     : `<div class="lift"><div class="row"><b class="grow muted">${r.L.label}</b><span class="muted small">kayıt yok</span></div></div>`).join("");
 }
@@ -271,6 +272,5 @@ $("#wToday").onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); }
 $("#histEx").onchange = renderHist;
 $("#bmView").querySelectorAll("button").forEach(b => b.onclick = () => { segState.bm = b.dataset.v; renderRecovery(); });
 document.querySelectorAll('input[name=hMetric], input[name=hMetricT]').forEach(r => r.onchange = renderHist);
-$("#pfSex").onchange = () => { state.profile.sex = $("#pfSex").value; save(); renderPower(); };
 $("#pfBw").oninput = () => { state.profile.bw = $("#pfBw").value; save(); renderPower(true); };
 }

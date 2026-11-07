@@ -9,8 +9,7 @@ import { renderCalStatus, sync, syncCanRun } from "./cloud.js";
 
 /* ---------- Backup ---------- */
 export function renderBackup(){
-  const last = state.lastBackup ? `Son yedek: ${Math.floor((Date.now()-state.lastBackup)/864e5) || "bugün"}${Math.floor((Date.now()-state.lastBackup)/864e5) ? " gün önce" : ""}` : "Henüz yedek alınmadı";
-  $("#dataInfo").textContent = `${state.entries.length} kayıt · ${new Set(state.entries.map(e=>e.date)).size} antrenman günü · ${state.programs.length} program · ${state.body.length} ölçü · ${state.custom.length} özel hareket · ${last}`;
+  $("#dataInfo").textContent = `${state.entries.length} kayıt · ${state.programs.length} program`;
   renderCalStatus();
   // takvim onay kutusu ilk dokunuşta giriş penceresini açabilsin diye Google betiği şimdiden yüklenir
   if (syncCanRun()) preloadGoogle().catch(() => {});
@@ -32,7 +31,7 @@ export function renderBackupBanner(){
   const synced = sync.on && Date.now() - sync.last < 10*864e5;
   const show = !synced && state.entries.length >= 3 && isFinite(since) && days >= 10 && Date.now() > state.backupSnooze;
   $("#backupBanner").classList.toggle("hidden", !show);
-  if (show) $("#backupMsg").innerHTML = state.lastBackup ? `${ic("save")} Son yedeğin <b>${days} gün</b> önce alındı. Verilerin sadece bu tarayıcıda; yedek almanı öneririm.` : `${ic("save")} Henüz hiç yedek almadın. Verilerin sadece bu tarayıcıda duruyor.`;
+  if (show) $("#backupMsg").innerHTML = state.lastBackup ? `${ic("save")} <b>${days} gündür</b> yedek yok` : `${ic("save")} Hiç yedek yok`;
 }
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
@@ -51,7 +50,7 @@ $("#csvBtn").onclick = () => {
     });
   });
   download(`spor-defteri-${ymd(new Date())}.csv`, "\ufeff" + rows.map(r => r.map(cell).join(";")).join("\r\n"), "text/csv;charset=utf-8");
-  toast(`${rows.length-1} set dışa aktarıldı`, "file-spreadsheet");
+  toast("Aktarıldı", "file-spreadsheet");
 };
 $("#backupNow").onclick = exportBackup;
 $("#backupLater").onclick = () => { state.backupSnooze = Date.now() + 3*864e5; save(); renderBackupBanner(); };
@@ -61,7 +60,7 @@ $("#importFile").onchange = async ev => {
   try {
     const s = JSON.parse(await f.text());
     if (!Array.isArray(s.entries)) throw 0;
-    const mode = await choose(`Yedekte ${s.entries.length} antrenman kaydı var.\n\nBirleştir: iki taraftaki kayıtlar birleşir (telefon + bilgisayar için). Aynı kayıt iki yerde değiştiyse en son değiştirilen kazanır.\nDeğiştir: buradaki tüm veriler silinir, yedektekiler yüklenir.`,
+    const mode = await choose(`Yedekte ${s.entries.length} antrenman kaydı var.\n\nBirleştir: iki taraf birleşir, en yeni kazanır.\nDeğiştir: buradaki veriler silinir.`,
       [{ label: "Vazgeç", value: null }, { label: "Değiştir", value: "replace" }, { label: "Birleştir", value: "merge", primary: true }]);
     if (!mode) return;
     let msg = "Geri yüklendi";
@@ -69,7 +68,7 @@ $("#importFile").onchange = async ev => {
       stampChanges();
       const r = mergeStates(state, s);
       setState(r.state);
-      msg = `Birleştirildi: ${r.stats.added} yeni, ${r.stats.updated} güncellenen, ${r.stats.removed} silinen kayıt`;
+      msg = "Birleştirildi";
     } else {
       setState({ ...withDefaults(s), deviceId: state.deviceId, active: null, live: null, draft: null });
     }
@@ -77,7 +76,7 @@ $("#importFile").onchange = async ev => {
     for (const k in _mCache) delete _mCache[k];
     takeSnapshot(); save();
     refreshDatalist(); resetEditor(); refreshAll(); renderBackup(); toast(msg, "check");
-  } catch(e){ toast("Geçersiz yedek dosyası"); }
+  } catch(e){ toast("Geçersiz yedek"); }
   finally { ev.target.value = ""; }
 };
 }

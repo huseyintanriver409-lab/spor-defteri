@@ -1,7 +1,7 @@
 // Hazır programlar ve "Bana program öner". İçerik ve öneri kuralları core/programs.ts'te.
 import { PROGRAMS, programById, recommend, weeklyPlan } from "../core/programs.ts";
 import { $, esc, ic, save, state, toast, uid } from "./store.js";
-import { buzz, closeSheet, openSheet, sheetHead, refreshAll } from "./ui.js";
+import { buzz, closeSheet, helpTip, openSheet, sheetHead, refreshAll } from "./ui.js";
 import { renderProg, WEEKDAYS } from "./programs.js";
 import { syncCanRun, connectDrive } from "./cloud.js";
 import { openBaseline } from "./baseline.js";
@@ -39,7 +39,7 @@ export function applyProgram(p, days, placeInPlan){
     else state.plan.mode = "fixed";
   }
   save(); renderProg(); refreshAll(); buzz(15);
-  toast(placeInPlan ? `${p.name} haftalık planına yerleşti` : `${p.name} programlarına eklendi`, "check");
+  toast(placeInPlan ? "Eklendi · plana yerleşti" : "Program eklendi", "check");
 }
 
 // Program ayrıntısı. onClose: ilk açılıştan gelindiyse kapanınca "ilk açılış tamam" işaretlemek için.
@@ -64,8 +64,8 @@ export function openProgramDetail(p, days, onClose){
      <div class="pk-head">Takılırsan</div><p style="margin:4px 0 0">${esc(p.stall)}</p>
      <div class="pk-head">Başlarken</div>${list(p.tips)}
      <p class="muted small" style="margin-top:14px">Kaynak: ${esc(p.source)}</p>
-     <label class="check row" style="margin:14px 0 0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="pdPlace" checked><span>Haftalık plana yerleştir${hasPlan ? " (mevcut planın yerine geçer)" : ""}</span></label>
-     <button class="btn primary xl" id="pdGo" style="margin-top:12px">${ic("play")}Bu programla başla</button>`,
+     <label class="check row" style="margin:14px 0 0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="pdPlace" checked><span>Plana yerleştir${hasPlan ? " (yerini alır)" : ""}</span></label>
+     <button class="btn primary xl" id="pdGo" style="margin-top:12px">${ic("play")}Başla</button>`,
     onClose);
   const renderPlan = () => {
     $("#pdPlan").textContent = planSummary();
@@ -94,7 +94,7 @@ export function openLibrary(yoga){
   const part = (title, list) => `<div class="pk-head" style="margin:14px 0 8px">${title}</div>${list.map(item).join("")}`;
   const lift = liftOn() ? PROGRAMS.filter(p => !isYoga(p)) : [], yogas = yogaOn() ? PROGRAMS.filter(isYoga) : [];
   openSheet(sheetHead(yoga ? "Yoga programları" : "Hazır programlar"),
-    `<p class="muted" style="margin:0 0 4px">Bir programa dokun: kime uygun olduğunu, haftalık düzenini ve nasıl ilerleneceğini gör.</p>
+    `${helpTip("Bir programa dokun: kime uygun olduğunu, haftalık düzenini ve nasıl ilerleneceğini gör.")}
      ${yoga || !lift.length ? yogas.map(item).join("") : yogas.length ? part("Ağırlık ve kondisyon", lift) + part("Yoga ve esneme", yogas) : lift.map(item).join("")}
      <button class="btn" id="libRec" style="width:100%;justify-content:center;margin-top:4px">${ic("lightbulb")}Hangisi bana uygun?</button>`);
   $("#bsBody").querySelectorAll("[data-pid]").forEach(b => b.onclick = () => openProgramDetail(programById(b.dataset.pid), 3));
@@ -107,10 +107,9 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
   const markDone = onboarding ? () => { state.onboarded = true; save(); } : undefined;
   const q = (key, title, opts) => `<div class="pk-head">${title}</div><div class="optgrid" data-q="${key}">${opts.map(([v, l]) => `<button class="fchip${String(a[key]) === String(v) ? " on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;
   const head = onboarding
-    ? `<div class="row" style="align-items:flex-start;margin-top:6px"><div class="grow"><div class="eyebrow">Hoş geldin</div>
-         <h3 style="font-size:26px;margin:4px 0 6px;letter-spacing:-.035em">Sana uygun programı bulalım</h3></div>
-         <button class="btn quiet" id="obSkip" style="flex:none">Atla</button></div>
-       <p class="muted" style="margin:0 0 4px">Birkaç soru; önerim hemen aşağıda çıkar. Ne yapacağını biliyorsan atla, programını kendin kur.</p>`
+    ? `<div class="row" style="align-items:flex-start;margin-top:6px"><div class="grow">
+         <h3 style="font-size:26px;margin:4px 0 6px;letter-spacing:-.035em">Programını bulalım</h3></div>
+         <button class="btn quiet" id="obSkip" style="flex:none">Atla</button></div>`
     : sheetHead("Bana program öner");
   openSheet(head,
     (onboarding ? q("sex", "Cinsiyetin", [["m", "Erkek"], ["f", "Kadın"], ["o", "Diğer"]]) : "")
@@ -119,20 +118,19 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
     + (liftOn() ? q("equip", "Nerede çalışacaksın", [["salon", "Spor salonu"], ["ev", "Evde, dumbbell var"], ["yok", "Ekipmansız"]]) : "")
     + q("days", "Haftada kaç gün", [2, 3, 4, 5, 6].map(n => [n, n + " gün"]))
     + `<div id="recOut" style="margin-top:16px"></div>`
-    + (onboarding ? `<button class="ghost" id="obBase" style="width:100%;justify-content:center;margin-top:8px">${ic("trending-up")}Başka uygulamadan geliyorum: mevcut kilolarımı gir</button>` : "")
-    + (onboarding && syncCanRun() ? `<button class="ghost" id="obDrive" style="width:100%;justify-content:center;margin-top:8px">${ic("cloud")}Başka cihazda kullanıyorum: Drive'dan getir</button>` : ""),
+    + (onboarding ? `<button class="ghost" id="obBase" style="width:100%;justify-content:center;margin-top:8px">${ic("trending-up")}Kilolarımı gireyim</button>` : "")
+    + (onboarding && syncCanRun() ? `<button class="ghost" id="obDrive" style="width:100%;justify-content:center;margin-top:8px">${ic("cloud")}Drive'dan getir</button>` : ""),
     markDone);
 
   const render = () => {
     const r = recommend(a), p = r.program;
     $("#recOut").innerHTML = `<div class="card" style="margin:0;background:var(--card2)">
-        <div class="eyebrow">Önerim</div>
         <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:2px 0 4px">${esc(p.name)}</div>
         <div class="muted small">${esc(p.short)} · haftada ${r.days} gün</div>
         ${list(r.reasons)}
         <div class="row" style="margin-top:12px">
-          <button class="btn primary" id="${onboarding ? "obGo" : "recGo"}">${ic("play")}Bu programla başla</button>
-          <button class="btn" id="recMore">Ayrıntılar</button>
+          <button class="btn primary" id="${onboarding ? "obGo" : "recGo"}">${ic("play")}Başla</button>
+          <button class="btn quiet" id="recMore">Ayrıntı</button>
         </div>
         ${r.alternatives.length ? `<div class="pk-head">Alternatif</div>${r.alternatives.map(x => `<button class="libitem" data-alt="${x.program.id}" data-days="${x.days}" style="margin:6px 0 0"><b>${esc(x.program.name)}</b><span class="muted small" style="display:block">${esc(x.why)}</span></button>`).join("")}` : ""}
       </div>`;
@@ -159,7 +157,5 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
 }
 
 export function setup(){
-  $("#liftCard #recOpen").onclick = () => openRecommender();
-  $("#libOpen").onclick = () => openLibrary();
   $("#yogaProgs").onclick = () => openLibrary(true);
 }

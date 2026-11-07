@@ -66,9 +66,20 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;
 .logo{width:34px;height:34px;border-radius:10px;background:var(--card2);border:1px solid var(--line);color:var(--text);display:grid;place-items:center;flex:none}
 .logo .ic{width:20px;height:20px;stroke-width:2.4}
 header h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
-header small{display:block;color:var(--muted);font-size:12px;line-height:1.3}
-/* senkronizasyon dikkat istediğinde (yeniden giriş, hata) alt başlık dokunulabilir olur */
-header small.tap{color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+/* eşitleme simgesi: durum biçimle anlatılır (bulut+tik, dönen ok, bulut+nokta, bulut+ünlem, çizgili bulut) */
+.syncbtn{display:inline-flex;align-items:center;gap:6px;min-width:32px;height:32px;padding:0 4px;border:0;border-radius:0;background:none;color:var(--muted);cursor:pointer;flex:none;font:inherit;font-size:12px;font-weight:600}
+.syncbtn .ic{width:18px;height:18px}
+#syncWord:empty{display:none}
+.syncbtn[data-s="ok"]{color:var(--text)}
+.syncbtn[data-s="off"]{color:var(--faint)}
+.syncbtn[data-s="err"]{color:var(--danger)}
+.syncbtn[data-s="busy"] .ic{animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.i-help summary{list-style:none;display:inline-grid;place-items:center;width:30px;height:30px;color:var(--faint);cursor:pointer}
+.i-help summary::-webkit-details-marker{display:none}
+.i-help .ic{width:16px;height:16px}
+.i-help[open] summary{color:var(--accent)}
+#recCard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 main{max-width:680px;margin:0 auto;padding:8px 16px 16px}
 
 /* ---------- Alt menü ---------- */
@@ -586,3 +597,19 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 :is(.btn,.fab,.seg button,.fchip,.f-list button,.f-chips button):focus-visible{outline:none;--bd:var(--text);box-shadow:inset 0 -2px 0 var(--text)}
 :is(.seg button,.fchip,.f-list button).on:focus-visible{box-shadow:inset 0 -2px 0 var(--bg)}
 .btn.primary:focus-visible,.fab.run:focus-visible{--bd:var(--accent);box-shadow:inset 0 -2px 0 var(--accent-ink)}
+
+/* ---------- Program ekle: boş durum kutusu, sessiz satır, sayfa seçenekleri ---------- */
+.btn.addbox{flex-direction:column;gap:6px;width:100%;min-height:132px;margin-bottom:12px;font-size:18px;font-weight:800}
+.btn.addbox .ic{width:44px;height:44px;stroke-width:2}
+.btn.padd{width:100%;margin-bottom:12px}
+#pList.editing .padd{display:none}
+.addopts{display:grid;gap:10px;margin-top:4px}
+.addopts .btn{width:100%;min-height:56px;justify-content:flex-start;font-size:16px}
+/* sayfa (sheet) içi açıklama: ⓘ'ye dokununca açılır */
+.shhelp{display:inline-block;vertical-align:middle;margin-left:4px}
+.shhelp[open]{display:block;margin:6px 0 0}
+.shhelp summary{list-style:none;cursor:pointer;display:inline-grid;place-items:center;width:30px;height:30px;color:var(--faint)}
+.shhelp summary::-webkit-details-marker{display:none}
+.shhelp summary .ic{width:16px;height:16px}
+.shhelp[open] summary{color:var(--accent)}
+.shhelp p{margin:0;font-size:13px;font-weight:400;text-transform:none}

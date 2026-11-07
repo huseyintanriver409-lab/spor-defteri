@@ -3,7 +3,7 @@ import { work } from "../core/training.ts";
 import { plannedOn } from "../core/calendar.ts";
 import { $, esc, ic, state } from "./store.js";
 import { durText, isCardio } from "./exercises.js";
-import { emptyHTML, segState, showTab } from "./ui.js";
+import { segState, showTab } from "./ui.js";
 import { bindEntryActions, entryHTML, renderDay, resetEditor, saveDraft, updateHint } from "./log.js";
 import { autoLogged, calDay } from "./programs.js";
 import { MONTHS_LONG } from "./home.js";
@@ -23,7 +23,7 @@ export function renderHistory(){
   let planned = 0;
   for (let d = 1; d <= new Date(y, m + 1, 0).getDate(); d++) if (plannedFor(`${key}-${pad(d)}`)) planned++;
   $("#calTitle").textContent = `${days} antrenman${planned ? ` · ${planned} planlı` : ""}`;
-  $("#calSub").textContent = `${MONTHS_LONG[m]} ${y} · ${sets} çalışma seti`;
+  $("#calSub").textContent = `${sets} set`;
   const start = mondayOf(new Date(y, m, 1));
   let html = ["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"].map(d => `<div class="wd">${d}</div>`).join("");
   for (let i = 0; i < 42; i++) {
@@ -38,14 +38,17 @@ export function renderHistory(){
   const list = state.entries.filter(e => e.date === selDay).sort((a, b) => a.ts - b.ts);
   $("#hdTitle").textContent = selDay === today ? "Bugün" : niceDate(selDay);
   const ss = state.sessions.filter(s => s.date === selDay);
-  $("#hdSess").innerHTML = ss.length ? `${ic("timer")} Antrenman süresi: ${durText(ss.reduce((a, s) => a + s.end - s.start, 0))}` : "";
+  $("#hdSess").innerHTML = ss.length ? `<span role="img" aria-label="Süre">${ic("timer")}</span> ${durText(ss.reduce((a, s) => a + s.end - s.start, 0))}` : "";
   const pl = !list.length && plannedFor(selDay);
   $("#hdList").innerHTML = list.length ? list.map(e => entryHTML(e, true)).join("")
     : pl ? `<div class="planday"><div class="eyebrow">Planlı antrenman</div><b>${esc(pl.name)}</b>
         <div class="muted small">${pl.items.map(i => `${esc(i.ex)} ${i.sets}×${esc(i.reps || "")}`.trim()).join(" · ")}</div>
         ${selDay === today && !state.live ? `<button class="btn primary" id="hdStart" style="margin-top:12px">${ic("play")}Başla</button>` : ""}</div>`
-    : emptyHTML("calendar-days", selDay > today ? "Bu gün plan yok" : "Bu gün kayıt yok", selDay > today ? "Haftalık planı Antrenman → Plan'dan kurabilirsin." : "Elle eklemek için + düğmesine dokun.");
+    : selDay > today ? `<div class="empty">${ic("calendar-days")}<button class="btn sm" id="hdEmptyPlan">Plan kur</button></div>`
+    : `<div class="empty">${ic("calendar-days")}<button class="btn sm" id="hdEmptyAdd">Kayıt ekle</button></div>`;
   if ($("#hdStart")) $("#hdStart").onclick = () => startWorkout(pl.id);
+  if ($("#hdEmptyPlan")) $("#hdEmptyPlan").onclick = () => { segState.train = "plan"; showTab("train"); };
+  if ($("#hdEmptyAdd")) $("#hdEmptyAdd").onclick = () => $("#hdAdd").click();
   $("#hdCal").classList.toggle("hidden", !list.length || autoLogged(ss));
   bindEntryActions($("#hdList"), renderHistory);
 }

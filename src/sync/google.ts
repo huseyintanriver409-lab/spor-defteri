@@ -36,7 +36,7 @@ export function preload(): Promise<void> {
     const s = document.createElement("script");
     s.src = GIS_SRC; s.async = true;
     s.onload = () => res();
-    s.onerror = () => { gisLoading = null; rej(new Error("Google girişi yüklenemedi (internet bağlantısını kontrol et)")); };
+    s.onerror = () => { gisLoading = null; rej(new Error("Google girişi yüklenemedi, bağlantını kontrol et")); };
     document.head.appendChild(s);
   });
 }
@@ -45,7 +45,7 @@ export function preload(): Promise<void> {
 // Daha önce verilmiş izinler de yeni anahtara eklenir (include_granted_scopes).
 export function requestToken(clientId: string, firstTime: boolean, scopes: string[] = [DRIVE_SCOPE]): Promise<string> {
   return new Promise((res, rej) => {
-    if (!gisReady()) return rej(new Error("Google girişi henüz yüklenmedi, birkaç saniye sonra tekrar dene"));
+    if (!gisReady()) return rej(new Error("Google hazır değil, tekrar dene"));
     const oauth = window.google.accounts.oauth2;
     const client = oauth.initTokenClient({
       client_id: clientId,
@@ -56,7 +56,7 @@ export function requestToken(clientId: string, firstTime: boolean, scopes: strin
         const granted = String(r.scope || scopes.join(" ")).split(" ").filter(x => oauth.hasGrantedAllScopes(r, x));
         write({ t: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000, s: granted.join(" ") });
         const missing = scopes.filter(x => !granted.includes(x));
-        if (missing.length) return rej(new Error(`${missing.map(x => NAMES[x] || x).join(" ve ")} izni verilmedi. Onay ekranında ilgili kutuyu işaretle.`));
+        if (missing.length) return rej(new Error(`${missing.map(x => NAMES[x] || x).join(" ve ")} izni verilmedi`));
         res(r.access_token);
       },
       error_callback: (e: any) => rej(new Error(e && e.type === "popup_closed" ? "Giriş penceresi kapatıldı" : "Giriş penceresi açılamadı")),

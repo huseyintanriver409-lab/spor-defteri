@@ -51,6 +51,8 @@ export function closeSheet(){
 export const sheetHead = title => `<div class="row" style="margin-bottom:12px"><h3 class="grow">${esc(title)}</h3><button class="iconbtn" data-close title="Kapat">${ic("x")}</button></div>`;
 // Açıklamalar ⓘ düğmesinin arkasında: kartın başlığındaki düğme o karttaki .help yazılarını açar/kapatır
 export const infoBtn = () => `<button class="infobtn" type="button" data-info aria-label="Açıklama" aria-expanded="false">${ic("info")}</button>`;
+// Sayfa (sheet) içeriği için aynı fikir: ⓘ'ye dokununca açılan açıklama (initHelp yalnız açılışta, statik karta çalışır)
+export const helpTip = text => `<details class="shhelp"><summary aria-label="Açıklama">${ic("info")}</summary><p class="muted">${text}</p></details>`;
 function initHelp(){
   document.querySelectorAll(".help").forEach(p => {
     const card = p.closest(".card"), h = card && card.querySelector("h2");
@@ -98,8 +100,8 @@ export function openPicker(title, onPick){
       return `<div class="pk-item"><button class="pk-main" data-ex="${esc(e.name)}"><b>${esc(e.name)}</b><small><span class="tag">${esc(equipOf(e.name))}</span>${esc(m.p.join(", ") || e.group)}</small></button>
         <button class="iconbtn star${fav ? " on" : ""}" data-fav="${esc(e.name)}" title="${fav ? "Favorilerden çıkar" : "Favorilere ekle"}" aria-pressed="${fav}">${ic("star")}</button></div>`;
     }).join("");
-    if (!html) html = filter === "fav" ? emptyHTML("star", "Henüz favori yok", "Yıldıza dokunarak sık yaptığın hareketleri buraya ekle.")
-      : emptyHTML("history", "Henüz kayıt yok", "Tümü sekmesinden ya da arayarak bir hareket seç.");
+    if (!html) html = filter === "fav" ? emptyHTML("star", "Favori yok", "")
+      : emptyHTML("history", "Kayıt yok", "");
     $("#pkList").innerHTML = html;
     $("#pkList").querySelectorAll("[data-ex]").forEach(b => b.onclick = () => { closeSheet(); onPick(b.dataset.ex); });
     $("#pkList").querySelectorAll("[data-fav]").forEach(b => b.onclick = () => {
@@ -139,7 +141,7 @@ export function renderTab(t){
   if (t === "home") renderHome();
   if (t === "train") renderSeg("train");
   if (t === "history") { renderHistory(); renderStreakCard(); }
-  if (t === "progress") { $("#progTitle").textContent = liftOn() ? "Ne kadar güçlendin?" : "Ne kadar ilerledin?"; renderSeg("stats"); }
+  if (t === "progress") renderSeg("stats");
   if (t === "profile") { renderAccount(); renderSeg("profile"); }
 }
 // Takvim'in üstündeki seri kartı: yalnız bilgi; türü Profil → Ayarlar'dan seçilir

@@ -11,17 +11,17 @@ export function calendarClient(token: string, fetchFn: typeof fetch = fetch): Ca
       headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) },
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (res.status === 401) throw new AuthError("Takvim erişimi reddedildi (401)");
+    if (res.status === 401) throw new AuthError("Takvim erişimi yok");
     if (res.status === 403) {
       // 403 kota aşımı da olabilir; yalnız izin sorunu yeniden giriş ister
       const text = await res.text().catch(() => "");
-      if (/rateLimitExceeded|quotaExceeded|usageLimits/i.test(text)) throw new Error("Takvim şu an meşgul, sonra yeniden denenecek");
-      throw new AuthError("Takvim izni yok (403)");
+      if (/rateLimitExceeded|quotaExceeded|usageLimits/i.test(text)) throw new Error("Takvim meşgul, sonra tekrar dene");
+      throw new AuthError("Takvim izni yok");
     }
     return res;
   };
   const events = (cal: string) => `${API}/calendars/${encodeURIComponent(cal)}/events`;
-  const fail = (what: string, res: Response) => new Error(`Takvim hatası: ${what} (${res.status})`);
+  const fail = (what: string, res: Response) => new Error(`Takvim: ${what} (${res.status})`);
 
   return {
     async createCalendar(summary, description, timeZone) {
@@ -37,7 +37,7 @@ export function calendarClient(token: string, fetchFn: typeof fetch = fetch): Ca
       res = await call(events(cal), "POST", { ...body, id });
       if (res.ok) return;
       // PUT de POST da 404 veriyorsa takvimin kendisi yok
-      if (res.status === 404) throw new CalendarMissing("Spor Defteri takvimi bulunamadı");
+      if (res.status === 404) throw new CalendarMissing("Takvim bulunamadı");
       // arada başka bir cihaz oluşturduysa güncellemeyi bir kez daha dene
       if (res.status === 409 && (await call(`${events(cal)}/${id}`, "PUT", { ...body, id })).ok) return;
       throw fail("etkinlik oluşturulamadı", res);

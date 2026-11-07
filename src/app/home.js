@@ -7,8 +7,8 @@ import { bindBodyMap, bodyMap, fatigueSummary, fatigueTiers, levelBar, openRecov
 import { programById } from "../core/programs.ts";
 import { plannedOn } from "../core/calendar.ts";
 import { segState, showTab } from "./ui.js";
-import { ssLabels } from "./programs.js";
 import { elapsedText, liveItems, openFocus, startWorkout } from "./live.js";
+import { openAddProgram } from "./programs.js";
 import { dayLoad, recoveryMap } from "./stats.js";
 import { renderBackupBanner } from "./backup.js";
 import { flameHTML, streakNote, streakNow, streakOn } from "./streak.js";
@@ -44,42 +44,41 @@ export function renderHome(){
   if (state.live) {
     const items = liveItems(), it = items[state.live.idx || 0];
     const n = state.entries.filter(e => e.date === state.live.date).reduce((a, e) => a + work(e.sets).length, 0);
-    title = "Antrenman sürüyor"; sub = it ? `Sıradaki: ${it.ex}` : "";
-    main = `<div class="card"><h2>Süre</h2><div class="bignum" id="homeLiveT">${elapsedText()}</div>
-      <p class="muted" style="margin:6px 0 16px">${n} set</p><div class="home-start"><button class="btn primary xl" id="homeResume">${ic("play")}Devam et</button></div></div>`;
+    title = it ? it.ex : "Antrenman";
+    main = `<div class="card"><div class="bignum" id="homeLiveT">${elapsedText()}</div>
+      <p class="muted" style="margin:6px 0 16px">${n} set</p><div class="home-start"><button class="btn primary xl" id="homeResume">${ic("play")}Devam</button></div></div>`;
   } else if (p) {
     title = trainedToday ? "Bugün çalıştın" : p.name;
-    const L = ssLabels(p.items);
     const totalSets = p.items.reduce((a, i) => a + (+i.sets || 0), 0);
-    if (!trainedToday) sub = `${p.items.length} hareket, ${totalSets} set, yaklaşık ${planMinutes(totalSets)} dk`;
+    if (!trainedToday) sub = `${p.items.length} hareket · ${totalSets} set · ${planMinutes(totalSets)} dk`;
     main = `<div class="card">${trainedToday ? `<h2>${esc(p.name)}</h2>` : ""}
-      <div class="today-list">${p.items.map((i, k) => `<div>${esc(i.ex)}${L[k] ? `<span class="ssl ss-tag">${L[k]}</span>` : ""}<span class="ssl">${i.sets} × ${esc(i.reps || "–")}</span></div>`).join("")}</div>
+      <div class="today-list">${p.items.slice(0, 4).map(i => `<div>${esc(i.ex)}</div>`).join("")}${p.items.length > 4 ? `<div class="muted">+${p.items.length - 4}</div>` : ""}</div>
       <div class="home-start"><button class="btn primary xl" data-start="${p.id}">${trainedToday ? "Tekrar başla" : "Başla"}</button></div></div>`;
   } else if (best) {
     // planlı gün değil: kasları en hazır program önerilir
     title = trainedToday ? "Bugün çalıştın" : "Serbest gün";
-    main = `<div class="card"><h2>Önerilen</h2>
+    main = `<div class="card">
       <div style="font-size:24px;font-weight:800;letter-spacing:-.02em">${esc(best.x.name)}</div>
-      <p class="muted" style="margin:4px 0 16px">${best.x.items.length} hareket · kasları %${Math.round(best.s * 100)} hazır</p>
+      <p class="muted" style="margin:4px 0 16px">${best.x.items.length} hareket · %${Math.round(best.s * 100)} hazır</p>
       <div class="home-start"><button class="btn primary xl" data-start="${best.x.id}">Başla</button></div></div>`;
   } else {
     title = trainedToday ? "Bugün çalıştın" : "Serbest gün";
-    if (!state.programs.length) sub = "İlk programını oluştur ya da boş bir antrenmanla başla.";
+    main = `<div class="home-start"><button class="btn xl" id="qAdd">${ic("plus")}Program ekle</button></div>`;
   }
   $("#homeTitle").textContent = title; $("#homeSub").textContent = sub;
   $("#homeSub").classList.toggle("hidden", !sub);
-  const st = streakNow(), on = streakOn(), note = on ? streakNote(st) : "";
+  const st = streakNow(), on = streakOn(), note = on && !trainedToday ? streakNote(st) : "";
   $("#homeStreak").innerHTML = on ? flameHTML(st) : "";
   $("#homeStreakNote").textContent = note;
   $("#homeStreakNote").classList.toggle("hidden", !note);
   $("#homeStreakNote").classList.toggle("risk", st.atRisk);
   const links = state.live ? "" : `<div class="row" style="justify-content:center;gap:4px;margin:-4px 0 12px">
-    <button class="ghost" id="qEmpty">${ic("play")}Boş antrenman</button><button class="ghost" id="qProg">${ic("clipboard-list")}Başka program</button></div>`;
+    <button class="ghost" id="qEmpty">${ic("play")}Boş antrenman</button></div>`;
   $("#homeMain").innerHTML = main + links;
   $("#homeMain").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
   const r = $("#homeResume"); if (r) r.onclick = openFocus;
   if ($("#qEmpty")) $("#qEmpty").onclick = () => startWorkout(null);
-  if ($("#qProg")) $("#qProg").onclick = () => { segState.train = "prog"; showTab("train"); };
+  if ($("#qAdd")) $("#qAdd").onclick = () => { segState.train = "prog"; showTab("train"); openAddProgram(); };
   // bu hafta: sayılar ve hedef çubuğu
   const w = weekProgress();
   $("#homeWeek").innerHTML = `<div class="stat" role="group" aria-label="Bu hafta antrenman günü: ${w.days} / hedef ${state.goal}"><b>${w.days}<span>/${state.goal}</span></b><span>antrenman</span></div>
@@ -92,14 +91,18 @@ export function renderHome(){
   const activeRest = focus() === "both" && tired.length && !state.live;
   const fs = fatigueSummary(R);
   // karta ya da haritaya dokununca hareketler değil, toparlanma analizi açılır
-  $("#homeRecovery").innerHTML = Object.keys(R).length && liftOn() ? `<div class="section-title">Toparlanma<span class="grow"></span></div><div class="card" id="recCard">
-    <div class="row" style="align-items:flex-start"><div class="grow"><div class="eyebrow">Yorgunluk</div><div style="font-size:22px;font-weight:800;letter-spacing:-.02em">${fs.label}</div>${levelBar(fs.lvl)}</div>
-      <button class="ghost" id="homeAnalysis">Analiz${ic("chevron-right")}</button></div>
+  const rest = tired.length ? `${tired.length} kas dinleniyor` : "Kaslar hazır";
+  $("#homeRecovery").innerHTML = Object.keys(R).length && liftOn() ? `<div class="section-title">Toparlanma<span class="grow"></span></div><div class="card" id="recCard" role="button" tabindex="0" aria-label="Toparlanma analizi: ${fs.label}, ${rest}">
+    <div class="row" style="align-items:flex-start"><div class="grow"><div style="font-size:22px;font-weight:800;letter-spacing:-.02em">${fs.label}</div>${levelBar(fs.lvl)}</div>
+      ${ic("chevron-right")}</div>
     ${bodyMap(fatigueTiers(R), { small: true })}
-    ${tired.length ? `<div class="hint">${ic("battery-low")} <span>Dinlenmeli: <b>${esc(tired.join(", "))}</b></span></div>` : `<div class="hint good">${ic("battery-full")} Bütün kasların hazır.</div>`}
-    ${activeRest ? `<button class="btn sm" id="homeYoga" style="margin-top:10px">${ic("leaf")}Hafif esneme: ${yogaProg ? esc(yogaProg.name) : "20 dk"}</button>` : ""}</div>` : "";
+    ${tired.length ? `<div class="hint">${ic("battery-low")} <span>${rest}</span></div>` : `<div class="hint good">${ic("battery-full")} ${rest}</div>`}</div>
+    ${activeRest ? `<button class="btn sm" id="homeYoga" style="margin-top:10px"${yogaProg ? ` title="${esc(yogaProg.name)}"` : ""}>${ic("leaf")}Hafif esneme</button>` : ""}` : "";
   bindBodyMap($("#homeRecovery"), ms => openRecoveryAnalysis(ms[0]));
-  if ($("#recCard")) $("#recCard").onclick = e => { if (!e.target.closest("#homeYoga")) openRecoveryAnalysis(); };
+  if ($("#recCard")) {
+    $("#recCard").onclick = () => openRecoveryAnalysis();
+    $("#recCard").onkeydown = e => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openRecoveryAnalysis(); } };
+  }
   if ($("#homeYoga")) $("#homeYoga").onclick = () => {
     // yoga programı yoksa "Akşam Esneme ve Rahatlama" programlara eklenir (plana dokunmadan) ve başlar
     if (!yogaProg) applyProgram(programById("yoga-aksam"), 3, false);

@@ -86,7 +86,7 @@ export function relabel(){
   $("#setRows").querySelectorAll(".w").forEach(i => { i.placeholder = wl; i.setAttribute("aria-label", cardio ? "Süre (dk)" : timed ? "Ek ağırlık (kg)" : "Ağırlık (kg)"); });
   $("#setRows").querySelectorAll(".r").forEach(i => { i.placeholder = rl; i.setAttribute("aria-label", cardio ? "Mesafe (km)" : timed ? "Süre (saniye)" : "Tekrar"); });
   $("#setRows").querySelectorAll(".rir").forEach(i => i.style.visibility = cardio || timed ? "hidden" : "");
-  $("#hW").textContent = cardio ? "dk" : timed ? "ek kg" : "kg"; $("#hR").textContent = cardio ? "km" : timed ? "süre (sn)" : "tekrar";
+  $("#hW").textContent = cardio ? "dk" : timed ? "+kg" : "kg"; $("#hR").textContent = cardio ? "km" : timed ? "sn" : "tekrar";
   $("#hRir").style.visibility = cardio || timed ? "hidden" : "";
   // yoga pozunda ek ağırlık olmaz
   const yoga = timed && isYoga(ex);
@@ -112,7 +112,7 @@ export function updateHint(){
     h.classList.remove("hidden"); return;
   }
   if (!prev){ h.classList.add("hidden"); return; }
-  h.innerHTML = `<b>Son kez</b> (${niceDate(prev.date)}): ` + work(prev.sets).map(s => setLabel(s,c)).join(", ") + (prev.note ? `<br>${ic("notebook-pen")} ${esc(prev.note)}` : "");
+  h.innerHTML = `<b>Son</b> (${niceDate(prev.date)}): ` + work(prev.sets).map(s => setLabel(s,c)).join(", ") + (prev.note ? `<br>${ic("notebook-pen")} ${esc(prev.note)}` : "");
   h.classList.remove("hidden");
 }
 export function bestOf(ex, excludeId){
@@ -124,9 +124,9 @@ export function bestOf(ex, excludeId){
 export const bestSecOf = (ex, excludeId) => Math.max(+(state.baseline[ex] || {}).sec || 0, ...state.entries.filter(x => x.ex===ex && x.id!==excludeId).flatMap(x => work(x.sets)).map(s => +s.sec||0));
 export function saveEditor(){
   const ex = $("#logEx").value.trim(), date = $("#logDate").value, sets = readRows(), note = $("#logNote").value.trim();
-  if (!ex) { toast("Önce bir hareket seç"); return false; }
+  if (!ex) { toast("Hareket seç"); return false; }
   if (!date) { toast("Tarih seç"); return false; }
-  if (!sets.length) { toast("En az bir set gir"); return false; }
+  if (!sets.length) { toast("Set gir"); return false; }
   if (!allEx().some(e => e.name===ex)) { state.custom.push({name:ex, group:"Diğer"}); refreshDatalist(); }
   const before = bestOf(ex, editingId), beforeSec = bestSecOf(ex, editingId);
   if (editingId){
@@ -142,11 +142,11 @@ export function saveEditor(){
   const ws = work(sets);
   if (isTimed(ex)) {
     const ns = Math.max(0, ...ws.map(s => +s.sec||0));
-    if (before.n && ns > beforeSec) { msg = `Yeni süre rekoru: ${fmtSec(ns)}!`; icon = "trophy"; }
+    if (before.n && ns > beforeSec) { msg = `Süre rekoru: ${fmtSec(ns)}`; icon = "trophy"; }
   } else if (!isCardio(ex) && before.n && ws.length) {
     const nw = Math.max(...ws.map(s => +s.w||0)), ne = Math.max(...ws.filter(s => s.r<=12).map(s => e1rm(+s.w||0, +s.r||0)), 0);
-    if (nw > before.w) { msg = `Yeni rekor: ${fmt(nw)} kg!`; icon = "trophy"; }
-    else if (ne > before.e + 0.05) { msg = `Yeni tahmini 1RM rekoru: ${fmt(ne)} kg!`; icon = "trophy"; }
+    if (nw > before.w) { msg = `Rekor: ${fmt(nw)} kg`; icon = "trophy"; }
+    else if (ne > before.e + 0.05) { msg = `Tahmini 1RM: ${fmt(ne)} kg`; icon = "trophy"; }
   }
   toast(msg, icon); buzz(icon === "trophy" ? [30,60,30,60,80] : 20);
   resetEditor(true); renderDay();
@@ -175,7 +175,7 @@ export function bindEntryActions(root, rerender){
 // Silmeden önce sorar: telefon cepteyken yanlışlıkla dokunulunca kayıt gitmesin. "Geri al" yine de kalır.
 export async function deleteEntry(id, rerender){
   const found = state.entries.find(e => e.id===id); if (!found) return;
-  if (!(await ask(`${found.ex} kaydı silinsin mi?\n${found.sets.length} set · ${niceDate(found.date)}`))) return;
+  if (!(await ask(`Kayıt silinsin mi?\n${found.sets.length} set · ${niceDate(found.date)}`))) return;
   const i = state.entries.findIndex(e => e.id===id); if (i < 0) return;
   const [e] = state.entries.splice(i, 1); save(); rerender(); buzz(15);
   undoable(`${e.ex} silindi`, () => { state.entries.splice(Math.min(i, state.entries.length), 0, e); save(); rerender(); });
@@ -192,11 +192,11 @@ export function renderDay(){
   const date = $("#logDate").value;
   $("#dayTitle").textContent = date === ymd(new Date()) ? "Bugün" : niceDate(date);
   const list = state.entries.filter(e => e.date===date).sort((a,b) => a.ts-b.ts);
-  $("#dayList").innerHTML = list.length ? list.map(e => entryHTML(e,true)).join("") : emptyHTML("calendar-days", "Bu gün kayıt yok", "Yukarıdan hareket seçip setlerini gir.");
+  $("#dayList").innerHTML = list.length ? list.map(e => entryHTML(e,true)).join("") : emptyHTML("calendar-days", "Kayıt yok", "");
   const ss = state.sessions.filter(s => s.date===date);
   // antrenman Google Takvim'e kendiliğinden yazıldıysa elle eklemek kopya oluşturur
   $("#dayCal").classList.toggle("hidden", !list.length || autoLogged(ss));
-  $("#daySess").innerHTML = ss.length ? `${ic("timer")} Antrenman süresi: ${durText(ss.reduce((a,s) => a + s.end - s.start, 0))}` : "";
+  $("#daySess").innerHTML = ss.length ? `${ic("timer")} Süre: ${durText(ss.reduce((a,s) => a + s.end - s.start, 0))}` : "";
   bindEntryActions($("#dayList"), () => { renderDay(); updateHint(); });
 }
 
@@ -215,11 +215,11 @@ $("#addSet").onclick = () => {
 };
 $("#addWarm").onclick = () => {
   const ex = $("#logEx").value.trim();
-  if (!ex) return toast("Önce bir hareket seç");
+  if (!ex) return toast("Hareket seç");
   if (isCardio(ex)) return toast("Kardiyoda ısınma seti yok");
   const rows = [...$("#setRows").children].filter(d => d.querySelector(".n").dataset.t !== "w");
   const first = rows.map(rowData).find(s => s.w > 0);
-  if (!first) return toast("Önce ilk çalışma setinin kilosunu gir");
+  if (!first) return toast("Önce kilo gir");
   const ws = warmupSets(first.w, barFor(ex));
   if (!ws.length) return toast("Bu kilo için ısınma setine gerek yok");
   const keep = rows.map(d => ({ ...rowData(d), w: d.querySelector(".w").value, r: d.querySelector(".r").value }));

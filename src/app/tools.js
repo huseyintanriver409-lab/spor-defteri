@@ -72,7 +72,7 @@ export function stopTimer(){
 }
 export function tickTimer(){
   const left = Math.ceil((tEnd - Date.now())/1000);
-  if (left <= 0) { stopTimer(); beep(); toast("Dinlenme bitti, sıradaki set!", "timer"); return; }
+  if (left <= 0) { stopTimer(); beep(); toast("Dinlenme bitti · sıradaki set", "timer"); return; }
   $("#clock").textContent = mmss(left); $("#fabTxt").textContent = mmss(left); $("#fab").classList.add("run");
   renderFocusRest(left);
 }

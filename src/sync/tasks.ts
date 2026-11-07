@@ -12,18 +12,18 @@ export function tasksClient(token: string, fetchFn: typeof fetch = fetch): Tasks
       headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) },
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (res.status === 401) throw new AuthError("Görev erişimi reddedildi (401)");
+    if (res.status === 401) throw new AuthError("Görev erişimi yok");
     if (res.status === 403) {
       const text = await res.text().catch(() => "");
       // Google Cloud projesinde Tasks API açılmamışsa yeniden giriş işe yaramaz
-      if (/accessNotConfigured|SERVICE_DISABLED|has not been used/i.test(text)) throw new Error("Google Tasks API, Google Cloud projesinde açık değil");
-      if (/rateLimitExceeded|quotaExceeded|usageLimits/i.test(text)) throw new Error("Google Görevler şu an meşgul, sonra yeniden denenecek");
-      throw new AuthError("Görev izni yok (403)");
+      if (/accessNotConfigured|SERVICE_DISABLED|has not been used/i.test(text)) throw new Error("Tasks API açık değil");
+      if (/rateLimitExceeded|quotaExceeded|usageLimits/i.test(text)) throw new Error("Görevler meşgul, sonra tekrar dene");
+      throw new AuthError("Görev izni yok");
     }
     return res;
   };
   const tasks = (list: string) => `${API}/lists/${encodeURIComponent(list)}/tasks`;
-  const fail = (what: string, res: Response) => new Error(`Görev hatası: ${what} (${res.status})`);
+  const fail = (what: string, res: Response) => new Error(`Görev: ${what} (${res.status})`);
   const missing = (res: Response) => res.status === 404 || res.status === 400;
 
   return {
@@ -38,7 +38,7 @@ export function tasksClient(token: string, fetchFn: typeof fetch = fetch): Tasks
       do {
         const q = new URLSearchParams({ dueMin: `${dueMin}T00:00:00.000Z`, showCompleted: "true", showHidden: "true", maxResults: "100", ...(page ? { pageToken: page } : {}) });
         const res = await call(`${tasks(list)}?${q}`, "GET");
-        if (missing(res)) throw new TaskListMissing("Spor Defteri görev listesi bulunamadı");
+        if (missing(res)) throw new TaskListMissing("Görev listesi bulunamadı");
         if (!res.ok) throw fail("görevler okunamadı", res);
         const j = (await res.json()) as any;
         out.push(...(j.items || []));
@@ -48,7 +48,7 @@ export function tasksClient(token: string, fetchFn: typeof fetch = fetch): Tasks
     },
     async insertTask(list, body) {
       const res = await call(tasks(list), "POST", body);
-      if (missing(res)) throw new TaskListMissing("Spor Defteri görev listesi bulunamadı");
+      if (missing(res)) throw new TaskListMissing("Görev listesi bulunamadı");
       if (!res.ok) throw fail("görev eklenemedi", res);
     },
     async patchTask(list, id, body) {

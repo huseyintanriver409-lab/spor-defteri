@@ -2,7 +2,7 @@ import { ymd, shortDate } from "../core/dates.ts";
 import { baseSet, buildBaseline, progressRows } from "../core/baseline.ts";
 import { $, esc, fmt, ic, save, state, toast } from "./store.js";
 import { allEx, fmtSec, isCardio, isTimed, setLabel } from "./exercises.js";
-import { buzz, closeSheet, openSheet, refreshAll, sheetHead } from "./ui.js";
+import { buzz, closeSheet, helpTip, openSheet, refreshAll, sheetHead } from "./ui.js";
 import { refreshDatalist } from "./log.js";
 
 /* ---------- Mevcut verilerim (başlangıç noktası) ----------
@@ -40,11 +40,11 @@ function progressHTML(){
 export function openBaseline({ onboarding = false, exercises = [] } = {}){
   const b = state.baseline, names = [...Object.keys(b), ...exercises.filter(x => !b[x])];
   const head = onboarding
-    ? `<div class="row" style="align-items:flex-start;margin-top:6px"><div class="grow"><div class="eyebrow">Başlangıç noktan</div>
+    ? `<div class="row" style="align-items:flex-start;margin-top:6px"><div class="grow">
          <h3 style="font-size:24px;margin:4px 0 6px;letter-spacing:-.035em">Şu an hangi kilolarla çalışıyorsun?</h3></div>
          <button class="btn quiet" id="blSkip" style="flex:none">Atla</button></div>`
     : sheetHead("Mevcut verilerim");
-  openSheet(head, `<p class="muted small" style="margin:0 0 12px">Başka uygulamadan geliyorsan ya da defter tutmadan çalıştıysan, her hareket için şu an rahatça yaptığın kiloyu ve tekrarı yaz. İlk antrenmanda öneriler buradan başlar, bu değerleri geçmek rekor sayılır. Antrenman yaptıkça "şimdi" değeri kendiliğinden güncellenir. Antrenman geçmişine, takvime ve istatistiklere girmez. Bilmediğin hareketi boş bırak.</p>
+  openSheet(head, `<div class="muted small" style="margin:0 0 12px">Şu an rahat yaptığın kiloyu ve tekrarı yaz.${helpTip("Başka uygulamadan geliyorsan ya da defter tutmadan çalıştıysan her hareket için bunu yaz. İlk antrenmanda öneriler buradan başlar, bu değerleri geçmek rekor sayılır. Antrenman yaptıkça \"şimdi\" değeri kendiliğinden güncellenir. Antrenman geçmişine, takvime ve istatistiklere girmez. Bilmediğin hareketi boş bırak.")}</div>
     <div id="blRows" style="display:grid;gap:8px">${(names.length ? names : [""]).map(n => rowHTML(n, b[n])).join("")}</div>
     <button class="ghost" id="blAdd" style="margin-top:8px">${ic("plus")}Hareket ekle</button>
     <div class="row" style="margin-top:14px"><button class="btn primary" id="blSave">${ic("check")}Kaydet</button></div>

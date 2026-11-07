@@ -3,13 +3,14 @@ import { volume, work } from "../core/training.ts";
 import { setsByMuscle } from "../core/musclemap.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, liftOn, setLabel, yogaOn } from "./exercises.js";
-import { buzz, emptyHTML, openPicker, openSheet, sheetHead, undoable } from "./ui.js";
+import { buzz, closeSheet, openPicker, openSheet, sheetHead, undoable } from "./ui.js";
 import { bindBodyMap, sessionLoadHTML } from "./bodymap.js";
 import { refreshDatalist } from "./log.js";
 import { startWorkout } from "./live.js";
-import { shareProgram } from "./importer.js";
+import { shareProgram, openAiSheet } from "./importer.js";
+import { openLibrary } from "./presets.js";
 import { dropProgram, fillWeek, isRot, keepRotation } from "../core/plan.ts";
-import { plannedDates } from "../core/calendar.ts";
+import { plannedDates, plannedOn } from "../core/calendar.ts";
 
 /* ---------- Programs ---------- */
 export let progEditId = null;
@@ -30,13 +31,27 @@ export function pRow(it = {ex:"", sets:3, reps:"10"}){
   $("#pRows").appendChild(div); renderEditorLoad();
   return div;
 }
-// program formu yalnız "Kendi programını oluştur" ya da Düzenle ile açılır
-function showEditor(on){ $("#pEditor").classList.toggle("hidden", !on); $("#pNew").classList.toggle("hidden", on); syncPrimary(); }
-// aynı görünümde tek "primary": editör açıkken ana düğme #pSave; kapalıyken program varsa #startEmpty, yoksa #recOpen
+// program formu yalnız "Program ekle > Kendin kur" ya da Düzenle ile açılır
+function showEditor(on){ $("#pEditor").classList.toggle("hidden", !on); $("#pList").classList.toggle("editing", on); syncPrimary(); }
+// aynı görünümde tek kiraz: editör açıkken #pSave; kapalıyken yalnız bir "Başla" kiraz (bugün planlı program, yoksa ilk program), diğerleri sessiz
+let primaryId = null;
 function syncPrimary(){
-  const editing = !$("#pEditor").classList.contains("hidden"), hasPrograms = state.programs.length > 0;
-  $("#startEmpty").classList.toggle("primary", !editing && hasPrograms);
-  $("#liftCard #recOpen").classList.toggle("primary", !editing && !hasPrograms);
+  const editing = !$("#pEditor").classList.contains("hidden");
+  $("#pList").querySelectorAll("[data-start]").forEach(b => {
+    const hot = !editing && b.dataset.start === primaryId;
+    b.classList.toggle("primary", hot);
+    b.classList.toggle("quiet", !editing && !hot);
+  });
+}
+// Yeni program formunu açar
+function newProgram(){ resetProgEditor(); showEditor(true); $("#pEditor").scrollIntoView({ behavior: "smooth", block: "start" }); $("#pName").focus({ preventScroll: true }); }
+// "Program ekle" sayfası: Hazır (kütüphane + "Hangisi bana uygun?" sihirbazı), Yapay zekâ ile, Kendin kur
+export function openAddProgram(){
+  const body = openSheet(sheetHead("Program ekle"),
+    `<div class="addopts"><button class="btn" id="apLib">${ic("list")}Hazır</button><button class="btn" id="apAi">${ic("sparkles")}Yapay zekâ ile</button><button class="btn" id="apOwn">${ic("pencil")}Kendin kur</button></div>`);
+  body.querySelector("#apLib").onclick = () => openLibrary();
+  body.querySelector("#apAi").onclick = () => openAiSheet();
+  body.querySelector("#apOwn").onclick = () => { closeSheet(); newProgram(); };
 }
 export function resetProgEditor(){
   progEditId = null; $("#pTitle").textContent = "Yeni program"; $("#pName").value = "";
@@ -64,8 +79,9 @@ export function renderEditorLoad(){
   $("#pLoad").innerHTML = html ? `<div class="pk-head">Bu antrenman kaslarını ne kadar çalıştırır</div>${html}` : "";
 }
 export function renderProg(){
-  $("#yogaCard").classList.toggle("hidden", !yogaOn()); $("#liftCard").classList.toggle("hidden", !liftOn());
-  syncPrimary();
+  $("#yogaCard").classList.toggle("hidden", !yogaOn());
+  // tek kiraz "Başla": bugün planlı program varsa o, yoksa listedeki ilk program
+  primaryId = (plannedOn(state.plan, state.programs, ymd(new Date())) || state.programs[0] || {}).id ?? null;
   $("#pList").innerHTML = state.programs.length ? state.programs.map(p => {
     const ms = setsByMuscle(p.items.filter(i => i.ex), musclesOf);
     const top = Object.entries(ms).sort((a,b) => b[1]-a[1]).slice(0,4).map(([m]) => m).join(" · ");
@@ -76,7 +92,10 @@ export function renderProg(){
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " sn" : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="Bağlantıyla paylaş">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
-    </div>`; }).join("") : `<div class="card">${emptyHTML("clipboard-list", "Henüz program yok", "Hazır programlardan birini seç, yapay zekâyla oluştur ya da kendin kur.")}</div>`;
+    </div>`; }).join("") + `<button class="btn quiet padd" data-padd>${ic("plus")}Yeni program</button>`
+    : `<button class="btn primary addbox" data-padd aria-label="Program ekle">${ic("plus")}Program ekle</button>`;
+  $("#pList").querySelectorAll("[data-padd]").forEach(b => b.onclick = openAddProgram);
+  syncPrimary();
   const find = id => state.programs.find(p => p.id===id);
   $("#pList").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
   $("#pList").querySelectorAll("[data-pmap]").forEach(b => b.onclick = () => openProgramMap(find(b.dataset.pmap)));
@@ -95,7 +114,7 @@ export function renderProg(){
   $("#pList").querySelectorAll("[data-pdel]").forEach(b => b.onclick = async () => {
     const target = state.programs.find(x => x.id===b.dataset.pdel); if (!target) return;
     const inPlan = Object.values(state.plan.days).some(d => d.prog === target.id) || (isRot(state.plan) && state.plan.rot.includes(target.id));
-    if (!(await ask(`"${target.name}" programı silinsin mi?${inPlan ? "\nHaftalık plandaki günleri de boşalır." : ""}\nEski antrenman kayıtların silinmez.`))) return;
+    if (!(await ask(`"${target.name}" silinsin mi?${inPlan ? "\nPlan günleri boşalır." : ""}`))) return;
     const i = state.programs.findIndex(x => x.id===target.id), p = state.programs[i]; if (i < 0) return;
     const plan = JSON.parse(JSON.stringify(state.plan)), wasActive = state.active === p.id;
     state.programs.splice(i, 1);
@@ -191,7 +210,7 @@ export function renderPlan(){
   const opts = (sel, empty) => (empty ? `<option value="">${empty}</option>` : "") + state.programs.map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(p.name)}</option>`).join("");
   const time = (code, on) => `<input type="time" data-pt="${code}" value="${(P.days[code] && P.days[code].time) || "19:00"}" style="flex:0 0 96px"${on ? "" : ` class="hidden"`}>`;
   const mode = `<div class="fchips" id="planMode" style="margin-bottom:6px"><button class="fchip${rot ? "" : " on"}" data-mode="fixed">Sabit günler</button><button class="fchip${rot ? " on" : ""}" data-mode="rot">Sırayla</button></div>
-    <p class="muted small" style="margin:0 0 4px">${rot ? "Antrenman günlerini seç; programlar bu günlere sırayla dağılır. 3 gün ve A, B ile: bu hafta A-B-A, gelecek hafta B-A-B." : "Her gün kendi programını alır, her hafta aynı."}</p>`;
+    <p class="muted small help" style="margin:0 0 4px">${rot ? "Antrenman günlerini seç; programlar bu günlere sırayla dağılır. 3 gün ve A, B ile: bu hafta A-B-A, gelecek hafta B-A-B." : "Her gün kendi programını alır, her hafta aynı."}</p>`;
   if (rot) {
     const R = P.rot || [], n = Object.keys(P.days).length;
     $("#planRows").innerHTML = mode + WEEKDAYS.map(([code, name]) =>
@@ -241,8 +260,8 @@ export function renderPlan(){
   if ($("#planRotShift")) $("#planRotShift").onclick = () => { P.shift = (P.shift || 0) + 1; fillWeek(P, new Date()); save(); buzz(5); renderPlan(); };
   rows.querySelectorAll("[data-pt]").forEach(t => t.onchange = () => { const d = P.days[t.dataset.pt]; if (d) { d.time = t.value || "19:00"; save(); } });
   const n = Object.keys(P.days).length;
-  $("#planInfo").textContent = (state.programs.length ? (n ? `Haftada ${n} antrenman` + (P.until ? `, ${untilText(P.until)}` : "") : "Henüz gün seçilmedi") : "Önce bir program oluştur")
-    + (state.gcal.plan && n ? " · Google Takvim'de kendiliğinden güncellenir" : "");
+  $("#planInfo").innerHTML = (state.programs.length ? (n ? `${n} antrenman` + (P.until ? ` · ${esc(untilText(P.until))}` : "") : "Gün seçilmedi") : "Önce program ekle")
+    + (state.gcal.plan && n ? ` <span title="Google Takvim'de kendiliğinden güncellenir" aria-label="Google Takvim'de kendiliğinden güncellenir">${ic("calendar-days")}</span>` : "");
   // plan takvime kendiliğinden yazılırken .ics dosyası da eklenirse etkinlikler iki kez görünür
   $("#planIcs").classList.toggle("hidden", !!state.gcal.plan);
 }
@@ -263,13 +282,12 @@ export function setup(){
 $("#pAddRow").onclick = () => pRow().querySelector(".pe").click();
 $("#pCancel").onclick = resetProgEditor;
 $("#pRows").addEventListener("input", e => { if (e.target.classList.contains("ps")) renderEditorLoad(); });
-$("#pNew").onclick = () => { resetProgEditor(); showEditor(true); $("#pEditor").scrollIntoView({ behavior: "smooth", block: "start" }); $("#pName").focus({ preventScroll: true }); };
 $("#pSave").onclick = () => {
   const name = $("#pName").value.trim();
   const items = [...$("#pRows").children].map(d => ({ ex: d.querySelector(".pe").value.trim(), sets: Math.max(1, parseInt(d.querySelector(".ps").value)||1), reps: d.querySelector(".pr").value.trim(), ss: d.querySelector(".pss").classList.contains("on") }))
     .filter(i => i.ex).map((i, k) => { if (!i.ss || k === 0) delete i.ss; return i; });
-  if (!name) return toast("Programa bir ad ver");
-  if (!items.length) return toast("En az bir hareket ekle");
+  if (!name) return toast("Ad gir");
+  if (!items.length) return toast("Hareket ekle");
   items.forEach(i => { if (!allEx().some(e => e.name===i.ex)) state.custom.push({name:i.ex, group:"Diğer"}); });
   if (progEditId) Object.assign(state.programs.find(p => p.id===progEditId), {name, items});
   else state.programs.push({ id: uid(), name, items });
@@ -308,7 +326,7 @@ $("#planIcs").onclick = () => {
     if (P.remind > 0) L.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsText(p.name + " antrenmanı")}`,`TRIGGER:-PT${P.remind}M`,"END:VALARM");
     L.push("END:VEVENT");
   });
-  if (!n) return toast("Önce en az bir güne program seç");
+  if (!n) return toast("Önce gün seç");
   L.push("END:VCALENDAR");
   const blob = new Blob([L.map(fold).join("\r\n") + "\r\n"], { type: "text/calendar;charset=utf-8" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "antrenman-plani.ics";
