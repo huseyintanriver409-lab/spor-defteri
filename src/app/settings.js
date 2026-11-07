@@ -20,6 +20,10 @@ export function renderSettings(){
 export function renderTrainPrefs(){
   $("#setRest").innerHTML = [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
+  // cinsiyet erkek/kadınsa vücut çizimi ona göre; değilse çizim burada seçilir
+  const sx = state.profile.sex || "", given = sx === "m" || sx === "f";
+  $("#bSex").value = sx; $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
+  $("#bBodyWrap").classList.toggle("hidden", given);
   $("#prefFocus").value = focus();
   $("#focusHelp").textContent = { both: "Ağırlık, kardiyo ve yoga birlikte görünür.",
     lift: "Yoga pozları ve programları listelerde görünmez.",
@@ -67,6 +71,8 @@ $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(
 $("#prefWake").onchange = () => { state.prefs.wake = $("#prefWake").checked; save(); if (!state.prefs.wake) keepAwake(false); };
 $("#prefHaptic").onchange = () => { state.prefs.haptics = $("#prefHaptic").checked; save(); buzz(30); };
 $("#prefFocus").onchange = () => { state.prefs.focus = $("#prefFocus").value; save(); refreshDatalist(); refreshAll(); renderSettings(); };
+$("#bSex").onchange = () => { state.profile.sex = $("#bSex").value; save(); refreshAll(); renderSettings(); };
+$("#bBody").onchange = () => { state.prefs.body = $("#bBody").value; save(); refreshAll(); };
 try { const t = localStorage.getItem(THEME_KEY); if (THEMES[t]) theme = t; } catch(e){}
 $("#themeBtn").onclick = () => setTheme({ dark: "light", light: "system", system: "dark" }[theme]);
 darkMq.addEventListener("change", applyTheme);

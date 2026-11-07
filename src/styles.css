@@ -222,9 +222,6 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 button.chip{border:0;color:var(--text);font:inherit;font-size:13px;font-weight:650;cursor:pointer}
 .note{display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--muted);margin-top:8px}
 .note .ic{width:14px;height:14px;margin-top:2px}
-.linkbtn{all:unset;cursor:pointer;display:inline;color:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
-.linkbtn .ic{width:12px;height:12px;vertical-align:-1px;margin-right:4px}
-.linkbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:0}
 .tag.good{background:var(--goodsoft);color:var(--good)}
 .tag.muted{background:none;border:1px solid var(--line2)}
 /* vücut haritası (bodymap.js) */
@@ -336,7 +333,13 @@ details.card.fold{border-top:0}
 .progcard li{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-weight:600;font-size:14px}
 .progcard li:first-child{border-top:0}
 .progcard li span{margin-left:auto;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.progcard .row{gap:0 2px}
+.progcard .row .iconbtn{width:40px;height:40px}
+.progcard .row .btn{padding:10px 12px;gap:6px}
 .progcard h3{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.progcard .progtop{display:flex;align-items:center;gap:8px}
+.progcard .progtop h3{flex:1;min-width:0;overflow-wrap:anywhere}
+.progcard .progtop .iconbtn{flex:none}
 .ssl{display:inline-block;font-size:12px;font-weight:600;color:var(--muted);background:var(--card2);border-radius:8px;padding:1px 6px}
 details{border-top:1px solid var(--line)}
 details:first-of-type{border-top:0}

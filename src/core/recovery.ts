@@ -16,7 +16,7 @@ export interface RecoveryInput {
   entries: { ex: string; date: string; sets: WorkSet[] }[];
   sessions: { date: string; end: number }[];
   isCardio: (ex: string) => boolean;
-  // w: hareketin kaslara payı (set × pay); yoksa p ana kaslar (tam set), s yardımcılar (yarım set)
+  // w: hareketin kaslara payı (set × pay); pay araştırma verisinden (muscledata.ts WEIGHTS); yoksa (yalnız kütüphane dışı hareket) yedek: p ana 1, s yardımcı 0,5
   musclesOf: (ex: string) => Muscles;
   now?: number;
 }

@@ -72,7 +72,7 @@ function miniSymbol(sex, side){
   }
   return id;
 }
-// Tek hareketin kaslara verdiği uyarı, programdaki ölçekle aynı: ana kas set kadar, yardımcı yarısı kadar etkili set.
+// Tek hareketin kaslara verdiği uyarı, programdaki ölçekle aynı: pay araştırma verisinden (muscledata.ts WEIGHTS); yalnız kütüphane dışı/kullanıcı hareketlerinde yedek ana 1, yardımcı 0,5.
 // Hareket listesinde ve kartlarda varsayılan 3 set (kartta değiştirilebilir).
 export const EX_SETS = 3;
 const RANKED = SESSION_TIERS.map(([k]) => k).reverse();  // hasar → dusuk
@@ -217,7 +217,7 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
   const names = pickableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts);
   const ago = r ? (r.hrs < 1 ? "az önce" : r.hrs < 24 ? `${Math.round(r.hrs)} sa önce` : `${Math.floor(r.hrs / 24)} gün önce`) : "";
-  // kullanıcının programlarından bu kası çalıştıranlar: bir antrenmanda kaç set (yardımcı kas yarım set)
+  // kullanıcının programlarından bu kası çalıştıranlar: bir antrenmanda kaç set (pay araştırma verisinden; kütüphane dışı hareketlerde yedek yardımcı 0,5)
   const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
   const body = openSheet(sheetHead(m),

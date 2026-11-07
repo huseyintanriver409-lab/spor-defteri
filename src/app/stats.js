@@ -201,7 +201,7 @@ export function renderRecovery(){
   // vücut haritası: şu anki yorgunluk ya da bu haftanın set yükü
   const week = segState.bm === "week", ws = week ? weekSets() : null;
   $("#bmView").querySelectorAll("button").forEach(x => x.classList.toggle("on", (x.dataset.v === "week") === week));
-  $("#bmNote").textContent = week ? "Bu haftaki etkili setler: ana kas 1, yardımcı kas ½ sayılır. Araştırmaya göre kas başına haftada 4 set gelişimi başlatır, 4–10 set en verimli aralıktır; daha fazlası da işe yarar ama set başına getirisi azalır."
+  $("#bmNote").textContent = week ? "Haftalık etkili setler · 4–10 set verimli"
     : "Bacak ve bel kasları ~48 saatte, üst vücut ~24 saatte toparlanır; o gün 8+ set ya da tükenişe kadar set yaptıysan her biri bir gün ekler. Kişiden kişiye değişir. Kasa dokun: ayrıntısı açılır.";
   $("#restMap").innerHTML = bodyMap(week ? loadTiers(ws) : fatigueTiers(R)) + legend(week ? "load" : "fatigue");
   bindBodyMap($("#restMap"));
@@ -231,8 +231,8 @@ export const LEVELS = ["Yeni başlayan","Başlangıç","Acemi","Orta","İleri","
 export const latestWeight = () => { const b = state.body.filter(x => x.weight).sort((a,b) => b.date.localeCompare(a.date))[0]; return b ? b.weight : null; };
 export const bodyweight = () => latestWeight() || parseFloat(state.profile.bw) || 0;
 export function renderPower(keepInput){
-  // cinsiyet tek yerden (İlerleme > Vücut, #bSex) seçilir; güç skoru state.profile.sex'i okur
-  const sexNote = state.profile.sex ? "" : " · Cinsiyeti Vücut'ta seç";
+  // cinsiyet tek yerden (Profil > Ayarlar, #bSex) seçilir; güç skoru state.profile.sex'i okur
+  const sexNote = state.profile.sex ? "" : " · Cinsiyeti Ayarlar'da seç";
   const lw = latestWeight();
   if (!keepInput) $("#pfBw").value = lw || state.profile.bw || "";
   $("#pfBw").disabled = !!lw;

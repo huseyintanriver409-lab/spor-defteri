@@ -20,7 +20,7 @@ export const groupShown = g => g === YOGA ? yogaOn() : liftOn() || g === CARDIO 
 export const pickableEx = () => allEx().filter(e => groupShown(e.group));
 
 // Kütüphanedeki hareketlerin kas payları araştırmadan gelir (src/core/muscledata.ts). Aşağıdaki kurallar yalnız
-// kütüphanede olmayan (kullanıcının eklediği) hareketler içindir: ana kas 1, yardımcı ½ sayılır.
+// kütüphanede olmayan (kullanıcının eklediği) hareketler içindir: yedek olarak ana kas 1, yardımcı 0,5 sayılır.
 // [desen, ana kaslar, yardımcı kaslar] — ilk eşleşen kural geçerli
 export const MUSCLE_RULES = [
   [/calf|tibialis/, ["Baldır"], []],

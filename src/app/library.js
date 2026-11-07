@@ -1,7 +1,7 @@
 import { shortDate, ymd } from "../core/dates.ts";
 import { $, LIB, YOGA, ask, esc, fmt, ic, save, state, toast } from "./store.js";
 import { EQUIPS, HOME, allEx, equipOf, groupShown, liftOn, musclesOf, yogaOn } from "./exercises.js";
-import { emptyHTML, openPicker, refreshAll, renderSeg, segState, showTab, undoable } from "./ui.js";
+import { emptyHTML, openPicker, renderSeg, segState, showTab, undoable } from "./ui.js";
 import { matchExercise } from "../core/importer.ts";
 import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
@@ -87,10 +87,6 @@ const has = v => v != null && v !== "";
 export function renderBody(){
   if (!$("#bDate").value) $("#bDate").value = ymd(new Date());
   $("#flexFields").classList.toggle("hidden", !yogaOn());
-  // cinsiyet erkek/kadınsa vücut haritası ona göre; değilse çizim burada seçilir
-  const sx = state.profile.sex || "", given = sx === "m" || sx === "f";
-  $("#bSex").value = sx; $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
-  $("#bBodyWrap").classList.toggle("hidden", given);
   const cur = $("#bMetric").value;
   $("#bMetric").innerHTML = bodyKeys().map(([k,l,u]) => `<option value="${k}">${l} (${u})</option>`).join("");
   $("#bMetric").value = bodyKeys().some(([k]) => k === cur) ? cur : "weight";
@@ -133,8 +129,6 @@ $("#cAdd").onclick = () => {
   $("#cName").value = ""; toast("Eklendi", "check"); renderLib();
 };
 $("#bMetric").onchange = renderBody;
-$("#bSex").onchange = () => { state.profile.sex = $("#bSex").value; save(); refreshAll(); renderBody(); };
-$("#bBody").onchange = () => { state.prefs.body = $("#bBody").value; save(); refreshAll(); };
 $("#bSave").onclick = () => {
   const date = $("#bDate").value; if (!date) return toast("Tarih seç");
   const rec = { date }; let any = false;

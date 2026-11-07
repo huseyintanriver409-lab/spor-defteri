@@ -45,7 +45,7 @@ export function sessionTier(sets: number): SessionTier {
   if (!(sets > 0)) return "yok";
   return sets < 1 ? "dusuk" : sets < 2 ? "koruma" : sets < 3 ? "minimum" : sets < 6 ? "iyi" : sets <= SESSION_TOO_MUCH ? "maksimum" : "hasar";
 }
-// Hareketin kaslara payı (1 = ana hedef). w yoksa eski kural: ana kas 1, yardımcı ½.
+// Hareketin kaslara payı (1 = ana hedef). Pay araştırma verisinden (muscledata.ts WEIGHTS); w yoksa (yalnız kütüphane dışı/kullanıcı hareketi) yedek: ana 1, yardımcı 0,5.
 export type Muscles = { p: string[]; s: string[]; w?: Record<string, number> };
 type MusclesOf = (ex: string) => Muscles;
 export function weightsOf(m: Muscles): Record<string, number> {

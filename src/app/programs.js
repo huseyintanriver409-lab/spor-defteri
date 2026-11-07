@@ -1,6 +1,5 @@
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
-import { setsByMuscle } from "../core/musclemap.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
 import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, liftOn, setLabel, yogaOn } from "./exercises.js";
 import { buzz, closeSheet, openPicker, openSheet, sheetHead, undoable } from "./ui.js";
@@ -68,7 +67,7 @@ export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
 // Programın bir antrenmanda kaslara yükü: aynı kası çalıştıran hareketler üst üste binerse uyarır
 function openProgramMap(p){
   const html = sessionLoadHTML(p.items, { tap: true, small: false });
-  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">Bu antrenmanı bir kez yapınca her kasın aldığı uyarı (ana kas 1 set, yardımcı ½ set sayılır). Kasa dokun: hareketleri açılır.</p>
+  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">Kasa dokun: hareketler açılır.</p>
     ${html || `<p class="muted">Bu programdaki hareketler kas haritasına girmiyor (yoga, kardiyo ya da kendi hareketlerin).</p>`}`);
   bindBodyMap(body);
 }
@@ -83,12 +82,10 @@ export function renderProg(){
   // tek kiraz "Başla": bugün planlı program varsa o, yoksa listedeki ilk program
   primaryId = (plannedOn(state.plan, state.programs, ymd(new Date())) || state.programs[0] || {}).id ?? null;
   $("#pList").innerHTML = state.programs.length ? state.programs.map(p => {
-    const ms = setsByMuscle(p.items.filter(i => i.ex), musclesOf);
-    const top = Object.entries(ms).sort((a,b) => b[1]-a[1]).slice(0,4).map(([m]) => m).join(" · ");
     const L = ssLabels(p.items), total = p.items.reduce((a,i) => a + i.sets, 0);
     return `<div class="card progcard">
-      <div class="eyebrow">${p.items.length} hareket · ${total} set${top ? ` · <button class="linkbtn" data-pmap="${p.id}" title="Kas haritasında gör">${ic("activity")}${esc(top)}</button>` : ""}</div>
-      <h3>${esc(p.name)}</h3>
+      <div class="eyebrow">${p.items.length} hareket · ${total} set</div>
+      <div class="progtop"><h3>${esc(p.name)}</h3><button class="iconbtn" data-pmap="${p.id}" aria-label="Kas haritası" title="Kas haritası">${ic("body")}</button></div>
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " sn" : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn" data-start="${p.id}">${ic("play")}Başla</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="Google Takvim'e ekle">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="Düzenle">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="Bağlantıyla paylaş">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="Kopyala">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="Sil">${ic("trash-2")}</button></div>
