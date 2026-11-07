@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { syncOnce, toPayload, type RemoteStore } from "../src/core/sync.ts";
 import { DEFAULTS, mergeStates, type State } from "../src/core/schema.ts";
-import { driveStore, AuthError, FILE_NAME } from "../src/sync/drive.ts";
+import { driveStore, driveAccount, AuthError, FILE_NAME } from "../src/sync/drive.ts";
 
 const entry = (id: string, u = 1, w = 100) => ({ id, ex: "Back Squat", date: "2026-10-01", sets: [{ w, r: 5 }], u });
 const device = (id: string, over: Partial<State> = {}): State => ({ ...DEFAULTS(), deviceId: id, settingsU: 1, ...over });
@@ -159,5 +159,28 @@ describe("driveStore", () => {
     const e = await st(500).read().catch(x => x);
     expect(e).not.toBeInstanceOf(AuthError);
     expect(e.message).toContain("500");
+  });
+
+  it("403 kota/oran sınırı AuthError değil, geçici hata (izin 403 ve 401 yine AuthError)", async () => {
+    const err = (status: number, reason: string) => new Response(JSON.stringify({ error: { code: status, errors: [{ reason }], status: "PERMISSION_DENIED" } }), { status });
+    const st = (res: Response) => driveStore("T", (async () => res.clone()) as unknown as typeof fetch);
+    for (const reason of ["rateLimitExceeded", "userRateLimitExceeded", "quotaExceeded", "dailyLimitExceeded"]) {
+      const e = await st(err(403, reason)).read().catch(x => x);
+      expect(e).toBeInstanceOf(Error);
+      expect(e).not.toBeInstanceOf(AuthError);
+      expect(e.message).toContain("Drive meşgul");
+    }
+    const denied = await st(err(403, "insufficientPermissions")).read().catch(x => x);
+    expect(denied).toBeInstanceOf(AuthError);
+    const unauth = await st(err(401, "authError")).read().catch(x => x);
+    expect(unauth).toBeInstanceOf(AuthError);
+  });
+
+  it("driveAccount da aynı ayrımı yapar: kota 403 AuthError değil, izin 403 AuthError", async () => {
+    const acc = (res: Response) => driveAccount("T", (async () => res) as unknown as typeof fetch);
+    const quota = await acc(new Response(JSON.stringify({ error: { errors: [{ reason: "quotaExceeded" }] } }), { status: 403 })).catch(x => x);
+    expect(quota).not.toBeInstanceOf(AuthError);
+    const perm = await acc(new Response(JSON.stringify({ error: { errors: [{ reason: "insufficientPermissions" }] } }), { status: 403 })).catch(x => x);
+    expect(perm).toBeInstanceOf(AuthError);
   });
 });

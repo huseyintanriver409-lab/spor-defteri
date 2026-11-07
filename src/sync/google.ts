@@ -41,11 +41,32 @@ export function preload(): Promise<void> {
   });
 }
 
+// Pencere açılamadı ya da kapatıldı: gerçek bir hata değil, kullanıcı hareketi gerekiyor demek
+export class PopupError extends Error { type: string; constructor(msg: string, type: string) { super(msg); this.name = "PopupError"; this.type = type; } }
+
+// Saklı anahtarın taşıdığı kapsamlar (anahtar yoksa boş)
+export function tokenScopes(): string[] { const s = read(); return s ? scopesOf(s).filter(Boolean) : []; }
+export const TOKEN_TIMEOUT_MS = 120_000;
+
+// Anahtarın bitiş zamanı (ms); o kapsamı taşıyan anahtar yoksa 0
+export function tokenExpiry(scope = DRIVE_SCOPE): number { const s = read(); return s && scopesOf(s).includes(scope) ? s.exp : 0; }
+
+// GIS istek ayarları: ilk izinde onay ekranı; sonra e-posta varsa login_hint ile hesap seçimi atlanır
+// (alan adı: resmi GIS JS başvurusu, TokenClientConfig / OverridableTokenClientConfig.login_hint)
+export function tokenRequestOptions(firstTime: boolean, email?: string | null): { prompt: string; login_hint?: string } {
+  if (firstTime) return { prompt: "consent" };
+  return email ? { prompt: "", login_hint: email } : { prompt: "" };
+}
+
 // Kullanıcıdan izin ister (ilk seferde onay ekranı, sonra çoğunlukla tek dokunuş).
 // Daha önce verilmiş izinler de yeni anahtara eklenir (include_granted_scopes).
-export function requestToken(clientId: string, firstTime: boolean, scopes: string[] = [DRIVE_SCOPE]): Promise<string> {
-  return new Promise((res, rej) => {
-    if (!gisReady()) return rej(new Error("Google hazır değil, tekrar dene"));
+export function requestToken(clientId: string, firstTime: boolean, scopes: string[] = [DRIVE_SCOPE], email?: string | null): Promise<string> {
+  return new Promise((res, rej0) => {
+    if (!gisReady()) return rej0(new Error("Google hazır değil, tekrar dene"));
+    // GIS hiçbir geri çağrı vermezse söz asılı kalmasın
+    let settled = false;
+    const timer = setTimeout(() => { settled = true; rej0(new PopupError("Giriş penceresi açılamadı", "timeout")); }, TOKEN_TIMEOUT_MS);
+    const rej = (e: any) => { if (settled) return; settled = true; clearTimeout(timer); rej0(e); };
     const oauth = window.google.accounts.oauth2;
     const client = oauth.initTokenClient({
       client_id: clientId,
@@ -57,11 +78,12 @@ export function requestToken(clientId: string, firstTime: boolean, scopes: strin
         write({ t: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000, s: granted.join(" ") });
         const missing = scopes.filter(x => !granted.includes(x));
         if (missing.length) return rej(new Error(`${missing.map(x => NAMES[x] || x).join(" ve ")} izni verilmedi`));
-        res(r.access_token);
+        if (settled) return;  // zaman aşımından sonra gelen geçerli anahtar saklandı, söz zaten sonuçlandı
+        settled = true; clearTimeout(timer); res(r.access_token);
       },
-      error_callback: (e: any) => rej(new Error(e && e.type === "popup_closed" ? "Giriş penceresi kapatıldı" : "Giriş penceresi açılamadı")),
+      error_callback: (e: any) => rej(new PopupError(e && e.type === "popup_closed" ? "Giriş penceresi kapatıldı" : "Giriş penceresi açılamadı", String((e && e.type) || "unknown"))),
     });
-    client.requestAccessToken({ prompt: firstTime ? "consent" : "" });
+    client.requestAccessToken(tokenRequestOptions(firstTime, email));
   });
 }
 

@@ -1,5 +1,5 @@
 import { GOOGLE_CLIENT_ID } from "../config.ts";
-import { CAL_SCOPE, DRIVE_SCOPE, TASKS_SCOPE, cachedToken, dropScope, gisReady, preload as preloadGoogle, requestToken, revoke } from "../sync/google.ts";
+import { CAL_SCOPE, DRIVE_SCOPE, PopupError, TASKS_SCOPE, cachedToken, dropScope, gisReady, preload as preloadGoogle, requestToken, revoke, tokenExpiry, tokenScopes } from "../sync/google.ts";
 import { syncOnce } from "../core/sync.ts";
 import { AuthError, driveAccount, driveStore } from "../sync/drive.ts";
 import { mergeStates } from "../core/schema.ts";
@@ -29,18 +29,21 @@ export const enqueue = job => (cloudQueue = cloudQueue.then(job, job));
 
 // interactive: bir dokunuşla çağrıldı; giriş gerekiyorsa pencere açılabilir.
 // Giriş penceresi engellenmesin diye requestToken sıraya girmeden, ilk await'ten önce çağrılır.
-export function runSync(interactive){
+// extra: aynı pencerede istenecek ek kapsamlar (tek pencere, tek dokunuş)
+const hintEmail = () => (sync.account && sync.account.email) || null;
+export function runSync(interactive, extra = []){
   if (!sync.on || syncBusy || !syncCanRun()) return Promise.resolve();
   let token = cachedToken(DRIVE_SCOPE), tokenP = null;
-  if (!token) {
-    if (!interactive || !gisReady()) { syncNeedsAuth = true; renderSyncStatus(); return Promise.resolve(); }
-    tokenP = requestToken(GOOGLE_CLIENT_ID, false, [DRIVE_SCOPE]);
+  // oturum "doldu" işaretliyse (ön yenileme tutmadı) dokunuşta anahtar yenilenir
+  if (!token || (interactive && syncNeedsAuth && gisReady())) {
+    if (!interactive || !gisReady()) { syncNeedsAuth = true; renderSyncStatus(); armTap(); return Promise.resolve(); }
+    tokenP = requestToken(GOOGLE_CLIENT_ID, false, [DRIVE_SCOPE, ...extra], hintEmail());
   }
   syncBusy = true; syncErr = ""; renderSyncStatus();
   return enqueue(async () => {
     try {
       if (tokenP) token = await tokenP;
-      syncNeedsAuth = false;
+      syncNeedsAuth = false; tapBlocked = false; scheduleRefresh();
       stampChanges();
       const firstSync = !sync.last;
       const r = await syncOnce(state, driveStore(token), Date.now(), { firstSync });
@@ -63,7 +66,8 @@ export function runSync(interactive){
       }
       saveSync(); renderAccount();
     } catch(e){
-      if (e instanceof AuthError) { dropScope(DRIVE_SCOPE); syncNeedsAuth = true; }
+      if (e instanceof PopupError) { syncNeedsAuth = true; tapBlocked = true; disarmTap(); }  // sessiz: hata gösterilmez, izin düşürülmez
+      else if (e instanceof AuthError) { dropScope(DRIVE_SCOPE); syncNeedsAuth = true; }
       else syncErr = (e && e.message) || "Eşitlenemedi";
     } finally {
       syncBusy = false; renderSyncStatus(); renderBackupBanner();
@@ -75,10 +79,10 @@ export function runSync(interactive){
 export function connectDrive(){
   if (!syncCanRun()) return;
   if (!gisReady()) { preloadGoogle().then(() => toast("Google hazır, tekrar dene", "check"), e => toast(e.message)); return; }
-  const tokenP = requestToken(GOOGLE_CLIENT_ID, true, [DRIVE_SCOPE]);
+  const tokenP = requestToken(GOOGLE_CLIENT_ID, true, [DRIVE_SCOPE], hintEmail());
   syncBusy = true; syncErr = ""; renderSyncStatus();
   tokenP.then(() => { sync.on = true; saveSync(); syncBusy = false; return runSync(false); })
-    .catch(e => { syncBusy = false; syncErr = e.message; renderSyncStatus(); });
+    .catch(e => { syncBusy = false; syncErr = e instanceof PopupError ? "" : e.message; renderSyncStatus(); });
 }
 
 // Üst çubuktaki bulut simgesi: durum biçimle anlatılır (renk tek başına taşımaz)
@@ -180,7 +184,7 @@ export function runCal(interactive){
   let token = calToken(), tokenP = null;
   if (!token) {
     if (!interactive || !gisReady()) { renderCalStatus(); return Promise.resolve(); }
-    tokenP = requestToken(GOOGLE_CLIENT_ID, false, calScopes());
+    tokenP = requestToken(GOOGLE_CLIENT_ID, false, calScopes(), hintEmail());
   }
   calBusy = true; calErr = ""; renderCalStatus();
   return enqueue(async () => {
@@ -192,7 +196,8 @@ export function runCal(interactive){
       sync.calLast = Date.now(); saveSync();
       if (interactive) toast(r.written || r.planUpdated || r.ticked ? "Takvim güncel" : "Güncel", "calendar-days");
     } catch(e){
-      if (e instanceof AuthError) dropScope(/^Görev/.test(e.message) ? TASKS_SCOPE : CAL_SCOPE);
+      if (e instanceof PopupError) { tapBlocked = true; disarmTap(); /* sessiz */ }
+      else if (e instanceof AuthError) dropScope(/^Görev/.test(e.message) ? TASKS_SCOPE : CAL_SCOPE);
       else calErr = (e && e.message) || "Takvime yazılamadı";
     } finally {
       // yarıda kalsa da yazılanların işaretleri kaydedilir
@@ -222,7 +227,7 @@ export function toggleCal(key, value){
       preloadGoogle().then(() => toast("Google hazır, tekrar dene", "check"), e => toast(e.message));
       return;
     }
-    const tokenP = requestToken(GOOGLE_CLIENT_ID, false, calScopes());
+    const tokenP = requestToken(GOOGLE_CLIENT_ID, false, calScopes(), hintEmail());
     save(); calBusy = true; calErr = ""; renderCalStatus();
     tokenP.then(() => { calBusy = false; return runCal(false); })
       .catch(e => { calBusy = false; state.gcal[key] = prev; save(); calErr = e.message; renderCalStatus(); });
@@ -254,12 +259,62 @@ export function renderCalStatus(){
   $("#calOpen").classList.toggle("hidden", !g.id);
 }
 
+/* ---------- Sessiz oturum yenileme ve tek dokunuş ----------
+   Anahtar ~1 saat yaşar. Bitmesine ~5 dk kala görünürken bir kez sessizce yenilenmeye çalışılır (her anahtar için en çok 1 deneme).
+   Pencere engellenirse bulut simgesi "bekliyor" olur ve bir sonraki dokunuş (pencere açabilen tek yol) yeniler.
+   tapBlocked: kullanıcı pencereyi kapattıysa ya da engellendiyse, görünürlük değişene/yeni anahtar gelene dek dokunuşla yeniden açılmaz. */
+let refreshTimer = null, refreshTriedFor = 0, tapArmed = false, tapBlocked = false;
+const TAP_SKIP = "#syncBtn,#syncConnect,#syncNow,#shSyncNow,#shSyncConnect,#acctSync,#acctConnect,#calAuth";
+
+function scheduleRefresh(){
+  clearTimeout(refreshTimer);
+  if (!sync.on || !syncCanRun() || document.visibilityState !== "visible") return;
+  const exp = tokenExpiry(DRIVE_SCOPE);
+  if (!exp || exp <= Date.now() || refreshTriedFor === exp) return;
+  refreshTimer = setTimeout(() => preRefresh(exp), Math.max(0, exp - 5*60e3 - Date.now()));
+}
+function preRefresh(exp){
+  if (!sync.on || syncBusy || document.visibilityState !== "visible" || !gisReady() || tokenExpiry(DRIVE_SCOPE) !== exp) return;
+  refreshTriedFor = exp;
+  requestToken(GOOGLE_CLIENT_ID, false, [...new Set([...tokenScopes(), DRIVE_SCOPE])], hintEmail())
+    .then(() => { tapBlocked = false; scheduleRefresh(); })
+    .catch(() => { syncNeedsAuth = true; renderSyncStatus(); armTap(); });
+}
+
+function onTap(e){
+  if (tapBlocked) return;
+  if (state.live) return;  // süren antrenman varken (state.live) pencere açma; dinleyici kalır
+  const t = e.target;
+  if (t && t.closest && (t.closest(TAP_SKIP) || t.closest("input,textarea,select"))) return;
+  if (sync.on && syncNeedsAuth && !syncBusy && gisReady()) { disarmTap(); oneTap(); }
+}
+function disarmTap(){ tapArmed = false; document.removeEventListener("click", onTap, true); }
+function armTap(){
+  if (tapArmed || tapBlocked || !sync.on || !syncNeedsAuth || !syncCanRun() || document.visibilityState !== "visible") return;
+  tapArmed = true; document.addEventListener("click", onTap, true);
+}
+
+// Gerekirse Drive ve Takvim kapsamları tek pencerede istenir; eşzamanlı (dokunuş içinde) çağrılmalı
+function oneTap(){
+  const driveNeeds = !cachedToken(DRIVE_SCOPE) || syncNeedsAuth;
+  const calNeeds = calOn() && !calToken();
+  if (driveNeeds) { const p = runSync(true, calNeeds ? calScopes() : []); if (calNeeds) p.then(() => runCal(false)); }
+  else { runSync(true); if (calNeeds) runCal(true); }
+}
+// Bulut simgesi: bağlı ve oturum/eşitleme sorunluysa panel açmadan doğrudan yenile
+function syncTap(){
+  const bad = syncNeedsAuth || !cachedToken(DRIVE_SCOPE) || !!syncErr;
+  if (sync.on && syncCanRun() && !syncBusy && gisReady() && bad) { disarmTap(); oneTap(); }
+  else openSyncSheet();
+}
+
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
 try { sync = { ...sync, ...JSON.parse(localStorage.getItem(SYNC_KEY) || "{}") }; } catch(e){}
 $("#syncConnect").onclick = connectDrive;
 $("#syncNow").onclick = () => runSync(true);
-$("#syncBtn").onclick = openSyncSheet;
+$("#syncBtn").onclick = syncTap;
+scheduleRefresh();
 $("#syncOff").onclick = async () => {
   const ok = await choose("Bağlantı kesilsin mi?\n\nCihazdaki kayıtlar kalır.",
     [{ label: "Vazgeç", value: false }, { label: "Bağlantıyı kes", value: true, primary: true }]);
@@ -272,12 +327,18 @@ $("#syncOff").onclick = async () => {
 document.addEventListener("visibilitychange", () => {
   // geri dönünce (2 dk'dan uzun aradan sonra) güncelle; arka plana geçerken son değişiklikleri gönder
   if (document.visibilityState === "visible") {
+    tapBlocked = false; scheduleRefresh(); armTap();
     if (sync.on) { if (Date.now() - sync.last > 2*60e3) runSync(false); else renderSyncStatus(); }
     runCal(false);
   }
-  else if (sync.on) runSync(false);
+  else { clearTimeout(refreshTimer); disarmTap(); if (sync.on) runSync(false); }
 });
-setInterval(() => { if (sync.on && !syncBusy) renderSyncStatus(); }, 60e3);
+setInterval(() => {
+  if (!sync.on || syncBusy) return;
+  // anahtar süresi dolduysa simge "bekliyor" olur ve ilk dokunuş yeniler
+  if (sync.last && !syncNeedsAuth && document.visibilityState === "visible" && !cachedToken(DRIVE_SCOPE)) { syncNeedsAuth = true; armTap(); }
+  renderSyncStatus();
+}, 60e3);
 $("#calLog").onchange = e => toggleCal("log", e.target.checked);
 $("#calPlan").onchange = e => toggleCal("plan", e.target.checked);
 document.querySelectorAll('[name="calMode"]').forEach(r => r.onchange = () => {

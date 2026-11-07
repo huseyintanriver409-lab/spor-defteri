@@ -9,11 +9,22 @@ const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 // Erişim süresi dolmuş ya da izin geri alınmış: yeniden giriş gerekir
 export class AuthError extends Error {}
 
+// 403 kota/oran sınırı da olabilir; yalnız izin sorunu yeniden giriş ister (calendar.ts ile aynı ayrım)
+const QUOTA_REASON = /rateLimitExceeded|userRateLimitExceeded|quotaExceeded|dailyLimitExceeded|usageLimits|RESOURCE_EXHAUSTED/i;
+async function checkStatus(res: Response) {
+  if (res.status !== 401 && res.status !== 403) return;
+  if (res.status === 403) {
+    const text = await res.text().catch(() => "");
+    if (QUOTA_REASON.test(text)) throw new Error("Drive meşgul");
+  }
+  throw new AuthError(`Drive erişimi yok (${res.status})`);
+}
+
 export function driveStore(token: string, fetchFn: typeof fetch = fetch): RemoteStore {
   let fileId: string | null = null;
   const call = async (url: string, init: RequestInit = {}) => {
     const res = await fetchFn(url, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) } });
-    if (res.status === 401 || res.status === 403) throw new AuthError(`Drive erişimi yok (${res.status})`);
+    await checkStatus(res);
     if (!res.ok) throw new Error(`Drive hatası (${res.status})`);
     return res;
   };
@@ -47,7 +58,7 @@ export function driveStore(token: string, fetchFn: typeof fetch = fetch): Remote
 export interface Account { name: string; email: string; photo: string }
 export async function driveAccount(token: string, fetchFn: typeof fetch = fetch): Promise<Account> {
   const res = await fetchFn(`https://www.googleapis.com/drive/v3/about?fields=user(displayName,emailAddress,photoLink)`, { headers: { Authorization: `Bearer ${token}` } });
-  if (res.status === 401 || res.status === 403) throw new AuthError(`Drive erişimi yok (${res.status})`);
+  await checkStatus(res);
   if (!res.ok) throw new Error(`Drive hatası (${res.status})`);
   const u = ((await res.json()) as any).user || {};
   return { name: String(u.displayName || ""), email: String(u.emailAddress || ""), photo: String(u.photoLink || "") };
