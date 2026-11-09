@@ -15,7 +15,7 @@ export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omu
 export const MUSCLE_LABEL: Record<string, string> = {
   "Göğüs": "Pectoralis major", "Lat": "Latissimus dorsi", "Trapez": "Trapezius", "Bel": "Erector spinae", "Ön Omuz": "Deltoideus anterior", "Yan Omuz": "Deltoideus medius",
   "Arka Omuz": "Deltoideus posterior", "Biceps": "Biceps brachii", "Triceps": "Triceps brachii", "Önkol": "Musculi antebrachii", "Quadriceps": "Quadriceps femoris",
-  "Hamstring": "Ischiocrurales", "Kalça": "Gluteus maximus", "İç Bacak": "Adductores", "Baldır": "Triceps surae", "Karın": "Rectus abdominis", "Oblik": "Obliqui abdominis", "Rotator Manşet": "Rotator cuff",
+  "Hamstring": "Hamstrings", "Kalça": "Gluteus maximus", "İç Bacak": "Adductores", "Baldır": "Triceps surae", "Karın": "Rectus abdominis", "Oblik": "Obliqui abdominis", "Rotator Manşet": "Rotator cuff",
 };
 // sözlük anahtarı için kısa ascii ad
 const MUSCLE_KEY: Record<string, string> = {"Göğüs":"gogus","Lat":"lat","Trapez":"trapez","Bel":"bel","Ön Omuz":"on_omuz","Yan Omuz":"yan_omuz","Arka Omuz":"arka_omuz","Biceps":"biceps","Triceps":"triceps","Önkol":"onkol","Quadriceps":"quadriceps","Hamstring":"hamstring","Kalça":"kalca","İç Bacak":"ic_bacak","Baldır":"baldir","Karın":"karin","Oblik":"oblik","Rotator Manşet":"rotator"};
