@@ -91,7 +91,7 @@ $("#prefWake").onchange = () => { state.prefs.wake = $("#prefWake").checked; sav
 $("#prefHaptic").onchange = () => { state.prefs.haptics = $("#prefHaptic").checked; save(); buzz(30); };
 $("#prefFocus").onchange = () => { state.prefs.focus = $("#prefFocus").value; save(); refreshDatalist(); refreshAll(); renderSettings(); };
 for (const [id, key] of [["profileHeight", "height"], ["profileAge", "age"], ["profileWeight", "bw"]]) {
-  $(id).onchange = e => {
+  $(`#${id}`).onchange = e => {
     const input = e.currentTarget;
     if (input.readOnly || !input.reportValidity()) return;
     state.profile[key] = input.value;
