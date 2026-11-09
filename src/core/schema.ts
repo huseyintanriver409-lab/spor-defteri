@@ -30,7 +30,7 @@ export const DEFAULT_PLAN = () => ({ days: {}, dur: 60, remind: 30, until: "" })
 // Ayarlarla birlikte eşitlenir; böylece cihazlar aynı takvimi kullanır ve plan bir kez yazılır.
 export const DEFAULT_GCAL = () => ({ log: false, plan: false, id: "", planSig: "", dates: [] as string[], dated: 0, mode: "event", taskList: "", taskSig: "" });
 // profile.sex: "m" | "f" | "o" (diğer) | "" (belirtilmedi); prefs.body: cinsiyet m/f değilse vücut haritasında hangi çizim
-export const DEFAULTS = (): State => ({ v: SCHEMA, deviceId: "", entries: [], custom: [], programs: [], active: null, body: [], profile: { sex: "", bw: "" }, rest: 90, plan: DEFAULT_PLAN(),
+export const DEFAULTS = (): State => ({ v: SCHEMA, deviceId: "", entries: [], custom: [], programs: [], active: null, body: [], profile: { sex: "", bw: "", height: "", age: "" }, rest: 90, plan: DEFAULT_PLAN(),
   exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
   exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true, focus: "both", body: "m" }, favs: [], onboarded: false, gcal: DEFAULT_GCAL(),
   // başlangıç noktası: hareket → şu anki kilo/tekrar (core/baseline.ts)

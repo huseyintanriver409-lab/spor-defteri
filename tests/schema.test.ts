@@ -15,7 +15,7 @@ describe("withDefaults", () => {
   it("iç içe ayarları birleştirir, kullanıcının değerini korur", () => {
     const s = withDefaults({ v: 2, prefs: { haptics: false }, profile: { bw: "80" } });
     expect(s.prefs).toEqual({ wake: true, haptics: false, focus: "both", body: "m" });
-    expect(s.profile).toEqual({ sex: "", bw: "80" });
+    expect(s.profile).toEqual({ sex: "", bw: "80", height: "", age: "" });
   });
 
   it("v1 verisini v2'ye yükseltir: zamanı olmayan kayıtlar ts ya da 1 alır", () => {

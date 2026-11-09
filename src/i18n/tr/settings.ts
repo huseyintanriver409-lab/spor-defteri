@@ -1,4 +1,13 @@
 export default {
+  profile_weight_history: "Kilo, son vücut ölçümünden alınır. Diğer bilgiler otomatik kaydedilir.",
+  profile_autosave: "İsteğe bağlı. Değişiklikler otomatik kaydedilir.",
+  welcome_title: "Spor Defteri’ne hoş geldin",
+  welcome_intro: "Antrenmanını kaydet, haftanı planla ve zamanla nasıl ilerlediğini gör.",
+  welcome_log: "Set, tekrar, ağırlık ve süreyi kaydet.",
+  welcome_plan: "Hazır bir program seç veya kendi planını oluştur.",
+  welcome_progress: "Rekorlarını ve vücut ölçümlerini takip et.",
+  welcome_program: "Program seç",
+  welcome_skip: "Deftere geç",
   lang_label: "Dil",
   lang_system: "Sistem",
   lang_tr: "Türkçe",

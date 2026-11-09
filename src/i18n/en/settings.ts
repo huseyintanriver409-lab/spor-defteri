@@ -1,4 +1,13 @@
 export default {
+  profile_weight_history: "Weight comes from your latest body measurement. Other changes save automatically.",
+  profile_autosave: "Optional. Changes save automatically.",
+  welcome_title: "Welcome to Spor Defteri",
+  welcome_intro: "Log your workouts, plan your week, and see your progress over time.",
+  welcome_log: "Log sets, reps, weight, and duration.",
+  welcome_plan: "Choose a program or build your own plan.",
+  welcome_progress: "Track personal records and body measurements.",
+  welcome_program: "Choose a program",
+  welcome_skip: "Go to my log",
   lang_label: "Language",
   lang_system: "System",
   lang_tr: "Türkçe",

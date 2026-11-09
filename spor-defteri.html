@@ -333,6 +333,19 @@
     <div class="seg" data-seg="profile"><button data-v="settings" class="on" data-i18n="html.profile_settings">Ayarlar</button><button data-v="tools" data-i18n="html.profile_tools">Araçlar</button><button data-v="backup" data-i18n="html.profile_backup">Yedek</button></div>
 
     <div id="profile-settings">
+      <div class="card">
+        <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg></span><span data-i18n="html.profile_body_title">Vücut Bilgilerim</span></h2>
+        <div class="grid2">
+          <div><label for="profileHeight" data-i18n="html.profile_height">Boy (cm)</label><input id="profileHeight" type="number" inputmode="decimal" min="1" step="0.1"></div>
+          <div><label for="profileAge" data-i18n="html.profile_age">Yaş</label><input id="profileAge" type="number" inputmode="numeric" min="0" step="1"></div>
+          <div><label for="profileWeight" data-i18n="html.body_weight">Kilo (kg)</label><input id="profileWeight" type="number" inputmode="decimal" min="1" step="0.1"></div>
+          <div><label for="bSex" data-i18n="html.sex_label">Cinsiyet</label><select id="bSex"><option value="" data-i18n="html.sex_none">Belirtmek istemiyorum</option><option value="m" data-i18n="html.gender_male">Erkek</option><option value="f" data-i18n="html.gender_female">Kadın</option><option value="o" data-i18n="html.gender_other">Diğer</option></select></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <span class="grow muted small" id="profileBodyNote"></span>
+          <button class="btn quiet" id="profileMeasurements" data-i18n="html.profile_measurements">Ölçüm geçmişi</button>
+        </div>
+      </div>
       <details class="card fold" id="goalCard">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg></span><span data-i18n="html.goal_title">Hedef ve seri</span></h2><span class="muted small" id="goalSum"></span></summary>
         <div style="display:grid;gap:12px">
@@ -347,7 +360,6 @@
       <details class="card fold">
         <summary><h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg></span><span data-i18n="html.general_settings_title">Genel</span></h2></summary>
         <div style="margin-bottom:12px"><label for="setLang" data-i18n="settings.lang_label">Dil</label><select id="setLang"><option value="system" data-i18n="settings.lang_system">Sistem</option><option value="tr" data-i18n="settings.lang_tr">Türkçe</option><option value="en" data-i18n="settings.lang_en">English</option></select></div>
-        <div style="margin-bottom:12px"><label for="bSex" data-i18n="html.sex_label">Cinsiyet</label><select id="bSex"><option value="" data-i18n="html.sex_none">Belirtmek istemiyorum</option><option value="m" data-i18n="html.gender_male">Erkek</option><option value="f" data-i18n="html.gender_female">Kadın</option><option value="o" data-i18n="html.gender_other">Diğer</option></select></div>
         <div id="bBodyWrap" style="margin-bottom:12px"><label for="bBody" data-i18n="html.body_draw_label">Çizim</label><select id="bBody"><option value="m" data-i18n="html.gender_male">Erkek</option><option value="f" data-i18n="html.gender_female">Kadın</option></select></div>
       </details>
       <details class="card fold">

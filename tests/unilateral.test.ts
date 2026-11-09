@@ -57,11 +57,17 @@ describe("unilateral workout", () => {
     expect(volume([{ w: 30, r: 8 }])).toBe(240);
   });
 });
-it("personal controls belong to General, outside training settings", () => {
+it("body profile fields stay together outside training settings", () => {
   const html = readFileSync("spor-defteri.html", "utf8");
   const general = html.slice(html.indexOf('data-i18n="html.general_settings_title"')).split("</details>")[0];
   const training = html.slice(html.indexOf('data-i18n="html.train_settings_title"')).split("</details>")[0];
-  for (const id of ["setLang", "bSex", "bBody"]) {
+  const body = html.slice(html.indexOf('data-i18n="html.profile_body_title"')).split('<details')[0];
+  for (const id of ["profileHeight", "profileAge", "profileWeight", "bSex"]) {
+    expect(body).toContain('id="' + id + '"');
+    expect(training).not.toContain('id="' + id + '"');
+    expect(html.split('id="' + id + '"')).toHaveLength(2);
+  }
+  for (const id of ["setLang", "bBody"]) {
     expect(general).toContain('id="' + id + '"');
     expect(training).not.toContain('id="' + id + '"');
     expect(html.split('id="' + id + '"')).toHaveLength(2);

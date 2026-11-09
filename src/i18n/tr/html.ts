@@ -1,4 +1,8 @@
 export default {
+  profile_body_title: "Vücut Bilgilerim",
+  profile_height: "Boy (cm)",
+  profile_age: "Yaş",
+  profile_measurements: "Ölçüm geçmişi",
   general_settings_title: "Genel",
   backup_later: "Sonra",
   backup_now: "Yedek al",

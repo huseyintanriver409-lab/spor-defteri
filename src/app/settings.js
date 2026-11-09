@@ -1,8 +1,9 @@
-import { $, ic, save, state } from "./store.js";
-import { buzz, keepAwake, refreshAll } from "./ui.js";
+import { $, esc, ic, save, state } from "./store.js";
+import { buzz, closeSheet, keepAwake, openSheet, refreshAll, segState, sheetHead, showTab } from "./ui.js";
 import { openRecommender } from "./presets.js";
 import { focus } from "./exercises.js";
 import { refreshDatalist } from "./log.js";
+import { latestWeight } from "./stats.js";
 import { mmss, setTDur } from "./tools.js";
 import { getLangPref, setLangPref, t, locale } from "../core/i18n.ts";
 
@@ -11,6 +12,13 @@ export function renderSettings(){
   $("#setGoal").innerHTML = [1,2,3,4,5,6,7].map(v => `<option value="${v}"${v===state.goal?" selected":""}>${t("settings.goal_days", { n: v })}</option>`).join("");
   $("#setStreak").value = state.streakMode || "auto";
   $("#streakHelp").textContent = { auto: t("settings.streak_auto"), week: t("settings.streak_week"), off: t("settings.streak_off") }[$("#setStreak").value];
+  const weight = latestWeight();
+  $("#profileHeight").value = state.profile.height;
+  $("#profileAge").value = state.profile.age;
+  $("#profileWeight").value = weight || state.profile.bw || "";
+  $("#profileWeight").readOnly = !!weight;
+  $("#profileBodyNote").textContent = t(weight ? "settings.profile_weight_history" : "settings.profile_autosave");
+  $("#bSex").value = state.profile.sex || "";
   renderTrainPrefs();
   $("#goalSum").textContent = t("settings.goal_sum", { goal: state.goal, streak: $("#setStreak").selectedOptions[0].textContent.toLocaleLowerCase(locale()) });
 }
@@ -21,7 +29,7 @@ export function renderTrainPrefs(){
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
   // cinsiyet erkek/kadınsa vücut çizimi ona göre; değilse çizim burada seçilir
   const sx = state.profile.sex || "", given = sx === "m" || sx === "f";
-  $("#bSex").value = sx; $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
+  $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
   $("#bBodyWrap").classList.toggle("hidden", given);
   $("#prefFocus").value = focus();
   $("#focusHelp").textContent = { both: t("settings.focus_both"), lift: t("settings.focus_lift"), yoga: t("settings.focus_yoga") }[focus()];
@@ -45,11 +53,23 @@ export function setTheme(t){
 }
 
 /* ---------- First run ---------- */
-// Yeni kullanıcıya program önerisi ekranı açılır; bilen "Atla" ile geçer.
+// Tanıtımdan sonra kullanıcı program önerisini açabilir veya deftere geçebilir.
 export function maybeOnboard(){
   if (state.onboarded) return;
   if (state.entries.length || state.programs.length) { state.onboarded = true; save(); return; }
-  openRecommender({ onboarding: true });
+  openSheet(sheetHead(t("settings.welcome_title")), `
+    <p class="muted">${esc(t("settings.welcome_intro"))}</p>
+    <ul>
+      <li>${esc(t("settings.welcome_log"))}</li>
+      <li>${esc(t("settings.welcome_plan"))}</li>
+      <li>${esc(t("settings.welcome_progress"))}</li>
+    </ul>
+    <div class="row" style="margin-top:16px">
+      <button class="btn primary" id="welcomeProgram">${ic("play")}${esc(t("settings.welcome_program"))}</button>
+      <button class="btn quiet" id="welcomeSkip">${esc(t("settings.welcome_skip"))}</button>
+    </div>`, () => { state.onboarded = true; save(); });
+  $("#welcomeProgram").onclick = () => openRecommender({ onboarding: true });
+  $("#welcomeSkip").onclick = closeSheet;
 }
 
 /* ---------- Accessibility ----------
@@ -70,6 +90,18 @@ $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(
 $("#prefWake").onchange = () => { state.prefs.wake = $("#prefWake").checked; save(); if (!state.prefs.wake) keepAwake(false); };
 $("#prefHaptic").onchange = () => { state.prefs.haptics = $("#prefHaptic").checked; save(); buzz(30); };
 $("#prefFocus").onchange = () => { state.prefs.focus = $("#prefFocus").value; save(); refreshDatalist(); refreshAll(); renderSettings(); };
+for (const [id, key] of [["profileHeight", "height"], ["profileAge", "age"], ["profileWeight", "bw"]]) {
+  $(id).onchange = e => {
+    const input = e.currentTarget;
+    if (input.readOnly || !input.reportValidity()) return;
+    state.profile[key] = input.value;
+    save();
+  };
+}
+$("#profileMeasurements").onclick = () => {
+  segState.stats = "body";
+  showTab("progress");
+};
 $("#bSex").onchange = () => { state.profile.sex = $("#bSex").value; save(); refreshAll(); renderSettings(); };
 $("#bBody").onchange = () => { state.prefs.body = $("#bBody").value; save(); refreshAll(); };
 try { const t = localStorage.getItem(THEME_KEY); if (THEMES[t]) theme = t; } catch(e){}

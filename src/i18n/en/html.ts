@@ -1,4 +1,8 @@
 export default {
+  profile_body_title: "Body profile",
+  profile_height: "Height (cm)",
+  profile_age: "Age",
+  profile_measurements: "Measurement history",
   general_settings_title: "General",
   backup_later: "Later",
   backup_now: "Back up now",
