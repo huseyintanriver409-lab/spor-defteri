@@ -1,3 +1,4 @@
+import { programName } from "../core/programs.ts";
 // Bağlantıyla program ekleme ve paylaşma; "Yapay zekâ ile program yap". Biçim ve ayrıştırma core/importer.ts'te.
 import { LINK_KEY, parseProgram, buildLink, aiPrompt } from "../core/importer.ts";
 import { PLAN_DAYS } from "../core/programs.ts";
@@ -29,7 +30,7 @@ const untilLine = r => r.until ? ` · ${untilText(r.until)}` : "";
 function addImported(r, plan){
   const ids = r.days.map(d => {
     let name = r.days.length > 1 ? `${r.name} · ${d.name}` : r.name;
-    if (state.programs.some(p => p.name === name)) { let n = 2; while (state.programs.some(p => p.name === `${name} (${n})`)) n++; name = `${name} (${n})`; }
+    if (state.programs.some(p => programName(p) === name)) { let n = 2; while (state.programs.some(p => programName(p) === `${name} (${n})`)) n++; name = `${name} (${n})`; }
     for (const it of d.items) if (!allEx().some(e => e.name === it.ex)) state.custom.push({ name: it.ex, group: "Diğer" });
     const prog = { id: uid(), name, items: d.items.map(i => ({ ex: i.ex, sets: i.sets, reps: i.reps })) };
     state.programs.push(prog);
@@ -51,7 +52,7 @@ function openPlanPreview(r){
   const inPlan = [...new Set(Object.values(state.plan.days).map(d => d.prog))].filter(id => state.programs.some(p => p.id === id));
   const pool = inPlan.length ? inPlan : state.programs.map(p => p.id);
   const pick = r.plan.map(([code], i) => [code, (state.plan.days[code] && pool.includes(state.plan.days[code].prog)) ? state.plan.days[code].prog : pool[i % pool.length]]);
-  const opts = sel => state.programs.map(p => `<option value="${p.id}"${p.id === sel ? " selected" : ""}>${esc(p.name)}</option>`).join("");
+  const opts = sel => state.programs.map(p => `<option value="${p.id}"${p.id === sel ? " selected" : ""}>${esc(programName(p))}</option>`).join("");
   openSheet(sheetHead(t("importer.plan_title")),
     `<div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:2px 0 6px">${t("importer.week_days", { n: r.plan.length })}${esc(untilLine(r))}</div>
      ${pick.map(([code, prog]) => `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span style="flex:0 0 74px;font-weight:600" class="small">${dayName(code)}</span>
@@ -107,8 +108,8 @@ export function handleImportLink(){
 
 export async function shareProgram(p){
   if (!p) return;
-  const link = buildLink(base(), p.name, [{ name: "A", items: p.items }]);
-  try { if (navigator.share) { await navigator.share({ title: p.name, text: `${p.name} (Spor Defteri)`, url: link }); return; } } catch(e){ if (e && e.name === "AbortError") return; }
+  const link = buildLink(base(), programName(p), [{ name: "A", items: p.items }]);
+  try { if (navigator.share) { await navigator.share({ title: programName(p), text: `${programName(p)} (Spor Defteri)`, url: link }); return; } } catch(e){ if (e && e.name === "AbortError") return; }
   try { await navigator.clipboard.writeText(link); toast(t("importer.copied"), "copy"); }
   catch(e){ openSheet(sheetHead(t("importer.share_title")), `<p class="muted">${t("importer.copy_send")}</p><textarea readonly style="width:100%;min-height:120px">${esc(link)}</textarea>`); }
 }

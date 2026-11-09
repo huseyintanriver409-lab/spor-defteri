@@ -1,5 +1,5 @@
 // Hazır programlar ve "Bana program öner". İçerik ve öneri kuralları core/programs.ts'te.
-import { PROGRAMS, programById, recommend, weeklyPlan } from "../core/programs.ts";
+import { PROGRAMS, presetSessionName, presetSessionIndex, programById, recommend, weeklyPlan } from "../core/programs.ts";
 import { $, esc, ic, save, state, toast, uid } from "./store.js";
 import { buzz, closeSheet, helpTip, openSheet, sheetHead, refreshAll } from "./ui.js";
 import { renderProg, WEEKDAYS } from "./programs.js";
@@ -23,9 +23,10 @@ const rotates = (p, days) => p.sessions.length > 1 && !(p.rotation && p.rotation
 
 // Programın seanslarını kullanıcının programlarına ekler (aynısı varsa yeniden eklemez); istenirse haftalık plana yerleştirir.
 export function applyProgram(p, days, placeInPlan){
-  const ids = p.sessions.map(s => {
-    const name = p.sessions.length > 1 ? `${p.name} · ${s.name}` : p.name;
-    let prog = state.programs.find(x => x.lib === p.id && x.name === name);
+  p = programById(p.id);
+  const ids = p.sessions.map((s, index) => {
+    const name = presetSessionName(p, index);
+    let prog = state.programs.find(x => x.lib === p.id && presetSessionIndex(x) === index);
     if (!prog) {
       prog = { id: uid(), name, lib: p.id, items: s.items.map(([ex, sets, reps]) => ({ ex, sets, reps })) };
       state.programs.push(prog);

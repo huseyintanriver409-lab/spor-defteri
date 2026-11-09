@@ -1,3 +1,4 @@
+import { programName } from "../core/programs.ts";
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
 import { groupLabel } from "../core/library.ts";
@@ -69,7 +70,7 @@ export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
 // Programın bir antrenmanda kaslara yükü: aynı kası çalıştıran hareketler üst üste binerse uyarır
 function openProgramMap(p){
   const html = sessionLoadHTML(p.items, { tap: true, small: false });
-  const body = openSheet(sheetHead(p.name), `<p class="muted" style="margin:0">${t("programs.map_hint")}</p>
+  const body = openSheet(sheetHead(programName(p)), `<p class="muted" style="margin:0">${t("programs.map_hint")}</p>
     ${html || `<p class="muted">${t("programs.map_empty")}</p>`}`);
   bindBodyMap(body);
 }
@@ -87,7 +88,7 @@ export function renderProg(){
     const L = ssLabels(p.items), total = p.items.reduce((a,i) => a + i.sets, 0);
     return `<div class="card progcard">
       <div class="eyebrow">${t("programs.eyebrow", { n: p.items.length, sets: total })}</div>
-      <div class="progtop"><h3>${esc(p.name)}</h3><button class="iconbtn" data-pmap="${p.id}" aria-label="${t("programs.muscle_map")}" title="${t("programs.muscle_map")}">${ic("body")}</button></div>
+      <div class="progtop"><h3>${esc(programName(p))}</h3><button class="iconbtn" data-pmap="${p.id}" aria-label="${t("programs.muscle_map")}" title="${t("programs.muscle_map")}">${ic("body")}</button></div>
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " " + t("programs.sec") : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn" data-start="${p.id}">${ic("play")}${t("programs.start")}</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="${t("programs.cal_add")}">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="${t("programs.edit")}">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="${t("programs.share")}">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="${t("programs.copy")}">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="${t("programs.delete")}">${ic("trash-2")}</button></div>
@@ -101,26 +102,26 @@ export function renderProg(){
   $("#pList").querySelectorAll("[data-pcal]").forEach(b => b.onclick = () => openCalModal(find(b.dataset.pcal)));
   $("#pList").querySelectorAll("[data-pedit]").forEach(b => b.onclick = () => {
     const p = find(b.dataset.pedit); progEditId = p.id;
-    $("#pTitle").textContent = t("programs.edit_program"); $("#pName").value = p.name;
+    $("#pTitle").textContent = t("programs.edit_program"); $("#pName").value = programName(p);
     $("#pRows").innerHTML = ""; p.items.forEach(i => pRow(i)); showEditor(true);
     $("#pEditor").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   $("#pList").querySelectorAll("[data-pshare]").forEach(b => b.onclick = () => shareProgram(find(b.dataset.pshare)));
   $("#pList").querySelectorAll("[data-pcopy]").forEach(b => b.onclick = () => {
     const p = find(b.dataset.pcopy);
-    state.programs.push({ id: uid(), name: t("programs.copy_name", { name: p.name }), items: p.items.map(i => ({...i})) }); save(); renderProg(); toast(t("programs.copied"), "copy");
+    state.programs.push({ id: uid(), name: t("programs.copy_name", { name: programName(p) }), items: p.items.map(i => ({...i})) }); save(); renderProg(); toast(t("programs.copied"), "copy");
   });
   $("#pList").querySelectorAll("[data-pdel]").forEach(b => b.onclick = async () => {
     const target = state.programs.find(x => x.id===b.dataset.pdel); if (!target) return;
     const inPlan = Object.values(state.plan.days).some(d => d.prog === target.id) || (isRot(state.plan) && state.plan.rot.includes(target.id));
-    if (!(await ask(t("programs.del_confirm", { name: target.name }) + (inPlan ? "\n" + t("programs.del_plan_note") : "")))) return;
+    if (!(await ask(t("programs.del_confirm", { name: programName(target) }) + (inPlan ? "\n" + t("programs.del_plan_note") : "")))) return;
     const i = state.programs.findIndex(x => x.id===target.id), p = state.programs[i]; if (i < 0) return;
     const plan = JSON.parse(JSON.stringify(state.plan)), wasActive = state.active === p.id;
     state.programs.splice(i, 1);
     if (wasActive) state.active = null;
     dropProgram(state.plan, p.id, new Date());
     save(); renderProg(); buzz(15);
-    undoable(t("programs.deleted", { name: p.name }), () => { state.programs.splice(i, 0, p); state.plan = plan; if (wasActive) state.active = p.id; save(); renderProg(); });
+    undoable(t("programs.deleted", { name: programName(p) }), () => { state.programs.splice(i, 0, p); state.plan = plan; if (wasActive) state.active = p.id; save(); renderProg(); });
   });
   renderPlan();
 }
@@ -151,7 +152,7 @@ export function openCalModal(p){
   calProg = p;
   // planda bu program bir güne atanmışsa o günün tarih ve saatini öner
   const planned = plannedDates(state.plan, state.programs, new Date()).find(x => x.p.id === p.id);
-  $("#calName").textContent = p.name + " · " + t("programs.cal_moves", { n: p.items.length });
+  $("#calName").textContent = programName(p) + " · " + t("programs.cal_moves", { n: p.items.length });
   $("#calDate").value = planned ? planned.date : ymd(new Date());
   $("#calTime").value = planned ? planned.time : "19:00";
   $("#calModal").classList.remove("hidden");
@@ -180,14 +181,14 @@ export function describeSession(s){
   const list = (inSession.length ? inSession : day).sort((a,b) => a.ts-b.ts);
   const p = s.prog && state.programs.find(x => x.id === s.prog);
   const dt_ = dayText(list);
-  return { title: p ? t("programs.workout_title", { name: p.name }) : dt_.title, details: t("programs.session_dur", { dur: durText(s.end - s.start) }) + "\n\n" + dt_.details };
+  return { title: p ? t("programs.workout_title", { name: programName(p) }) : dt_.title, details: t("programs.session_dur", { dur: durText(s.end - s.start) }) + "\n\n" + dt_.details };
 }
 
 // "bitiş 6 Oca 2027"
 export const untilText = s => { const d = parse(s); return t("programs.until", { day: d.getDate(), month: MONTHS[d.getMonth()], year: d.getFullYear() }); };
 // kısa program adları: "Full Body · A", "Full Body · B" → "A", "B" (ortak ön ek atılır)
 function shortNames(ids){
-  const names = ids.map(id => (state.programs.find(p => p.id === id) || {}).name || "?");
+  const names = ids.map(id => (state.programs.find(p => p.id === id) ? programName(state.programs.find(p => p.id === id)) : "?"));
   const parts = names.map(n => n.split(" · "));
   return names.length > 1 && parts.every(x => x.length > 1 && x[0] === parts[0][0]) ? parts.map(x => x.slice(1).join(" · ")) : names;
 }
@@ -198,7 +199,7 @@ function rotPreview(P){
   const short = Object.fromEntries(P.rot.map((id, i) => [id, shortNames(P.rot)[i]]));
   const all = plannedDates({ ...P, until: ymd(end) }, state.programs, mon);
   const week = off => all.filter(x => (parse(x.date) - mon) / 864e5 >= off * 7 && (parse(x.date) - mon) / 864e5 < off * 7 + 7)
-    .map(x => `${WEEKDAYS.find(w => w[0] === x.code)[1]} <b>${esc(short[x.p.id] || x.p.name)}</b>`).join(" · ");
+    .map(x => `${WEEKDAYS.find(w => w[0] === x.code)[1]} <b>${esc(short[x.p.id] || programName(x.p))}</b>`).join(" · ");
   return `<div class="muted small" style="margin-top:10px;line-height:1.8">${t("programs.rot_preview_html", { this_week: week(0), next_week: week(1) })}</div>`;
 }
 export function renderPlan(){
@@ -206,7 +207,7 @@ export function renderPlan(){
   $("#planDur").value = P.dur; $("#planRemind").value = P.remind;
   $("#planUntil").value = P.until || ""; $("#planUntil").min = ymd(new Date());
   $("#planUntilClear").classList.toggle("hidden", !P.until);
-  const opts = (sel, empty) => (empty ? `<option value="">${empty}</option>` : "") + state.programs.map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(p.name)}</option>`).join("");
+  const opts = (sel, empty) => (empty ? `<option value="">${empty}</option>` : "") + state.programs.map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(programName(p))}</option>`).join("");
   const time = (code, on) => `<input type="time" data-pt="${code}" value="${(P.days[code] && P.days[code].time) || "19:00"}" style="flex:0 0 96px"${on ? "" : ` class="hidden"`}>`;
   const mode = `<div class="fchips" id="planMode" style="margin-bottom:6px"><button class="fchip${rot ? "" : " on"}" data-mode="fixed">${t("programs.mode_fixed")}</button><button class="fchip${rot ? " on" : ""}" data-mode="rot">${t("programs.mode_rot")}</button></div>
     <p class="muted small help" style="margin:0 0 4px">${rot ? t("programs.help_rot") : t("programs.help_fixed")}</p>`;
@@ -288,7 +289,7 @@ $("#pSave").onclick = () => {
   if (!name) return toast(t("programs.name_req"));
   if (!items.length) return toast(t("programs.ex_req"));
   items.forEach(i => { if (!allEx().some(e => e.name===i.ex)) state.custom.push({name:i.ex, group:"Diğer"}); });
-  if (progEditId) Object.assign(state.programs.find(p => p.id===progEditId), {name, items});
+  if (progEditId) { const p = state.programs.find(p => p.id===progEditId); Object.assign(p, {name, items, customName: !!p.customName || name !== programName(p)}); }
   else state.programs.push({ id: uid(), name, items });
   save(); refreshDatalist(); resetProgEditor(); renderProg(); toast(t("programs.saved"), "check");
 };
@@ -297,7 +298,7 @@ $("#calModal").onclick = e => { if (e.target.id === "calModal") $("#calModal").c
 $("#calGo").onclick = () => {
   if (!$("#calDate").value) return toast(t("programs.date_req"));
   const s = at($("#calDate").value, $("#calTime").value), e = new Date(s.getTime() + (state.plan.dur||60)*60000);
-  gcal(t("programs.workout_title", { name: calProg.name }), progDetails(calProg), dt(s) + "/" + dt(e));
+  gcal(t("programs.workout_title", { name: programName(calProg) }), progDetails(calProg), dt(s) + "/" + dt(e));
   $("#calModal").classList.add("hidden");
 };
 $("#dayCal").onclick = () => calDay($("#logDate").value);
@@ -313,16 +314,16 @@ $("#planIcs").onclick = () => {
   // sırayla planda her tarihin programı farklı: tekrarlayan etkinlik yerine tarih tarih etkinlik
   if (isRot(P)) plannedDates(P, state.programs, now).forEach(x => {
     const s = at(x.date, x.time), e = new Date(s.getTime() + P.dur*60000); n++;
-    L.push("BEGIN:VEVENT", `UID:sd-${x.date}@spor-defteri`, `DTSTAMP:${stamp}`, `DTSTART:${dt(s)}`, `DTEND:${dt(e)}`, `SUMMARY:${icsText(t("programs.workout_title", { name: x.p.name }))}`, `DESCRIPTION:${icsText(progDetails(x.p))}`);
-    if (P.remind > 0) L.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsText(t("programs.ics_alarm", { name: x.p.name }))}`,`TRIGGER:-PT${P.remind}M`,"END:VALARM");
+    L.push("BEGIN:VEVENT", `UID:sd-${x.date}@spor-defteri`, `DTSTAMP:${stamp}`, `DTSTART:${dt(s)}`, `DTEND:${dt(e)}`, `SUMMARY:${icsText(t("programs.workout_title", { name: programName(x.p) }))}`, `DESCRIPTION:${icsText(progDetails(x.p))}`);
+    if (P.remind > 0) L.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsText(t("programs.ics_alarm", { name: programName(x.p) }))}`,`TRIGGER:-PT${P.remind}M`,"END:VALARM");
     L.push("END:VEVENT");
   });
   else WEEKDAYS.forEach(([code,, js]) => {
     const d = P.days[code], p = d && state.programs.find(x => x.id===d.prog); if (!p) return;
     const s = at(ymd(nextDateFor(js)), d.time), e = new Date(s.getTime() + P.dur*60000); n++;
     L.push("BEGIN:VEVENT", `UID:sd-${code}-${p.id}@spor-defteri`, `DTSTAMP:${stamp}`, `DTSTART:${dt(s)}`, `DTEND:${dt(e)}`,
-      `RRULE:FREQ=WEEKLY;BYDAY=${code}` + (P.until ? `;UNTIL=${P.until.replace(/-/g,"")}T235959` : ""), `SUMMARY:${icsText(t("programs.workout_title", { name: p.name }))}`, `DESCRIPTION:${icsText(progDetails(p))}`);
-    if (P.remind > 0) L.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsText(t("programs.ics_alarm", { name: p.name }))}`,`TRIGGER:-PT${P.remind}M`,"END:VALARM");
+      `RRULE:FREQ=WEEKLY;BYDAY=${code}` + (P.until ? `;UNTIL=${P.until.replace(/-/g,"")}T235959` : ""), `SUMMARY:${icsText(t("programs.workout_title", { name: programName(p) }))}`, `DESCRIPTION:${icsText(progDetails(p))}`);
+    if (P.remind > 0) L.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsText(t("programs.ics_alarm", { name: programName(p) }))}`,`TRIGGER:-PT${P.remind}M`,"END:VALARM");
     L.push("END:VEVENT");
   });
   if (!n) return toast(t("programs.days_req"));

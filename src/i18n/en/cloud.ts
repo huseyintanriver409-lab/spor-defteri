@@ -1,4 +1,5 @@
 export default {
+ "free_workout": "free workout",
   ago_now: "just now",
   ago_min: "{n} min ago",
   ago_hour: "{n} h ago",

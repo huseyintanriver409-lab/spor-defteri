@@ -16,7 +16,8 @@
    görevler okunup tarihlerine göre eşlenir (iki cihaz aynı anda yazsa da fazlası silinir). Son BACKFILL_DAYS
    içinde antrenman yapılmış (oturumu ya da kaydı olan) ama görevi olmayan günler tamamlanmış görev olarak eklenir. */
 import { pad, parse, ymd } from "./dates.ts";
-import { t } from "./i18n.ts";
+import { programName } from "./programs.ts";
+import { t, lang } from "./i18n.ts";
 import { isRot, progIdOn, type Plan } from "./plan.ts";
 export type { Plan };
 
@@ -69,18 +70,18 @@ export const planEventId = (dayCode: string) => eventId("sdplan", dayCode);
 // Yerel saatle "YYYY-MM-DDTHH:MM:00" (tekrarlayan etkinlikler saat dilimiyle birlikte bunu ister)
 export const localDateTime = (d: Date) => `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 
-export interface Program { id: string; name: string; items: { ex: string; sets: number; reps?: string }[] }
+export interface Program { id: string; name: string; lib?: string; customName?: boolean; items: { ex: string; sets: number; reps?: string }[] }
 
 // Takvimdeki planın neye göre yazıldığı. Bugünün tarihini içermez: aynı plan her gün yeniden yazılmaz.
 // Önek, imzanın tarihli plana ait olduğunu gösterir; eski sürüm (tekrarlayan etkinlik) "[" ile başlayan imza yazar.
 export const SIG_PREFIX = "d1:";
 export function planSignature(plan: Plan, programs: Program[]): string {
-  return SIG_PREFIX + JSON.stringify([plan.dur, plan.remind, plan.until || "", WEEKDAYS.map(([code]) => {
+  return SIG_PREFIX + JSON.stringify([lang(), plan.dur, plan.remind, plan.until || "", WEEKDAYS.map(([code]) => {
     const d = plan.days[code], p = d && programs.find(x => x.id === d.prog);
-    return p ? [code, d!.time || "19:00", p.name, p.items] : [code];
+    return p ? [code, d!.time || "19:00", programName(p), p.items] : [code];
   }),
   // sırayla planda tarihlerin programı sıraya ve başlangıcına bağlı (sabit planın imzası eskisiyle aynı kalır)
-  ...(isRot(plan) ? [["rot", plan.anchor || "", plan.shift || 0, plan.rot!.map(id => { const p = programs.find(x => x.id === id); return p ? [p.name, p.items] : id; })]] : [])]);
+  ...(isRot(plan) ? [["rot", plan.anchor || "", plan.shift || 0, plan.rot!.map(id => { const p = programs.find(x => x.id === id); return p ? [programName(p), p.items] : id; })]] : [])]);
 }
 
 export interface PlannedDay { date: string; code: string; time: string; p: Program }
@@ -104,7 +105,7 @@ export function plannedEvent(x: PlannedDay, plan: Plan, opts: { timeZone: string
   const start = parse(x.date); start.setHours(h, m, 0, 0);
   const end = new Date(start.getTime() + (plan.dur || 60) * 60000);
   return {
-    summary: "Antrenman: " + x.p.name,
+    summary: t("programs.workout_title", { name: programName(x.p) }),
     description: opts.describe(x.p),
     start: { dateTime: localDateTime(start), timeZone: opts.timeZone },
     end: { dateTime: localDateTime(end), timeZone: opts.timeZone },
@@ -202,6 +203,7 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
       if (!keep.has(d)) await withCal(cal => client.deleteEvent(cal, dayEventId(d)));
       g.dates = g.dates.filter(x => x !== d);
     }
+    g.dates = []; // Rewrite remaining planned events when labels or language change.
     g.planSig = target; out.planUpdated = true;
   }
   let n = 0;
@@ -221,7 +223,8 @@ export const eventPlan = (g: CalendarState["gcal"]) => g.plan && g.mode !== "tas
 export const currentSig = (g: CalendarState["gcal"]) => taskPlan(g) ? g.taskSig || "" : g.planSig;
 
 export const TASK_LIST = "Spor Defteri";
-const TASK_PREFIX = "Antrenman: ";
+const taskTitle = (name: string) => t("programs.workout_title", { name });
+const isWorkoutTask = (title: string) => ["Antrenman: ", "Workout: "].some(prefix => title.startsWith(prefix));
 const dueOf = (date: string) => `${date}T00:00:00.000Z`;
 
 // Görev modu: plandaki tarihler görev olur, antrenmanı yapılan günün görevi tiklenir; plandan çıkan
@@ -241,7 +244,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   }
   const done = new Set([...state.sessions.filter(s => s.end).map(s => s.date), ...(state.entries || []).filter(e => e.sets?.length).map(e => e.date)]);
   const byDate = new Map<string, Task>();
-  for (const t of list.filter(t => t.due && String(t.title || "").startsWith(TASK_PREFIX))) {
+  for (const t of list.filter(t => t.due && isWorkoutTask(String(t.title || "")))) {
     const d = t.due!.slice(0, 10), other = byDate.get(d);
     // iki cihaz aynı tarihe görev açtıysa biri kalır (tamamlanmış olan tercih edilir)
     if (other) {
@@ -254,7 +257,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   // planlı olmayan ya da plan kurulmadan önce yapılmış antrenmanlar: tamamlanmış görev olarak eklenir
   if (want.length) for (const d of [...done].filter(d => d >= since && d <= today && !byDate.has(d)).sort()) {
     const ses = state.sessions.find(s => s.date === d && s.prog), p = (ses && state.programs.find(x => x.id === ses.prog)) || plannedOn(state.plan, state.programs, d);
-    await tc.insertTask(g.taskList, { title: TASK_PREFIX + (p ? p.name : "serbest"), notes: p ? h.describeProgram(p) : "", due: dueOf(d), status: "completed" });
+    await tc.insertTask(g.taskList, { title: taskTitle(p ? programName(p) : t("cloud.free_workout")), notes: p ? h.describeProgram(p) : "", due: dueOf(d), status: "completed" });
     byDate.set(d, { id: "", status: "completed" }); out.ticked++;
   }
   const wantBy = new Map(want.map(x => [x.date, x]));
@@ -263,7 +266,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   }
   let n = 0;
   for (const x of want) {
-    const t = byDate.get(x.date), body = { title: TASK_PREFIX + x.p.name, notes: h.describeProgram(x.p) };
+    const t = byDate.get(x.date), body = { title: taskTitle(programName(x.p)), notes: h.describeProgram(x.p) };
     if (t && (t.status === "completed" || (t.title === body.title && (t.notes || "") === body.notes))) continue;
     if (n++ >= MAX_PLAN_PER_RUN) break;
     if (t) await tc.patchTask(g.taskList, t.id, body);

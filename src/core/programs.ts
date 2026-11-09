@@ -7,6 +7,8 @@
      artı 150 dk orta ya da 75 dk yoğun kardiyo.
    Tarayıcıya bağlı değildir; testleri tests/programs.test.ts içinde. */
 
+import trPrograms from "../i18n/tr/core_programs.ts";
+import enPrograms from "../i18n/en/core_programs.ts";
 import { t, lang } from "./i18n.ts";
 
 export type Level = "yeni" | "orta" | "ileri";
@@ -35,6 +37,9 @@ export interface ProgramDef {
   source: string;
 }
 
+function buildPrograms(language: "tr" | "en"): ProgramDef[] {
+const dict: Record<string, string> = language === "tr" ? trPrograms : enPrograms;
+const t = (key: string) => dict[key.slice(14)];
 const COMMON_TIPS = [
   t("core_programs.tips_common_1"),
   t("core_programs.tips_common_2"),
@@ -53,7 +58,7 @@ const YOGA_TIPS = [
 ];
 const YOGA_SOURCE = t("core_programs.yoga_source");
 
-export const PROGRAMS: ProgramDef[] = [
+return [
   {
     id: "baslangic-tam",
     name: t("core_programs.baslangic_tam_name"),
@@ -273,6 +278,30 @@ export const PROGRAMS: ProgramDef[] = [
   },
 ];
 
+}
+const catalogs = { tr: buildPrograms("tr"), en: buildPrograms("en") };
+// Read the current language on access rather than capturing it at module import.
+export const PROGRAMS: ProgramDef[] = new Proxy([] as ProgramDef[], {
+  get: (_target, key) => Reflect.get(catalogs[lang()], key),
+  has: (_target, key) => key in catalogs[lang()],
+});
+export const presetSessionName = (p: ProgramDef, index: number): string =>
+  p.sessions.length > 1 ? p.name + " · " + p.sessions[index].name : p.name;
+export interface NamedProgram { name: string; lib?: string; customName?: boolean }
+// Recognize exact legacy defaults in both languages without changing stored data.
+export function presetSessionIndex(p: NamedProgram): number | undefined {
+  if (!p.lib || p.customName) return undefined;
+  for (const language of ["tr", "en"] as const) {
+    const def = catalogs[language].find(x => x.id === p.lib);
+    const index = def?.sessions.findIndex((_, i) => presetSessionName(def, i) === p.name);
+    if (index !== undefined && index >= 0) return index;
+  }
+  return undefined;
+}
+export function programName(p: NamedProgram): string {
+  const index = presetSessionIndex(p), def = programById(p.lib || "");
+  return def && index !== undefined ? presetSessionName(def, index) : p.name;
+}
 export const programById = (id: string) => PROGRAMS.find(p => p.id === id);
 
 // Haftanın hangi günleri (WEEKDAYS kodları) — gün sayısına göre, araya dinlenme koyarak

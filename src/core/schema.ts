@@ -15,6 +15,8 @@ export interface Stamped { u?: number; ts?: number; [k: string]: any }
 export interface Tombstone { c: string; k: string; at: number }
 export type State = {
   v: number; deviceId: string; deleted: Tombstone[]; settingsU: number;
+  // Program records may carry lib (preset id) and customName (explicit user rename).
+  // Names remain persisted verbatim; programName resolves built-in defaults for display.
   entries: Stamped[]; programs: Stamped[]; sessions: Stamped[]; body: Stamped[]; custom: Stamped[];
   [k: string]: any;
 };

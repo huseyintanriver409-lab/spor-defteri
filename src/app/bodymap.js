@@ -1,3 +1,4 @@
+import { programName } from "../core/programs.ts";
 // Vücut haritası: önden ve arkadan kaslar; renk kademesi core/musclemap.ts'ten. Kasa dokununca o kasın hareketleri açılır.
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { fmtNum, locale, t } from "../core/i18n.ts";
@@ -227,7 +228,7 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
        <span class="chip"><i class="bm-dot" data-t="${ft}"></i>${r ? `${LABEL[ft]} · ${ago}` : t("bodymap.not_trained")}</span></div>
      ${ft === "yorgun" || ft === "asiri" ? `<div class="hint">${ic("battery-low")} ${t("bodymap.not_recovered", { n: Math.max(1, Math.ceil((r.need - r.hrs) / 24)) })}</div>` : ""}`) +
     (progs.length ? `<div class="pk-head" style="margin-top:4px">${t("bodymap.in_programs")}</div>
-     ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(p.name)}</div><div class="ms muted small">${t("bodymap.sets_this_muscle", { n: fmt(sets) })}</div></div>
+     ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(programName(p))}</div><div class="ms muted small">${t("bodymap.sets_this_muscle", { n: fmt(sets) })}</div></div>
        ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}${t("bodymap.start")}</button>`}</div>`).join("")}
      <div class="pk-head">${t("bodymap.moves")}</div>` : "") +
     `${summaryHTML(m, "small")}${evidenceHelp}
@@ -277,7 +278,7 @@ export function openMuscleReel(m, alts = [m]){
         ${i === 0 && list.length > 1 ? `<div class="reel-hint">${ic("chevron-down")}${t("bodymap.scroll")}</div>` : ""}
       </div></section>`; }).join("")
     + (progs.length ? `<section class="reel-card reel-progs"><h3 class="reel-name">${t("bodymap.in_programs")}</h3>
-      ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(p.name)}</div><div class="ms muted small">${t("bodymap.sets_this_muscle", { n: fmt(sets) })}</div></div>
+      ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(programName(p))}</div><div class="ms muted small">${t("bodymap.sets_this_muscle", { n: fmt(sets) })}</div></div>
         ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}${t("bodymap.start")}</button>`}</div>`).join("")}</section>` : "");
   let el = $("#reel");
   if (!el) { document.body.insertAdjacentHTML("beforeend", `<div class="reel hidden" id="reel" role="dialog" aria-modal="true"></div>`); el = $("#reel"); }

@@ -1,3 +1,4 @@
+import { programName } from "../core/programs.ts";
 import { mondayOf, niceDate, pad, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
 import { plannedOn } from "../core/calendar.ts";
@@ -32,7 +33,7 @@ export function renderHistory(){
     if (i % 7 === 0 && i >= 28 && d.getMonth() !== m) break;
     const k = ymd(d), v = load[k] || 0, lv = !v ? 0 : v < 10 ? 1 : v < 20 ? 2 : v < 30 ? 3 : 4;
     const pl = plannedFor(k);
-    html += `<button class="${d.getMonth() !== m ? "out " : ""}${v ? `has l${lv} ` : ""}${pl ? "plan " : ""}${k === today ? "today " : ""}${k === selDay ? "sel" : ""}" style="${v ? `--lv:${lv}` : ""}" data-d="${k}" aria-label="${niceDate(k)}${v ? `, ${t("history.sets_count", { n: v })}` : ""}${pl ? t("history.aria_planned", { name: esc(pl.name) }) : ""}" aria-pressed="${k === selDay}">${d.getDate()}</button>`;
+    html += `<button class="${d.getMonth() !== m ? "out " : ""}${v ? `has l${lv} ` : ""}${pl ? "plan " : ""}${k === today ? "today " : ""}${k === selDay ? "sel" : ""}" style="${v ? `--lv:${lv}` : ""}" data-d="${k}" aria-label="${niceDate(k)}${v ? `, ${t("history.sets_count", { n: v })}` : ""}${pl ? t("history.aria_planned", { name: esc(programName(pl)) }) : ""}" aria-pressed="${k === selDay}">${d.getDate()}</button>`;
   }
   $("#calGrid").innerHTML = html;
   $("#calGrid").querySelectorAll("[data-d]").forEach(b => b.onclick = () => { selDay = b.dataset.d; renderHistory(); });
@@ -42,7 +43,7 @@ export function renderHistory(){
   $("#hdSess").innerHTML = ss.length ? `<span role="img" aria-label="${t("history.duration")}">${ic("timer")}</span> ${durText(ss.reduce((a, s) => a + s.end - s.start, 0))}` : "";
   const pl = !list.length && plannedFor(selDay);
   $("#hdList").innerHTML = list.length ? list.map(e => entryHTML(e, true)).join("")
-    : pl ? `<div class="planday"><div class="eyebrow">${t("history.planned_workout")}</div><b>${esc(pl.name)}</b>
+    : pl ? `<div class="planday"><div class="eyebrow">${t("history.planned_workout")}</div><b>${esc(programName(pl))}</b>
         <div class="muted small">${pl.items.map(i => `${esc(i.ex)} ${i.sets}×${esc(i.reps || "")}`.trim()).join(" · ")}</div>
         ${selDay === today && !state.live ? `<button class="btn primary" id="hdStart" style="margin-top:12px">${ic("play")}${t("history.start")}</button>` : ""}</div>`
     : selDay > today ? `<div class="empty">${ic("calendar-days")}<button class="btn sm" id="hdEmptyPlan">${t("history.make_plan")}</button></div>`

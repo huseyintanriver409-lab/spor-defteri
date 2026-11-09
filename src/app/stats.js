@@ -1,3 +1,4 @@
+import { programName } from "../core/programs.ts";
 import { locale, t } from "../core/i18n.ts";
 import { MONTHS, mondayOf, niceDate, parse, shortDate, ymd } from "../core/dates.ts";
 import { e1rm, liftScore, volume, work } from "../core/training.ts";
@@ -210,7 +211,7 @@ export function renderRecovery(){
   const score = p => { const ms = [...new Set(p.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a,m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };
   const ranked = state.programs.map(p => ({ p, s: score(p) })).filter(x => x.s > 0).sort((a,b) => b.s - a.s);
   let html = "";
-  if (ranked.length) html += `<div class="hint good">${ic("lightbulb")} ${t("stats.suggest_html", { name: esc(ranked[0].p.name), p: Math.round(ranked[0].s*100) })}</div>`;
+  if (ranked.length) html += `<div class="hint good">${ic("lightbulb")} ${t("stats.suggest_html", { name: esc(programName(ranked[0].p)), p: Math.round(ranked[0].s*100) })}</div>`;
   $("#restSuggest").innerHTML = html + `<div style="height:8px"></div>`;
 }
 

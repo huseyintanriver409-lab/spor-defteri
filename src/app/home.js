@@ -1,3 +1,4 @@
+import { programName } from "../core/programs.ts";
 import { DAYS, MONTHS_LONG, mondayOf, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, esc, ic, state } from "./store.js";
@@ -49,17 +50,17 @@ export function renderHome(){
     main = `<div class="card"><div class="bignum" id="homeLiveT">${elapsedText()}</div>
       <p class="muted" style="margin:6px 0 16px">${t("home.set_count", { n })}</p><div class="home-start"><button class="btn primary xl" id="homeResume">${ic("play")}${t("home.resume")}</button></div></div>`;
   } else if (p) {
-    title = trainedToday ? t("home.trained_today") : p.name;
+    title = trainedToday ? t("home.trained_today") : programName(p);
     const totalSets = p.items.reduce((a, i) => a + (+i.sets || 0), 0);
     if (!trainedToday) sub = t("home.plan_summary", { n: p.items.length, s: totalSets, m: planMinutes(totalSets) });
-    main = `<div class="card">${trainedToday ? `<h2>${esc(p.name)}</h2>` : ""}
+    main = `<div class="card">${trainedToday ? `<h2>${esc(programName(p))}</h2>` : ""}
       <div class="today-list">${p.items.slice(0, 4).map(i => `<div>${esc(i.ex)}</div>`).join("")}${p.items.length > 4 ? `<div class="muted">+${p.items.length - 4}</div>` : ""}</div>
       <div class="home-start"><button class="btn primary xl" data-start="${p.id}">${trainedToday ? t("home.restart") : t("home.start")}</button></div></div>`;
   } else if (best) {
     // planlı gün değil: kasları en hazır program önerilir
     title = trainedToday ? t("home.trained_today") : t("home.free_day");
     main = `<div class="card">
-      <div style="font-size:24px;font-weight:800;letter-spacing:-.02em">${esc(best.x.name)}</div>
+      <div style="font-size:24px;font-weight:800;letter-spacing:-.02em">${esc(programName(best.x))}</div>
       <p class="muted" style="margin:4px 0 16px">${t("home.best_summary", { n: best.x.items.length, p: Math.round(best.s * 100) })}</p>
       <div class="home-start"><button class="btn primary xl" data-start="${best.x.id}">${t("home.start")}</button></div></div>`;
   } else {
@@ -98,7 +99,7 @@ export function renderHome(){
       ${ic("chevron-right")}</div>
     ${bodyMap(fatigueTiers(R), { small: true })}
     ${tired.length ? `<div class="hint">${ic("battery-low")} <span>${rest}</span></div>` : `<div class="hint good">${ic("battery-full")} ${rest}</div>`}</div>
-    ${activeRest ? `<button class="btn sm" id="homeYoga" style="margin-top:10px"${yogaProg ? ` title="${esc(yogaProg.name)}"` : ""}>${ic("leaf")}${t("home.light_stretch")}</button>` : ""}` : "";
+    ${activeRest ? `<button class="btn sm" id="homeYoga" style="margin-top:10px"${yogaProg ? ` title="${esc(programName(yogaProg))}"` : ""}>${ic("leaf")}${t("home.light_stretch")}</button>` : ""}` : "";
   bindBodyMap($("#homeRecovery"), ms => openRecoveryAnalysis(ms[0]));
   if ($("#recCard")) {
     $("#recCard").onclick = () => openRecoveryAnalysis();

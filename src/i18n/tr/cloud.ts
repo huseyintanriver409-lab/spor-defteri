@@ -1,4 +1,5 @@
 export default {
+ "free_workout": "serbest",
   ago_now: "az önce",
   ago_min: "{n} dk önce",
   ago_hour: "{n} sa önce",
