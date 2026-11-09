@@ -11,6 +11,8 @@
    Boşluk yerine "+" ya da %20 kullanılabilir. Tarayıcıya bağlı değildir; testleri tests/importer.test.ts.
    Eski biçim (günler "|", hareket*set*tekrar) de okunur; ama yazılmaz: Claude'un telefon uygulaması "*4*"ü italik
    sanıp bağlantıyı ilk hareketten sonra kesiyor, Android'in bağlantı tanıyıcısı da "|" işaretinde duruyor. */
+import { t } from "./i18n.ts";
+import { canonicalEx, EX_RENAMES } from "./renames.ts";
 
 export const LINK_KEY = "ekle";
 
@@ -19,6 +21,8 @@ export interface ImportDay { name: string; items: ImportItem[] }
 // plan: [gün kodu, gün sırası]; programsız bağlantıda (days boş) sıra -1. times: gün kodu → "SS:DD"
 export interface ImportedProgram {
   name: string; days: ImportDay[]; plan: [string, number][]; times: Record<string, string>; until: string; warnings: string[];
+  // kütüphanede bulunamayan hareketlerin ham adları (uyarı metni çevrildiği için filtreleme bu listeye göre yapılır)
+  unknown: string[];
 }
 
 export const DAY_CODES: Record<string, string> = {
@@ -46,7 +50,15 @@ const ALIASES: Record<string, string> = {
   "rdl": "Romanian Deadlift", "barbell romanian deadlift": "Romanian Deadlift",
   "wood chop": "Cable Woodchopper", "woodchop": "Cable Woodchopper", "cable wood chop": "Cable Woodchopper", "cable chop": "Cable Woodchopper",
   "cable high to low chop": "Cable Woodchopper", "cable low to high chop": "Cable Woodchopper", "high to low cable chop": "Cable Woodchopper",
-  "pull up": "Barfiks (Pull-up)", "pullup": "Barfiks (Pull-up)", "push up": "Şınav (Push-up)", "pushup": "Şınav (Push-up)",
+  "pull up": "Pull-up", "pullup": "Pull-up", "push up": "Push-up", "pushup": "Push-up",
+  // Türkçe günlük adlar (eski kütüphane adları matchExercise başında canonicalEx ile çözülür)
+  "sinav": "Push-up", "barfiks": "Pull-up", "mekik": "Sit-up", "kosu": "Treadmill Run", "yuruyus": "Walking / Incline Walk",
+  // Türkçe yoga adları
+  "agac": "Tree Pose", "kobra": "Cobra Pose", "dag durusu": "Mountain Pose", "cocuk pozu": "Child's Pose", "kedi inek": "Cat-Cow", "kopru": "Bridge Pose",
+  "guvercin": "Pigeon Pose", "kelebek": "Butterfly Pose", "deve": "Camel Pose", "sandalye": "Chair Pose", "kayik": "Boat Pose", "ucgen": "Triangle Pose",
+  "yarim ay": "Half Moon", "alcak hamle": "Low Lunge", "mutlu bebek": "Happy Baby", "derin rahatlama": "Corpse Pose", "ters savasci": "Reverse Warrior",
+  "savasci 1": "Warrior I", "savasci 2": "Warrior II", "asagi bakan kopek": "Downward Dog", "yukari bakan kopek": "Upward Dog", "gunese selam": "Sun Salutation",
+  "yuzme": "Swimming", "eliptik": "Elliptical", "ip atlama": "Jump Rope", "sabit bisiklet": "Stationary Bike", "bisiklet": "Outdoor Cycling",
 };
 // Benzerlik puanında sayılmayan dolgu kelimeleri
 const FILLER = new Set(["to", "the", "a", "with", "and", "conventional", "standard", "regular"]);
@@ -55,9 +67,19 @@ const KINDS = ["press", "fly", "flye", "row", "curl", "chop", "woodchopper", "sq
   "lunge", "dip", "dips", "crunch", "plank", "shrug", "thrust", "bridge", "pullover", "kickback", "carry", "walk", "twist", "rollout", "clean", "snatch", "jerk", "swing"];
 const kindsOf = (words: string[]) => new Set(words.filter(w => KINDS.includes(w)));
 
+// eski kütüphane adlarının normalize hâli → yeni ad ("Sinav (Push-up)" gibi yazımlar için)
+const OLD_NORM = new Map(Object.entries(EX_RENAMES).map(([o, n]) => [normalize(o), n] as const));
+
 // Hareket adını uygulamadaki listeyle eşleştirir: bilinen başka ad → birebir → biri diğerini içeriyor →
 // kelime örtüşmesi (hareket türü aynıysa). Bulunamazsa null (yeni hareket olarak eklenir).
 export function matchExercise(name: string, known: string[]): string | null {
+  // eski (Türkçe karışık) kütüphane adları yeni adlara çözülür; eski adla özel hareket varsa (known içinde) o korunur
+  if (!known.includes(name)) {
+    const c = canonicalEx(String(name || "").trim());
+    if (c !== name && known.includes(c)) return c;
+    const old = OLD_NORM.get(normalize(name));
+    if (old && known.includes(old)) return old;
+  }
   const n = normalize(name);
   if (!n) return null;
   // bilinen başka ad birebir eşleşmeden önce gelir: eskiden aynı adla özel hareket eklenmiş olsa da kütüphanedeki kazanır
@@ -115,7 +137,7 @@ export function parseProgram(input: string, knownExercises: string[]): ImportedP
     else parts[key] = val;
   }
   if (!dayTexts.length && !parts.w) return null;
-  const warnings: string[] = [];
+  const warnings: string[] = [], unknown: string[] = [];
   const days: ImportDay[] = dayTexts.map((d, di) => {
     const c = d.indexOf(":");
     const name = clean(c >= 0 ? d.slice(0, c) : "") || String.fromCharCode(65 + di);
@@ -124,7 +146,7 @@ export function parseProgram(input: string, knownExercises: string[]): ImportedP
       const sets = Math.min(20, Math.max(1, parseInt(setsRaw) || 3));
       const reps = (repsRaw || "").match(/^\d+(-\d+)?$/) ? repsRaw : (repsRaw ? (repsRaw.match(/\d+(-\d+)?/) || [""])[0] : "");
       const m = matchExercise(exRaw, knownExercises);
-      if (!m) warnings.push(`"${exRaw}" listede yok, yeni hareket olarak eklenecek.`);
+      if (!m) { unknown.push(exRaw); warnings.push(t("ai.warn_unknown", { name: exRaw })); }
       return { ex: m || exRaw, sets, reps, original: exRaw, known: !!m };
     }).filter(it => it.ex);
     return { name, items };
@@ -138,18 +160,18 @@ export function parseProgram(input: string, knownExercises: string[]): ImportedP
     // sıra yazılmamışsa günler programın günlerine sırayla dağıtılır; programsız bağlantıda sıra yok (-1)
     const idx = !days.length ? -1 : n ? parseInt(n) : plan.length % days.length;
     if (!code || plan.some(([c]) => c === code) || (days.length && !(idx >= 0 && idx < days.length))) {
-      warnings.push(`Plan girdisi anlaşılamadı: "${pair}"`); continue;
+      warnings.push(t("ai.warn_plan", { pair })); continue;
     }
     plan.push([code, idx]);
     if (timePart) {
-      const t = parseTime(timePart);
-      if (t) times[code] = t; else warnings.push(`Saat anlaşılamadı: "${timePart}"`);
+      const tm = parseTime(timePart);
+      if (tm) times[code] = tm; else warnings.push(t("ai.warn_time", { time: timePart }));
     }
   }
   if (!days.length && !plan.length) return null;
   let until = "";
-  if (parts.u) { until = parseDate(parts.u); if (!until) warnings.push(`Bitiş tarihi anlaşılamadı: "${parts.u}"`); }
-  return { name: clean(parts.p || "") || "Claude'dan program", days, plan, times, until, warnings };
+  if (parts.u) { until = parseDate(parts.u); if (!until) warnings.push(t("ai.warn_until", { date: parts.u })); }
+  return { name: clean(parts.p || "") || t("ai.default_name"), days, plan, times, until, warnings, unknown };
 }
 
 // "18:00", "18.30", "1830", "7" → "SS:DD"
@@ -182,17 +204,17 @@ export function buildLink(base: string, name: string, days: { name: string; item
 // Yapay zekâya (Claude, ChatGPT, Gemini…) verilecek hazır istek: biçimi ve kuralları anlatır. today: "YYYY-AA-GG" ("6 Ocak'a kadar" doğru yıla çözülsün)
 export function aiPrompt(base: string, wish: string, today = ""): string {
   return [
-    "Spor Defteri adlı antrenman uygulamamı kullanıyorum. Bana bir ağırlık antrenmanı programı hazırla ya da haftalık planımı (hangi gün, saat kaçta, ne zamana kadar) ayarla; uygulama planı Google Takvim'ime kendisi yazıyor." + (wish ? " İsteğim: " + wish : ""),
-    (today ? `Bugünün tarihi: ${today}. ` : "") + "Gerekirse önce kısaca soru sor (deneyim, hedef, ekipman, hangi günler, saat).",
-    "Programı kısaca açıkla (hangi gün ne çalışılır, nasıl ilerlenir). Sonra uygulamaya eklemem için TEK bir bağlantı ver. Bağlantı biçimi:",
+    t("ai.prompt_intro") + (wish ? t("ai.prompt_wish", { wish }) : ""),
+    (today ? t("ai.prompt_today", { today }) : "") + t("ai.prompt_ask"),
+    t("ai.prompt_explain"),
     `${base}#ekle=p=Program+Adi;g=Gun1+Adi:Hareket+Adi/set/tekrar,Hareket+Adi/set/tekrar;g=Gun2+Adi:Hareket+Adi/set/tekrar;w=MO:0@18:00,WE:1@18:00,SA:0@10:00;u=2027-01-06`,
-    "Örnek: g=Ust+Vucut:Bench+Press/4/6-8,Barbell+Row/4/8-10,Plank/3/45",
-    "Kurallar: boşluk yerine + kullan; her gün için ayrı bir ;g= yaz; hareketleri virgülle ayır; hareket/set/tekrar (tekrar 8 ya da 8-12 gibi; plank gibi süreli hareketlerde saniye).",
-    "w haftalık plandır: gün kodu (MO TU WE TH FR SA SU) : programın gün sırası (0'dan başlar) @ saat (SS:DD). Saat bilinmiyorsa @ kısmını yazma.",
-    "u planın bitiş tarihidir (YYYY-AA-GG); \"6 Ocak'a kadar\" gibi bir istekte yaz, süresizse yazma.",
-    `Yeni program istemeyip yalnız günleri, saatleri ya da bitiş tarihini değiştirmek istersem p ve g olmadan yalnız planı ver; günlere mevcut programlarım konur: ${base}#ekle=w=MO@18:00,WE@18:00,SA@10:00;u=2027-01-06`,
-    "Bağlantıda yıldız (*), dikey çizgi (|), parantez, boşluk ve Türkçe harf kullanma; telefonda bağlantı yarıda kesiliyor.",
-    "Hareket adlarını yaygın İngilizce adlarıyla yaz (Back Squat, Bench Press, Romanian Deadlift, Lat Pulldown, Seated Cable Row, Overhead Press, Leg Press, Plank…).",
-    "Bağlantıyı tıklanabilir olarak, kod bloğu içine koymadan yaz.",
+    t("ai.prompt_example"),
+    t("ai.prompt_rules"),
+    t("ai.prompt_w"),
+    t("ai.prompt_u"),
+    t("ai.prompt_planonly", { link: `${base}#ekle=w=MO@18:00,WE@18:00,SA@10:00;u=2027-01-06` }),
+    t("ai.prompt_chars"),
+    t("ai.prompt_names"),
+    t("ai.prompt_clickable"),
   ].join("\n");
 }

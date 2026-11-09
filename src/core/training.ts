@@ -54,3 +54,8 @@ export function overloadDecision(prevWork: WorkSet[], sets: number, range: { lo:
   const hard = full && first.some(s => s.rir === 0 && (+s.r! || 0) < +lo);
   return { full, hitTop, easy, hard, increase: hitTop || easy };
 }
+
+// Shared default classification; callers supply custom exercise groups and preferences.
+export const TIMED_RE = /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer|copenhagen|suitcase|bear crawl|lateral walk/i;
+export const timedExercise = (name: string, cardio: boolean, yoga: boolean, preference?: boolean): boolean =>
+  preference != null ? preference : !cardio && (yoga || TIMED_RE.test(name));

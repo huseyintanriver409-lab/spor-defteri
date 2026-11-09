@@ -1,5 +1,8 @@
 import { $, esc, ic, save, state, toast } from "./store.js";
-import { allEx, equipOf, groupOf, groupShown, liftOn, musclesOf, pickableEx } from "./exercises.js";
+import { groupLabel } from "../core/library.ts";
+import { searchFold, t } from "../core/i18n.ts";
+import { muscleLabel, muscleSearchText } from "../core/musclemap.ts";
+import { allEx, equipLabel, equipOf, groupOf, groupShown, liftOn, musclesOf, pickableEx } from "./exercises.js";
 import { refreshDatalist, renderDay, updateHint } from "./log.js";
 import { renderPlan, renderProg } from "./programs.js";
 import { renderLiveBar } from "./live.js";
@@ -33,7 +36,7 @@ export function undoable(msg, undo){
   const s = $("#snack");
   $("#snackMsg").textContent = msg; $("#toast").classList.remove("show"); s.classList.add("show");
   clearTimeout(undoTimer);
-  $("#snackBtn").onclick = () => { clearTimeout(undoTimer); s.classList.remove("show"); undo(); toast("Geri alındı", "undo-2"); };
+  $("#snackBtn").onclick = () => { clearTimeout(undoTimer); s.classList.remove("show"); undo(); toast(t("ui.undo_done"), "undo-2"); };
   undoTimer = setTimeout(() => s.classList.remove("show"), 5000);
 }
 
@@ -48,11 +51,11 @@ export function closeSheet(){
   $("#bs").classList.add("hidden"); $("#bsBody").innerHTML = "";
   const f = sheetOnClose; sheetOnClose = null; if (f) f();
 }
-export const sheetHead = title => `<div class="row" style="margin-bottom:12px"><h3 class="grow">${esc(title)}</h3><button class="iconbtn" data-close title="Kapat">${ic("x")}</button></div>`;
+export const sheetHead = title => `<div class="row" style="margin-bottom:12px"><h3 class="grow">${esc(title)}</h3><button class="iconbtn" data-close title="${t("ui.close")}">${ic("x")}</button></div>`;
 // Açıklamalar ⓘ düğmesinin arkasında: kartın başlığındaki düğme o karttaki .help yazılarını açar/kapatır
-export const infoBtn = () => `<button class="infobtn" type="button" data-info aria-label="Açıklama" aria-expanded="false">${ic("info")}</button>`;
+export const infoBtn = () => `<button class="infobtn" type="button" data-info aria-label="${t("ui.info_aria")}" aria-expanded="false">${ic("info")}</button>`;
 // Sayfa (sheet) içeriği için aynı fikir: ⓘ'ye dokununca açılan açıklama (initHelp yalnız açılışta, statik karta çalışır)
-export const helpTip = text => `<details class="shhelp"><summary aria-label="Açıklama">${ic("info")}</summary><p class="muted">${text}</p></details>`;
+export const helpTip = text => `<details class="shhelp"><summary aria-label="${t("ui.info_aria")}">${ic("info")}</summary><p class="muted">${text}</p></details>`;
 function initHelp(){
   document.querySelectorAll(".help").forEach(p => {
     const card = p.closest(".card"), h = card && card.querySelector("h2");
@@ -75,33 +78,33 @@ export function recentExercises(){
   return out.filter(n => groupShown(groupOf(n))).slice(0, 15);
 }
 export function openPicker(title, onPick){
-  openSheet(sheetHead(title) + `<div class="search">${ic("search")}<input id="pkQ" placeholder="Hareket ara" autocomplete="off" aria-label="Hareket ara"></div>
+  openSheet(sheetHead(title) + `<div class="search">${ic("search")}<input id="pkQ" placeholder="${t("ui.ex_search")}" autocomplete="off" aria-label="${t("ui.ex_search")}"></div>
     <div class="fchips" id="pkChips" style="margin:10px 0 4px"></div>`, `<div class="pk-list" id="pkList"></div>`);
   const favs = () => state.favs.filter(n => groupShown(groupOf(n)));
   let filter = recentExercises().length ? "recent" : favs().length ? "fav" : "all";
-  const chips = [["recent", "Son kullanılanlar", "history"], ["fav", "Favoriler", "star"], ["all", "Tümü", "list"], ...groups().map(g => [g, g, ""])];
+  const chips = [["recent", t("ui.recent_lbl"), "history"], ["fav", t("ui.favs_lbl"), "star"], ["all", t("ui.all_lbl"), "list"], ...groups().map(g => [g, groupLabel(g), ""])];
   const renderChips = () => {
     $("#pkChips").innerHTML = chips.map(([k,l,i]) => `<button class="fchip${filter===k ? " on" : ""}" data-k="${esc(k)}">${i ? ic(i) : ""}${esc(l)}</button>`).join("");
     $("#pkChips").querySelectorAll("button").forEach(b => b.onclick = () => { filter = b.dataset.k; renderChips(); renderList(); });
   };
   const known = n => allEx().find(e => e.name===n) || { name: n, group: groupOf(n) };
   const renderList = () => {
-    const raw = $("#pkQ").value.trim(), q = raw.toLocaleLowerCase("tr");
+    const raw = $("#pkQ").value.trim(), q = searchFold(raw);
     let list;
-    if (q) list = pickableEx().filter(e => { const m = musclesOf(e.name); return [e.name, e.group, equipOf(e.name), ...m.p, ...m.s].join(" ").toLocaleLowerCase("tr").includes(q); });
+    if (q) list = pickableEx().filter(e => { const m = musclesOf(e.name); return [e.name, e.group, groupLabel(e.group), equipOf(e.name), equipLabel(equipOf(e.name)), ...m.p.map(muscleSearchText), ...m.s.map(muscleSearchText)].map(searchFold).join(" ").includes(q); });
     else if (filter === "recent") list = recentExercises().map(known);
     else if (filter === "fav") list = favs().map(known);
     else if (filter === "all") list = pickableEx();
     else list = pickableEx().filter(e => e.group === filter);
-    const exact = q && allEx().some(e => e.name.toLocaleLowerCase("tr") === q);
-    let html = q && !exact ? `<div class="pk-item"><button class="pk-main" data-new="1"><b>${ic("circle-plus", "acc")} “${esc(raw)}” ekle</b><small>Kendi hareketin olarak kaydedilir</small></button></div>` : "";
+    const exact = q && allEx().some(e => searchFold(e.name) === q);
+    let html = q && !exact ? `<div class="pk-item"><button class="pk-main" data-new="1"><b>${ic("circle-plus", "acc")} ${t("ui.new_ex", { raw: esc(raw) })}</b><small>${t("ui.new_ex_sub")}</small></button></div>` : "";
     html += list.map(e => {
       const m = musclesOf(e.name), fav = state.favs.includes(e.name);
-      return `<div class="pk-item"><button class="pk-main" data-ex="${esc(e.name)}"><b>${esc(e.name)}</b><small><span class="tag">${esc(equipOf(e.name))}</span>${esc(m.p.join(", ") || e.group)}</small></button>
-        <button class="iconbtn star${fav ? " on" : ""}" data-fav="${esc(e.name)}" title="${fav ? "Favorilerden çıkar" : "Favorilere ekle"}" aria-pressed="${fav}">${ic("star")}</button></div>`;
+      return `<div class="pk-item"><button class="pk-main" data-ex="${esc(e.name)}"><b>${esc(e.name)}</b><small><span class="tag">${esc(equipLabel(equipOf(e.name)))}</span>${esc(m.p.map(muscleLabel).join(", ") || groupLabel(e.group))}</small></button>
+        <button class="iconbtn star${fav ? " on" : ""}" data-fav="${esc(e.name)}" title="${fav ? t("ui.fav_remove") : t("ui.fav_add")}" aria-pressed="${fav}">${ic("star")}</button></div>`;
     }).join("");
-    if (!html) html = filter === "fav" ? emptyHTML("star", "Favori yok", "")
-      : emptyHTML("history", "Kayıt yok", "");
+    if (!html) html = filter === "fav" ? emptyHTML("star", t("ui.no_favs"), "")
+      : emptyHTML("history", t("ui.no_records"), "");
     $("#pkList").innerHTML = html;
     $("#pkList").querySelectorAll("[data-ex]").forEach(b => b.onclick = () => { closeSheet(); onPick(b.dataset.ex); });
     $("#pkList").querySelectorAll("[data-fav]").forEach(b => b.onclick = () => {
@@ -110,7 +113,7 @@ export function openPicker(title, onPick){
       save(); renderList(); buzz(8);
     });
     const nb = $("#pkList [data-new]");
-    if (nb) nb.onclick = () => { state.custom.push({ name: raw, group: "Diğer" }); save(); refreshDatalist(); closeSheet(); toast(`"${raw}" eklendi`, "check"); onPick(raw); };
+    if (nb) nb.onclick = () => { state.custom.push({ name: raw, group: "Diğer" }); save(); refreshDatalist(); closeSheet(); toast(t("ui.ex_added", { raw }), "check"); onPick(raw); };
   };
   $("#pkQ").oninput = renderList;
   renderChips(); renderList();

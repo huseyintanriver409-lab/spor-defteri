@@ -2,58 +2,72 @@
 // WEIGHTS: hareket → kas → pay (1 = ana hedef). Bir set, kasa "pay" kadar etkili set sayılır.
 // EVIDENCE: kas → büyütmede kanıtı en iyi olandan başlayarak eşit gruplar (aynı gruptakiler arasında fark gösterilmedi).
 // INFERENCE: payı çalışmaya değil çıkarıma dayanan hareketler (kas başına).
+import { t } from "./i18n.ts";
 export type Level = "güçlü" | "orta" | "zayıf" | "yok";
 export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Barbell)":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Rotator Manşet":0.15},
+  "Reverse-Grip Bench Press":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Rotator Manşet":0.15},
+  "Cable Chest Press":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Rotator Manşet":0.15},
   "Dumbbell Bench Press":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.4,"Rotator Manşet":0.15,"Biceps":0.1},
+  "Squeeze Press (Dumbbell)":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.4,"Rotator Manşet":0.15,"Biceps":0.1},
   "Incline Bench Press":{"Göğüs":1,"Ön Omuz":0.75,"Triceps":0.5},
   "Incline Dumbbell Press":{"Göğüs":1,"Ön Omuz":0.75,"Triceps":0.4,"Biceps":0.1},
   "Decline Bench Press":{"Göğüs":1,"Triceps":0.5,"Ön Omuz":0.35},
   "Decline Dumbbell Press":{"Göğüs":1,"Triceps":0.4,"Ön Omuz":0.35},
   "Smith Machine Bench Press":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5},
   "Smith Machine Incline Press":{"Göğüs":1,"Ön Omuz":0.75,"Triceps":0.5},
-  "Chest Press Makinesi":{"Göğüs":1,"Ön Omuz":0.55,"Triceps":0.5},
-  "Incline Chest Press Makinesi":{"Göğüs":1,"Ön Omuz":0.7,"Triceps":0.5},
+  "Machine Chest Press":{"Göğüs":1,"Ön Omuz":0.55,"Triceps":0.5},
+  "Machine Incline Chest Press":{"Göğüs":1,"Ön Omuz":0.7,"Triceps":0.5},
   "Dumbbell Fly":{"Göğüs":1,"Ön Omuz":0.35,"Biceps":0.15,"Triceps":0.1},
   "Incline Dumbbell Fly":{"Göğüs":1,"Ön Omuz":0.45,"Biceps":0.15,"Triceps":0.1},
   "Pec Deck (Butterfly)":{"Göğüs":1,"Ön Omuz":0.35,"Triceps":0.05},
   "Cable Crossover":{"Göğüs":1,"Ön Omuz":0.35,"Triceps":0.1},
   "Low-to-High Cable Fly":{"Göğüs":1,"Ön Omuz":0.5,"Triceps":0.1},
   "High-to-Low Cable Fly":{"Göğüs":1,"Ön Omuz":0.2,"Triceps":0.1},
-  "Dips (Göğüs)":{"Göğüs":1,"Triceps":0.6,"Ön Omuz":0.5},
-  "Şınav (Push-up)":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Karın":0.2,"Rotator Manşet":0.15},
-  "Incline Şınav":{"Göğüs":1,"Ön Omuz":0.5,"Triceps":0.5,"Karın":0.2},
-  "Decline Şınav":{"Göğüs":1,"Ön Omuz":0.7,"Triceps":0.5,"Karın":0.2},
+  "Chest Dip":{"Göğüs":1,"Triceps":0.6,"Ön Omuz":0.5},
+  "Push-up":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Karın":0.2,"Rotator Manşet":0.15},
+  "Weighted Push-up":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Karın":0.2,"Rotator Manşet":0.15},
+  "Deficit Push-up":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Karın":0.2,"Rotator Manşet":0.15},
+  "Incline Push-up":{"Göğüs":1,"Ön Omuz":0.5,"Triceps":0.5,"Karın":0.2},
+  "Decline Push-up":{"Göğüs":1,"Ön Omuz":0.7,"Triceps":0.5,"Karın":0.2},
   "Dumbbell Pullover":{"Göğüs":0.7,"Lat":0.6,"Triceps":0.3,"Ön Omuz":0.25,"Karın":0.2},
   "Landmine Press":{"Göğüs":0.8,"Ön Omuz":0.75,"Triceps":0.4,"Karın":0.3},
   "Svend Press":{"Göğüs":0.6,"Ön Omuz":0.4,"Triceps":0.2},
   "Floor Press":{"Göğüs":1,"Triceps":0.6,"Ön Omuz":0.5},
-  "Barfiks (Pull-up)":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Önkol":0.25,"Göğüs":0.2,"Karın":0.2,"Rotator Manşet":0.15},
+  "Pull-up":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Önkol":0.25,"Göğüs":0.2,"Karın":0.2,"Rotator Manşet":0.15},
+  "Neutral-Grip Pull-up":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Önkol":0.25,"Göğüs":0.2,"Karın":0.2,"Rotator Manşet":0.15},
   "Chin-up":{"Lat":1,"Biceps":0.6,"Arka Omuz":0.35,"Göğüs":0.3,"Trapez":0.3,"Önkol":0.25,"Karın":0.2,"Rotator Manşet":0.15},
-  "Ağırlıklı Barfiks":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Rotator Manşet":0.35,"Trapez":0.3,"Önkol":0.25,"Göğüs":0.2,"Karın":0.2},
-  "Asistanlı Barfiks Makinesi":{"Lat":1,"Biceps":0.5,"Trapez":0.4,"Arka Omuz":0.4,"Önkol":0.35,"Rotator Manşet":0.35,"Göğüs":0.2,"Karın":0.1},
-  "Lat Pulldown (Geniş)":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Göğüs":0.2,"Triceps":0.2,"Önkol":0.2,"Rotator Manşet":0.2},
-  "Lat Pulldown (Dar / V-Bar)":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Göğüs":0.2,"Triceps":0.2,"Önkol":0.2,"Rotator Manşet":0.2},
-  "Tek Kol Lat Pulldown":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.35,"Trapez":0.3,"Önkol":0.3,"Göğüs":0.2,"Triceps":0.2,"Rotator Manşet":0.2,"Karın":0.1,"Oblik":0.1},
+  "Weighted Pull-up":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Rotator Manşet":0.35,"Trapez":0.3,"Önkol":0.25,"Göğüs":0.2,"Karın":0.2},
+  "Assisted Pull-up Machine":{"Lat":1,"Biceps":0.5,"Trapez":0.4,"Arka Omuz":0.4,"Önkol":0.35,"Rotator Manşet":0.35,"Göğüs":0.2,"Karın":0.1},
+  "Wide-Grip Lat Pulldown":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Göğüs":0.2,"Triceps":0.2,"Önkol":0.2,"Rotator Manşet":0.2},
+  "Reverse-Grip Lat Pulldown":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Göğüs":0.2,"Triceps":0.2,"Önkol":0.2,"Rotator Manşet":0.2},
+  "Close-Grip Lat Pulldown (V-Bar)":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.4,"Trapez":0.3,"Göğüs":0.2,"Triceps":0.2,"Önkol":0.2,"Rotator Manşet":0.2},
+  "Single-Arm Lat Pulldown":{"Lat":1,"Biceps":0.5,"Arka Omuz":0.35,"Trapez":0.3,"Önkol":0.3,"Göğüs":0.2,"Triceps":0.2,"Rotator Manşet":0.2,"Karın":0.1,"Oblik":0.1},
   "Seated Cable Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.2,"Yan Omuz":0.2,"Önkol":0.2,"Rotator Manşet":0.2},
+  "Single-Arm Cable Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.2,"Yan Omuz":0.2,"Önkol":0.2,"Rotator Manşet":0.2},
   "Barbell Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.3,"Önkol":0.25,"Hamstring":0.2,"Kalça":0.2,"Rotator Manşet":0.2},
+  "Reverse-Grip Barbell Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.3,"Önkol":0.25,"Hamstring":0.2,"Kalça":0.2,"Rotator Manşet":0.2},
   "Pendlay Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.3,"Önkol":0.25,"Hamstring":0.2,"Kalça":0.2,"Rotator Manşet":0.2},
-  "Dumbbell Row (Tek Kol)":{"Lat":0.8,"Trapez":0.7,"Biceps":0.5,"Arka Omuz":0.4,"Önkol":0.25,"Rotator Manşet":0.2,"Bel":0.1,"Oblik":0.1},
+  "Single-Arm Dumbbell Row":{"Lat":0.8,"Trapez":0.7,"Biceps":0.5,"Arka Omuz":0.4,"Önkol":0.25,"Rotator Manşet":0.2,"Bel":0.1,"Oblik":0.1},
   "T-Bar Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.3,"Önkol":0.25,"Hamstring":0.2,"Kalça":0.2,"Rotator Manşet":0.2},
+  "Landmine Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.3,"Önkol":0.25,"Hamstring":0.2,"Kalça":0.2,"Rotator Manşet":0.2},
   "Chest-Supported Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Önkol":0.3,"Rotator Manşet":0.2},
   "Seal Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Önkol":0.3,"Rotator Manşet":0.2},
   "Machine Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Önkol":0.3,"Rotator Manşet":0.2},
   "Meadows Row":{"Lat":0.8,"Trapez":0.6,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.3,"Önkol":0.3,"Rotator Manşet":0.2,"Oblik":0.1},
   "Inverted Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.2,"Önkol":0.2,"Kalça":0.2,"Karın":0.2},
   "Straight-Arm Pulldown":{"Lat":1,"Arka Omuz":0.3,"Göğüs":0.2,"Triceps":0.2,"Karın":0.2,"Biceps":0.1},
-  "Dumbbell Pullover (Sırt)":{"Göğüs":0.8,"Lat":0.6,"Ön Omuz":0.3,"Triceps":0.3,"Karın":0.2},
+  "Machine Pullover":{"Lat":1,"Arka Omuz":0.3,"Göğüs":0.2,"Triceps":0.2,"Karın":0.2,"Biceps":0.1},
+  "Dumbbell Pullover (Lats)":{"Göğüs":0.8,"Lat":0.6,"Ön Omuz":0.3,"Triceps":0.3,"Karın":0.2},
   "Deadlift":{"Bel":0.8,"Kalça":0.7,"Hamstring":0.5,"İç Bacak":0.45,"Trapez":0.4,"Quadriceps":0.4,"Lat":0.3,"Önkol":0.3,"Karın":0.2},
+  "Deficit Deadlift":{"Bel":0.8,"Kalça":0.7,"Hamstring":0.5,"İç Bacak":0.45,"Trapez":0.4,"Quadriceps":0.4,"Lat":0.3,"Önkol":0.3,"Karın":0.2},
   "Rack Pull":{"Bel":0.7,"Kalça":0.5,"Trapez":0.4,"Önkol":0.3,"Hamstring":0.3,"Quadriceps":0.1},
-  "Back Extension (Hiperekstansiyon)":{"Hamstring":1,"Bel":0.8,"Kalça":0.7},
+  "Back Extension":{"Hamstring":1,"Bel":0.8,"Kalça":0.7},
   "Good Morning":{"Hamstring":0.8,"Bel":0.7,"Kalça":0.6,"İç Bacak":0.3},
   "Barbell Shrug":{"Trapez":1,"Önkol":0.3},
   "Dumbbell Shrug":{"Trapez":1,"Önkol":0.3},
   "Superman":{"Bel":0.4,"Kalça":0.3,"Hamstring":0.15,"Arka Omuz":0.1},
   "Overhead Press (Barbell)":{"Ön Omuz":1,"Yan Omuz":0.6,"Triceps":0.5,"Trapez":0.3,"Göğüs":0.2,"Arka Omuz":0.2,"Karın":0.2,"Rotator Manşet":0.2},
+  "Pike Push-up":{"Ön Omuz":1,"Yan Omuz":0.6,"Triceps":0.5,"Trapez":0.3,"Göğüs":0.2,"Arka Omuz":0.2,"Karın":0.2,"Rotator Manşet":0.2},
   "Seated Dumbbell Shoulder Press":{"Ön Omuz":1,"Yan Omuz":0.6,"Triceps":0.4,"Trapez":0.3,"Göğüs":0.2,"Rotator Manşet":0.2,"Arka Omuz":0.15},
   "Standing Dumbbell Press":{"Ön Omuz":1,"Yan Omuz":0.6,"Triceps":0.4,"Trapez":0.3,"Göğüs":0.2,"Arka Omuz":0.2,"Karın":0.2,"Rotator Manşet":0.2},
   "Arnold Press":{"Ön Omuz":1,"Yan Omuz":0.6,"Triceps":0.4,"Trapez":0.3,"Göğüs":0.25,"Rotator Manşet":0.2},
@@ -62,17 +76,21 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Push Press":{"Ön Omuz":0.8,"Yan Omuz":0.5,"Triceps":0.4,"Trapez":0.3,"Quadriceps":0.3,"Kalça":0.25,"Rotator Manşet":0.2,"Karın":0.15},
   "Landmine Shoulder Press":{"Ön Omuz":0.9,"Göğüs":0.4,"Triceps":0.4,"Trapez":0.3,"Yan Omuz":0.3,"Oblik":0.2,"Rotator Manşet":0.2,"Karın":0.15},
   "Lateral Raise (Dumbbell)":{"Yan Omuz":1,"Trapez":0.5,"Ön Omuz":0.3,"Rotator Manşet":0.3,"Arka Omuz":0.25},
+  "Dumbbell Scaption":{"Yan Omuz":1,"Trapez":0.5,"Ön Omuz":0.3,"Rotator Manşet":0.3,"Arka Omuz":0.25},
   "Cable Lateral Raise":{"Yan Omuz":1,"Trapez":0.5,"Ön Omuz":0.3,"Rotator Manşet":0.3,"Arka Omuz":0.25},
   "Machine Lateral Raise":{"Yan Omuz":1,"Trapez":0.5,"Ön Omuz":0.3,"Rotator Manşet":0.3,"Arka Omuz":0.25},
   "Front Raise (Dumbbell)":{"Ön Omuz":1,"Göğüs":0.3,"Yan Omuz":0.3,"Trapez":0.25,"Karın":0.1},
   "Plate Front Raise":{"Ön Omuz":1,"Göğüs":0.3,"Yan Omuz":0.3,"Trapez":0.25,"Önkol":0.15},
   "Cable Front Raise":{"Ön Omuz":1,"Göğüs":0.3,"Yan Omuz":0.3,"Trapez":0.25},
   "Rear Delt Fly (Dumbbell)":{"Arka Omuz":1,"Trapez":0.5,"Yan Omuz":0.3,"Rotator Manşet":0.3},
+  "Chest-Supported Rear Delt Raise":{"Arka Omuz":1,"Trapez":0.5,"Yan Omuz":0.3,"Rotator Manşet":0.3},
   "Reverse Pec Deck":{"Arka Omuz":1,"Trapez":0.5,"Yan Omuz":0.3,"Rotator Manşet":0.3},
   "Cable Rear Delt Fly":{"Arka Omuz":1,"Trapez":0.5,"Yan Omuz":0.3,"Rotator Manşet":0.3},
+  "Band Pull-Apart":{"Arka Omuz":1,"Trapez":0.5,"Yan Omuz":0.3,"Rotator Manşet":0.3},
   "Face Pull":{"Arka Omuz":0.8,"Trapez":0.5,"Rotator Manşet":0.5,"Yan Omuz":0.3,"Biceps":0.2},
   "Cable External Rotation":{"Rotator Manşet":1,"Arka Omuz":0.15},
-  "Dumbbell External Rotation (Yan Yatarak)":{"Rotator Manşet":1,"Arka Omuz":0.3},
+  "Cable Internal Rotation":{"Rotator Manşet":1,"Arka Omuz":0.15},
+  "Side-Lying Dumbbell External Rotation":{"Rotator Manşet":1,"Arka Omuz":0.3},
   "Cuban Press":{"Rotator Manşet":0.7,"Yan Omuz":0.5,"Trapez":0.4,"Arka Omuz":0.3,"Ön Omuz":0.2},
   "Upright Row":{"Yan Omuz":0.8,"Trapez":0.7,"Ön Omuz":0.35,"Biceps":0.3,"Arka Omuz":0.2,"Önkol":0.2},
   "Y-Raise":{"Trapez":0.6,"Yan Omuz":0.5,"Arka Omuz":0.5,"Rotator Manşet":0.4,"Ön Omuz":0.35},
@@ -82,117 +100,143 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Dumbbell Curl":{"Biceps":1,"Önkol":0.5},
   "Alternating Dumbbell Curl":{"Biceps":1,"Önkol":0.5},
   "Hammer Curl":{"Biceps":0.8,"Önkol":0.6},
-  "Cable Hammer Curl (Halat)":{"Biceps":0.8,"Önkol":0.6},
+  "Cable Hammer Curl (Rope)":{"Biceps":0.8,"Önkol":0.6},
   "Incline Dumbbell Curl":{"Biceps":1,"Önkol":0.5},
   "Preacher Curl":{"Biceps":1,"Önkol":0.5},
   "Machine Preacher Curl":{"Biceps":1,"Önkol":0.5},
   "Concentration Curl":{"Biceps":1,"Önkol":0.5},
   "Cable Curl":{"Biceps":1,"Önkol":0.5},
+  "High Cable Curl":{"Biceps":1,"Önkol":0.5},
   "Bayesian Cable Curl":{"Biceps":1,"Önkol":0.5},
   "Spider Curl":{"Biceps":1,"Önkol":0.5},
   "Drag Curl":{"Biceps":1,"Önkol":0.5},
   "Reverse Curl":{"Biceps":0.6,"Önkol":0.6},
   "Zottman Curl":{"Biceps":0.9,"Önkol":0.6},
-  "21'ler":{"Biceps":1,"Önkol":0.5},
-  "Triceps Pushdown (Halat)":{"Triceps":1},
+  "21s":{"Biceps":1,"Önkol":0.5},
+  "Triceps Pushdown (Rope)":{"Triceps":1},
   "Triceps Pushdown (Bar)":{"Triceps":1},
-  "Tek Kol Cable Pushdown":{"Triceps":1},
+  "Reverse-Grip Triceps Pushdown":{"Triceps":1},
+  "Single-Arm Cable Pushdown":{"Triceps":1},
   "Overhead Cable Extension":{"Triceps":1},
   "Overhead Dumbbell Extension":{"Triceps":1},
   "Skull Crusher (EZ-Bar)":{"Triceps":1},
+  "Lying Cable Triceps Extension":{"Triceps":1},
   "Dumbbell Skull Crusher":{"Triceps":1},
   "Close-Grip Bench Press":{"Triceps":0.75,"Göğüs":0.65,"Ön Omuz":0.5},
-  "Dips (Triceps)":{"Triceps":0.8,"Göğüs":0.5,"Ön Omuz":0.45},
+  "Triceps Dip":{"Triceps":0.8,"Göğüs":0.5,"Ön Omuz":0.45},
+  "Machine Seated Dip":{"Triceps":0.8,"Göğüs":0.5,"Ön Omuz":0.45},
+  "Assisted Dip Machine":{"Triceps":0.8,"Göğüs":0.5,"Ön Omuz":0.45},
   "Bench Dips":{"Triceps":0.8,"Ön Omuz":0.35,"Göğüs":0.2},
   "Triceps Kickback":{"Triceps":1,"Arka Omuz":0.1},
   "Cable Kickback (Triceps)":{"Triceps":1},
   "JM Press":{"Triceps":0.85,"Göğüs":0.3,"Ön Omuz":0.25},
   "Machine Triceps Extension":{"Triceps":1},
-  "Diamond Şınav":{"Triceps":0.7,"Göğüs":0.6,"Ön Omuz":0.5,"Karın":0.2},
+  "Diamond Push-up":{"Triceps":0.7,"Göğüs":0.6,"Ön Omuz":0.5,"Karın":0.2},
   "Wrist Curl":{"Önkol":1},
   "Reverse Wrist Curl":{"Önkol":1},
   "Farmer's Walk":{"Önkol":0.75,"Oblik":0.5,"Trapez":0.4,"Karın":0.25,"Bel":0.2},
+  "Suitcase Carry":{"Önkol":0.75,"Oblik":0.6,"Trapez":0.4,"Karın":0.25,"Bel":0.2},
   "Dead Hang":{"Önkol":0.75,"Lat":0.25,"Trapez":0.1},
   "Plate Pinch":{"Önkol":0.75,"Trapez":0.1},
   "Wrist Roller":{"Önkol":1,"Ön Omuz":0.3,"Trapez":0.1},
   "Back Squat":{"Quadriceps":1,"Kalça":1,"İç Bacak":0.6,"Bel":0.4,"Karın":0.2,"Hamstring":0.1},
+  "Safety Bar Squat":{"Quadriceps":1,"Kalça":1,"İç Bacak":0.6,"Bel":0.4,"Karın":0.2,"Hamstring":0.1},
   "Front Squat":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.55,"Bel":0.4,"Karın":0.2},
+  "Overhead Squat":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.55,"Bel":0.4,"Karın":0.2},
   "High-Bar Squat":{"Quadriceps":1,"Kalça":1,"İç Bacak":0.55,"Bel":0.4,"Karın":0.2,"Hamstring":0.1},
   "Low-Bar Squat":{"Quadriceps":1,"Kalça":1,"İç Bacak":0.55,"Bel":0.5,"Karın":0.2,"Hamstring":0.15},
   "Goblet Squat":{"Quadriceps":0.9,"Kalça":0.8,"İç Bacak":0.55,"Karın":0.2},
+  "Dumbbell Sumo Squat":{"Quadriceps":0.9,"Kalça":0.8,"İç Bacak":0.55,"Karın":0.2},
   "Hack Squat":{"Quadriceps":1,"Kalça":0.7,"İç Bacak":0.55},
   "Pendulum Squat":{"Quadriceps":1,"Kalça":0.7,"İç Bacak":0.55},
   "Belt Squat":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.55},
   "Smith Machine Squat":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.55,"Bel":0.1,"Karın":0.1},
   "Leg Press":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.6,"Hamstring":0.1},
-  "Tek Bacak Leg Press":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.6,"Hamstring":0.1},
+  "Single-Leg Leg Press":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.6,"Hamstring":0.1},
   "Bulgarian Split Squat":{"Quadriceps":1,"Kalça":0.9,"İç Bacak":0.4,"Hamstring":0.25,"Karın":0.1},
+  "Split Squat":{"Quadriceps":1,"Kalça":0.9,"İç Bacak":0.4,"Hamstring":0.25,"Karın":0.1},
   "Walking Lunge":{"Quadriceps":0.9,"Kalça":0.9,"İç Bacak":0.4,"Hamstring":0.2},
   "Reverse Lunge":{"Quadriceps":0.9,"Kalça":0.9,"İç Bacak":0.4,"Hamstring":0.2},
+  "Curtsy Lunge":{"Quadriceps":0.9,"Kalça":0.9,"İç Bacak":0.4,"Hamstring":0.2},
   "Forward Lunge":{"Quadriceps":0.9,"Kalça":0.9,"İç Bacak":0.4,"Hamstring":0.2},
   "Lateral Lunge":{"Quadriceps":0.8,"Kalça":0.7,"İç Bacak":0.6,"Hamstring":0.15},
+  "Cossack Squat":{"Quadriceps":0.8,"Kalça":0.7,"İç Bacak":0.6,"Hamstring":0.15},
   "Step-up":{"Quadriceps":0.9,"Kalça":0.9,"İç Bacak":0.4,"Hamstring":0.2},
   "Leg Extension":{"Quadriceps":1},
   "Sissy Squat":{"Quadriceps":0.85},
+  "Reverse Nordic":{"Quadriceps":0.85},
   "Pistol Squat":{"Quadriceps":0.9,"Kalça":0.8,"İç Bacak":0.4,"Hamstring":0.15},
   "Box Squat":{"Quadriceps":1,"Kalça":0.8,"Bel":0.4,"İç Bacak":0.4},
   "Zercher Squat":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.55,"Bel":0.4,"Karın":0.3,"Biceps":0.2},
   "Wall Sit":{"Quadriceps":0.6,"Kalça":0.3,"İç Bacak":0.3},
-  "Air Squat (Vücut Ağırlığı)":{"Kalça":0.7,"Quadriceps":0.5,"İç Bacak":0.3},
+  "Air Squat":{"Kalça":0.7,"Quadriceps":0.5,"İç Bacak":0.3},
+  "Jump Squat":{"Kalça":0.7,"Quadriceps":0.5,"İç Bacak":0.3},
   "Romanian Deadlift":{"Hamstring":1,"Kalça":0.8,"Bel":0.6,"İç Bacak":0.3,"Trapez":0.25,"Önkol":0.25},
   "Dumbbell Romanian Deadlift":{"Hamstring":1,"Kalça":0.8,"Bel":0.5,"İç Bacak":0.3,"Önkol":0.25,"Trapez":0.2},
-  "Tek Bacak RDL":{"Hamstring":1,"Kalça":0.9,"Bel":0.4,"İç Bacak":0.3,"Önkol":0.25,"Oblik":0.2},
+  "Single-Leg RDL":{"Hamstring":1,"Kalça":0.9,"Bel":0.4,"İç Bacak":0.3,"Önkol":0.25,"Oblik":0.2},
   "Stiff-Leg Deadlift":{"Hamstring":1,"Kalça":0.8,"Bel":0.6,"İç Bacak":0.3,"Önkol":0.25,"Trapez":0.2},
   "Sumo Deadlift":{"Bel":0.7,"Kalça":0.7,"Quadriceps":0.5,"İç Bacak":0.45,"Trapez":0.4,"Hamstring":0.4,"Önkol":0.3,"Karın":0.2},
   "Trap Bar Deadlift":{"Bel":0.7,"Kalça":0.7,"Quadriceps":0.5,"İç Bacak":0.45,"Trapez":0.4,"Hamstring":0.4,"Önkol":0.3,"Karın":0.2},
   "Lying Leg Curl":{"Hamstring":1,"Baldır":0.3},
+  "Slider Leg Curl":{"Hamstring":1,"Baldır":0.3},
   "Seated Leg Curl":{"Hamstring":1,"Baldır":0.3},
   "Standing Leg Curl":{"Hamstring":1,"Baldır":0.3},
   "Nordic Curl":{"Hamstring":1,"Baldır":0.3,"Kalça":0.2},
   "Glute-Ham Raise":{"Hamstring":1,"Bel":0.3,"Kalça":0.3,"Baldır":0.3},
   "Hip Thrust (Barbell)":{"Kalça":1,"Bel":0.3,"Quadriceps":0.2,"Hamstring":0.2,"İç Bacak":0.2},
-  "Hip Thrust Makinesi":{"Kalça":1,"Quadriceps":0.2,"Hamstring":0.2,"İç Bacak":0.2},
+  "Machine Hip Thrust":{"Kalça":1,"Quadriceps":0.2,"Hamstring":0.2,"İç Bacak":0.2},
   "Glute Bridge":{"Kalça":0.9,"Hamstring":0.25,"Quadriceps":0.2,"İç Bacak":0.2},
-  "Tek Bacak Glute Bridge":{"Kalça":1,"Hamstring":0.35},
-  "Cable Kickback (Kalça)":{"Kalça":1,"Hamstring":0.3},
+  "Single-Leg Glute Bridge":{"Kalça":1,"Hamstring":0.35},
+  "Cable Glute Kickback":{"Kalça":1,"Hamstring":0.3},
+  "Machine Glute Kickback":{"Kalça":1,"Hamstring":0.3},
   "Cable Pull-through":{"Kalça":0.8,"Hamstring":0.5,"Bel":0.3,"İç Bacak":0.2},
-  "Hip Abduction Makinesi":{"Kalça":0.5},
-  "Hip Adduction Makinesi":{"İç Bacak":1},
+  "Machine Hip Abduction":{"Kalça":0.5},
+  "Banded Lateral Walk":{"Kalça":0.5},
+  "Banded Clamshell":{"Kalça":0.5},
+  "Cable Hip Abduction":{"Kalça":0.5},
+  "Machine Hip Adduction":{"İç Bacak":1},
   "Kettlebell Swing":{"Kalça":0.6,"Bel":0.5,"Hamstring":0.5,"Önkol":0.25,"Quadriceps":0.2,"İç Bacak":0.2,"Ön Omuz":0.1},
+  "Dumbbell Snatch":{"Kalça":0.6,"Bel":0.5,"Hamstring":0.5,"Önkol":0.25,"Quadriceps":0.2,"İç Bacak":0.2,"Ön Omuz":0.1},
+  "Kettlebell Snatch":{"Kalça":0.6,"Bel":0.5,"Hamstring":0.5,"Önkol":0.25,"Quadriceps":0.2,"İç Bacak":0.2,"Ön Omuz":0.1},
   "Reverse Hyperextension":{"Bel":0.8,"Kalça":0.7,"Hamstring":0.6},
   "Frog Pump":{"Kalça":0.8,"İç Bacak":0.2,"Hamstring":0.1},
   "Standing Calf Raise":{"Baldır":1},
   "Seated Calf Raise":{"Baldır":0.5},
   "Leg Press Calf Raise":{"Baldır":1},
   "Smith Machine Calf Raise":{"Baldır":1},
-  "Tek Bacak Calf Raise":{"Baldır":1},
+  "Single-Leg Calf Raise":{"Baldır":1},
   "Donkey Calf Raise":{"Baldır":1},
   "Tibialis Raise":{},
   "Crunch":{"Karın":1,"Oblik":0.4},
-  "Mekik (Sit-up)":{"Karın":1,"Oblik":0.4},
+  "Sit-up":{"Karın":1,"Oblik":0.4},
   "Decline Sit-up":{"Karın":1,"Oblik":0.4},
   "Cable Crunch":{"Karın":1,"Oblik":0.4},
   "Machine Crunch":{"Karın":1,"Oblik":0.4},
   "Bicycle Crunch":{"Karın":0.7,"Oblik":0.7},
   "Reverse Crunch":{"Karın":1,"Oblik":0.4},
   "Hanging Leg Raise":{"Karın":1,"Oblik":0.7,"Önkol":0.25,"Lat":0.2},
+  "Toes-to-Bar":{"Karın":1,"Oblik":0.7,"Önkol":0.25,"Lat":0.2},
   "Hanging Knee Raise":{"Karın":1,"Oblik":0.6,"Önkol":0.25,"Lat":0.2},
   "Lying Leg Raise":{"Karın":0.8,"Oblik":0.3},
   "Captain's Chair Leg Raise":{"Karın":1,"Oblik":0.6,"Ön Omuz":0.1,"Triceps":0.1},
   "Plank":{"Karın":0.6,"Oblik":0.5,"Ön Omuz":0.2,"Göğüs":0.1},
   "Side Plank":{"Oblik":1,"Bel":0.4,"Kalça":0.3,"Karın":0.3},
+  "Copenhagen Plank":{"Oblik":1,"İç Bacak":1,"Bel":0.4,"Kalça":0.3,"Karın":0.3},
   "Ab Wheel Rollout":{"Karın":1,"Oblik":0.6,"Lat":0.3,"Göğüs":0.2,"Triceps":0.2},
   "Russian Twist":{"Oblik":0.8,"Karın":0.4},
+  "Landmine Twist":{"Oblik":0.8,"Karın":0.4},
   "Pallof Press":{"Oblik":0.8,"Karın":0.3,"Göğüs":0.15,"Ön Omuz":0.15},
   "Cable Woodchopper":{"Oblik":1,"Karın":0.4,"Bel":0.3,"Lat":0.2,"Ön Omuz":0.2},
   "Dragon Flag":{"Karın":1,"Oblik":0.5,"Lat":0.3},
   "Dead Bug":{"Karın":0.4,"Oblik":0.4},
   "Bird Dog":{"Kalça":0.4,"Bel":0.2,"Karın":0.1},
   "Mountain Climber":{"Karın":0.5,"Oblik":0.3,"Ön Omuz":0.2},
+  "Bear Crawl":{"Karın":0.5,"Oblik":0.3,"Ön Omuz":0.2},
   "V-Up":{"Karın":1,"Oblik":0.5},
   "Hollow Body Hold":{"Karın":0.8,"Oblik":0.4},
   "L-Sit":{"Karın":0.7,"Triceps":0.3,"Quadriceps":0.2,"Önkol":0.1},
   "Side Bend (Dumbbell)":{"Oblik":1,"Bel":0.4,"Önkol":0.2,"Karın":0.2},
+  "Cable Side Bend":{"Oblik":1,"Bel":0.4,"Önkol":0.2,"Karın":0.2},
   "Power Clean":{"Trapez":0.5,"Kalça":0.5,"Bel":0.4,"Quadriceps":0.4,"Önkol":0.25,"Hamstring":0.25,"Ön Omuz":0.15},
   "Hang Clean":{"Trapez":0.5,"Kalça":0.5,"Bel":0.4,"Quadriceps":0.3,"Önkol":0.25,"Hamstring":0.25,"Ön Omuz":0.15},
   "Clean and Jerk":{"Quadriceps":0.6,"Trapez":0.5,"Kalça":0.5,"Ön Omuz":0.45,"Bel":0.4,"Yan Omuz":0.3,"Triceps":0.3,"Hamstring":0.25},
@@ -206,6 +250,7 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Sled Push":{"Quadriceps":0.7,"Bel":0.2,"Baldır":0.2},
   "Sled Pull":{"Trapez":0.3,"Önkol":0.25,"Bel":0.2},
   "Battle Rope":{},
+  "Medicine Ball Slam":{},
   "Box Jump":{"Quadriceps":0.3,"Baldır":0.2},
   "Wall Ball":{"Quadriceps":0.6,"Kalça":0.4,"Ön Omuz":0.35,"Triceps":0.2},
   "Muscle-up":{"Lat":0.8,"Triceps":0.5,"Göğüs":0.45,"Biceps":0.4,"Arka Omuz":0.35,"Trapez":0.3,"Ön Omuz":0.3,"Önkol":0.25,"Karın":0.2},
@@ -217,25 +262,25 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "ex": [
     "Bench Press (Barbell)"
    ],
-   "note": "Göğüs kalınlaşmasını doğrudan ölçen birkaç çalışma var; şınav ve makinelerle fark çıkmadı"
+   "note": t("muscles.ev_gogus_1")
   },
   {
    "level": "orta",
    "ex": [
     "Pec Deck (Butterfly)"
    ],
-   "note": "12 haftalık çalışmada göğüsün iki başını da belirgin büyüttü; presle karşılaştırılmadı"
+   "note": t("muscles.ev_gogus_2")
   },
   {
    "level": "orta",
    "ex": [
     "Dumbbell Bench Press",
     "Smith Machine Bench Press",
-    "Chest Press Makinesi",
-    "Şınav (Push-up)",
+    "Machine Chest Press",
+    "Push-up",
     "Floor Press"
    ],
-   "note": "Dolaylı kanıt: serbest ağırlık, makine ve şınav yük eşitse benzer sonuç veriyor"
+   "note": t("muscles.ev_gogus_3")
   },
   {
    "level": "orta",
@@ -243,9 +288,9 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Incline Bench Press",
     "Incline Dumbbell Press",
     "Smith Machine Incline Press",
-    "Incline Chest Press Makinesi"
+    "Machine Incline Chest Press"
    ],
-   "note": "Eğimli itişler üst göğüste biraz önde olabilir; tek küçük çalışma, toplam göğüste fark yok"
+   "note": t("muscles.ev_gogus_4")
   },
   {
    "level": "zayıf",
@@ -254,10 +299,12 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Dumbbell Fly",
     "Incline Dumbbell Fly",
     "Cable Crossover",
-    "Dips (Göğüs)",
-    "Dumbbell Pullover"
+    "Chest Dip",
+    "Dumbbell Pullover",
+    "Cable Chest Press",
+    "Reverse-Grip Bench Press"
    ],
-   "note": "Yalnızca kas aktivasyonu ölçümü var; büyüme çalışması yok"
+   "note": t("muscles.ev_gogus_5")
   },
   {
    "level": "yok",
@@ -265,59 +312,68 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Decline Dumbbell Press",
     "Low-to-High Cable Fly",
     "High-to-Low Cable Fly",
-    "Incline Şınav",
-    "Decline Şınav",
+    "Incline Push-up",
+    "Decline Push-up",
     "Landmine Press",
-    "Svend Press"
+    "Svend Press",
+    "Deficit Push-up",
+    "Weighted Push-up",
+    "Squeeze Press (Dumbbell)"
    ],
-   "note": "Veri yok; yalnızca harekete bakılarak tahmin edildi"
+   "note": t("muscles.ev_gogus_6")
   }
  ],
  "Lat": [
   {
    "level": "zayıf",
    "ex": [
-    "Barfiks (Pull-up)",
+    "Pull-up",
     "Chin-up",
-    "Ağırlıklı Barfiks",
-    "Asistanlı Barfiks Makinesi",
-    "Lat Pulldown (Geniş)",
-    "Lat Pulldown (Dar / V-Bar)",
-    "Tek Kol Lat Pulldown",
+    "Weighted Pull-up",
+    "Assisted Pull-up Machine",
+    "Wide-Grip Lat Pulldown",
+    "Close-Grip Lat Pulldown (V-Bar)",
+    "Single-Arm Lat Pulldown",
     "Seated Cable Row",
     "Barbell Row",
     "Pendlay Row",
     "T-Bar Row",
-    "Dumbbell Row (Tek Kol)",
+    "Single-Arm Dumbbell Row",
     "Meadows Row",
     "Chest-Supported Row",
     "Seal Row",
     "Machine Row",
-    "Inverted Row"
+    "Inverted Row",
+    "Reverse-Grip Lat Pulldown",
+    "Neutral-Grip Pull-up"
    ],
-   "note": "Dikey çekişler ve row'lar: hiçbiri diğerinden üstün bulunmadı; kanıt zayıf, kavrama fark yaratmıyor."
+   "note": t("muscles.ev_lat_1")
   },
   {
    "level": "zayıf",
    "ex": [
     "Straight-Arm Pulldown"
    ],
-   "note": "Lat'ı en çok izole eden hareket (kas ölçümüyle), ama büyüme çalışması yok."
+   "note": t("muscles.ev_lat_2")
   },
   {
    "level": "zayıf",
    "ex": [
-    "Dumbbell Pullover (Sırt)",
+    "Dumbbell Pullover (Lats)",
     "Dumbbell Pullover"
    ],
-   "note": "Pullover'da göğüs baskın, lat ikincil çalışır."
+   "note": t("muscles.ev_lat_3")
   },
   {
    "level": "yok",
    "ex": [
-    "Muscle-up"
+    "Muscle-up",
+    "Single-Arm Cable Row",
+    "Landmine Row",
+    "Reverse-Grip Barbell Row",
+    "Machine Pullover"
    ],
-   "note": "Lat için hiç çalışma yok; ağırlık barfiksten tahmin edildi."
+   "note": t("muscles.ev_lat_4")
   }
  ],
  "Trapez": [
@@ -328,12 +384,12 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Dumbbell Shrug",
     "Upright Row"
    ],
-   "note": "Üst trapezde en yüksek kas aktivitesi; bu hareketleri içeren programda lifler büyüdü"
+   "note": t("muscles.ev_trapez_1")
   },
   {
    "level": "zayıf",
    "ex": [
-    "Dumbbell Row (Tek Kol)",
+    "Single-Arm Dumbbell Row",
     "Seated Cable Row",
     "Barbell Row",
     "Chest-Supported Row",
@@ -341,7 +397,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Lateral Raise (Dumbbell)",
     "Rear Delt Fly (Dumbbell)"
    ],
-   "note": "Orta/alt trapezi çalıştırdıkları ölçüldü ama büyüme kıyaslaması yok"
+   "note": t("muscles.ev_trapez_2")
   },
   {
    "level": "zayıf",
@@ -352,7 +408,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Snatch",
     "Power Snatch"
    ],
-   "note": "Trapez çalışıyor ama büyümeyi gösteren çalışma yok; yük düşük ya da hareket kısa"
+   "note": t("muscles.ev_trapez_3")
   },
   {
    "level": "yok",
@@ -370,7 +426,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Clean and Jerk",
     "Clean & Press"
    ],
-   "note": "Doğrudan veri yok; benzer harekete bakılarak tahmin edildi"
+   "note": t("muscles.ev_trapez_4")
   }
  ],
  "Bel": [
@@ -378,14 +434,15 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "level": "zayıf",
    "ex": [
     "Deadlift",
-    "Back Extension (Hiperekstansiyon)",
+    "Back Extension",
     "Reverse Hyperextension",
     "Good Morning",
     "Trap Bar Deadlift",
     "Sumo Deadlift",
-    "Rack Pull"
+    "Rack Pull",
+    "Deficit Deadlift"
    ],
-   "note": "Beli en çok yükleyen hareketler; aralarında fark gösteren çalışma yok, hepsi eşit sayılır"
+   "note": t("muscles.ev_bel_1")
   },
   {
    "level": "zayıf",
@@ -396,7 +453,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Kettlebell Swing",
     "Low-Bar Squat"
    ],
-   "note": "Beli orta düzeyde çalıştırır; asıl hedef bacak arkası ve kalça"
+   "note": t("muscles.ev_bel_2")
   }
  ],
  "Ön Omuz": [
@@ -405,7 +462,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "ex": [
     "Bench Press (Barbell)"
    ],
-   "note": "Tek doğrudan ölçüm: sadece bench yapınca ön omuz kası büyüdü (küçük bir çalışma)"
+   "note": t("muscles.ev_on_omuz_1")
   },
   {
    "level": "zayıf",
@@ -416,25 +473,25 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Machine Shoulder Press",
     "Smith Machine Shoulder Press"
    ],
-   "note": "Sadece kas aktivitesi ölçümü var, büyüme ölçülmemiş; aralarında fark gösterilmedi"
+   "note": t("muscles.ev_on_omuz_2")
   },
   {
    "level": "zayıf",
    "ex": [
     "Front Raise (Dumbbell)"
    ],
-   "note": "Ön omuzu en çok çalıştıran kaldırışlardan; büyüme verisi yok, yalnızca kas aktivitesi ölçümü"
+   "note": t("muscles.ev_on_omuz_3")
   },
   {
    "level": "zayıf",
    "ex": [
     "Dumbbell Bench Press",
     "Smith Machine Bench Press",
-    "Chest Press Makinesi",
+    "Machine Chest Press",
     "Incline Bench Press",
     "Incline Dumbbell Press"
    ],
-   "note": "Eğim arttıkça ön omuz aktivitesi artıyor; büyüme değil, sadece aktivite ölçüldü"
+   "note": t("muscles.ev_on_omuz_4")
   },
   {
    "level": "yok",
@@ -447,19 +504,20 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Handstand Push-up",
     "Landmine Press",
     "Smith Machine Incline Press",
-    "Decline Şınav",
-    "Incline Chest Press Makinesi",
-    "Şınav (Push-up)",
+    "Decline Push-up",
+    "Machine Incline Chest Press",
+    "Push-up",
     "Thruster",
     "Clean & Press",
-    "Dips (Göğüs)",
+    "Chest Dip",
     "Floor Press",
     "Close-Grip Bench Press",
-    "Diamond Şınav",
+    "Diamond Push-up",
     "Low-to-High Cable Fly",
-    "Incline Şınav"
+    "Incline Push-up",
+    "Pike Push-up"
    ],
-   "note": "Çalışma yok; benzer hareketlere bakılarak tahmin edildi"
+   "note": t("muscles.ev_on_omuz_5")
   }
  ],
  "Yan Omuz": [
@@ -470,7 +528,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Cable Lateral Raise",
     "Machine Lateral Raise"
    ],
-   "note": "Tek çalışmada dambıl ve kablo eşit çıktı; makine için kanıt daha zayıf, sıralanacak fark yok"
+   "note": t("muscles.ev_yan_omuz_1")
   },
   {
    "level": "zayıf",
@@ -479,9 +537,10 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Overhead Press (Barbell)",
     "Seated Dumbbell Shoulder Press",
     "Standing Dumbbell Press",
-    "Machine Shoulder Press"
+    "Machine Shoulder Press",
+    "Dumbbell Scaption"
    ],
-   "note": "Yan omuzu çalıştırdıkları ölçüldü ama büyüttükleri hiç ölçülmedi"
+   "note": t("muscles.ev_yan_omuz_2")
   },
   {
    "level": "yok",
@@ -493,7 +552,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Y-Raise",
     "Cuban Press"
    ],
-   "note": "Benzer hareketlerden tahmin; bu hareketlere özgü veri yok"
+   "note": t("muscles.ev_yan_omuz_3")
   }
  ],
  "Arka Omuz": [
@@ -502,16 +561,17 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "ex": [
     "Reverse Pec Deck",
     "Rear Delt Fly (Dumbbell)",
-    "Cable Rear Delt Fly"
+    "Cable Rear Delt Fly",
+    "Band Pull-Apart"
    ],
-   "note": "Arka omzu doğrudan çalıştırır; aralarında fark ölçülmedi, hepsi eşit iyi"
+   "note": t("muscles.ev_arka_omuz_1")
   },
   {
    "level": "zayıf",
    "ex": [
     "Face Pull"
    ],
-   "note": "Muhtemelen iyi ama face pull doğrudan ölçülmedi; benzer hareketlerden çıkarım"
+   "note": t("muscles.ev_arka_omuz_2")
   },
   {
    "level": "zayıf",
@@ -527,7 +587,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Meadows Row",
     "Y-Raise"
    ],
-   "note": "Yardımcı olarak çalıştırır; dirsek açık çekilirse arka omuz payı artar"
+   "note": t("muscles.ev_arka_omuz_3")
   }
  ],
  "Biceps": [
@@ -542,31 +602,31 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Alternating Dumbbell Curl",
     "Cable Curl",
     "Machine Preacher Curl",
-    "21'ler"
+    "21s"
    ],
-   "note": "Curl çeşitleri arasında toplam kol büyümesi farkı bulunmadı; küçük çalışmalar"
+   "note": t("muscles.ev_biceps_1")
   },
   {
    "level": "orta",
    "ex": [
-    "Barfiks (Pull-up)",
-    "Ağırlıklı Barfiks",
-    "Asistanlı Barfiks Makinesi",
-    "Lat Pulldown (Geniş)",
-    "Lat Pulldown (Dar / V-Bar)",
+    "Pull-up",
+    "Weighted Pull-up",
+    "Assisted Pull-up Machine",
+    "Wide-Grip Lat Pulldown",
+    "Close-Grip Lat Pulldown (V-Bar)",
     "Seated Cable Row",
     "Barbell Row",
     "Pendlay Row",
-    "Dumbbell Row (Tek Kol)",
+    "Single-Arm Dumbbell Row",
     "T-Bar Row",
     "Chest-Supported Row",
     "Seal Row",
     "Machine Row",
     "Meadows Row",
     "Inverted Row",
-    "Tek Kol Lat Pulldown"
+    "Single-Arm Lat Pulldown"
    ],
-   "note": "Çekişler biceps'i büyütür ama curl'den yarı etkili sayılır"
+   "note": t("muscles.ev_biceps_2")
   },
   {
    "level": "zayıf",
@@ -575,19 +635,20 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Chin-up",
     "Reverse Curl"
    ],
-   "note": "Çoğunlukla kas aktivitesi ölçümüne ve çıkarıma dayanıyor"
+   "note": t("muscles.ev_biceps_3")
   },
   {
    "level": "yok",
    "ex": [
     "Zottman Curl",
     "Hammer Curl",
-    "Cable Hammer Curl (Halat)",
+    "Cable Hammer Curl (Rope)",
     "Concentration Curl",
     "Spider Curl",
-    "Drag Curl"
+    "Drag Curl",
+    "High Cable Curl"
    ],
-   "note": "Büyüme çalışması yok; benzer curl'lerden çıkarım"
+   "note": t("muscles.ev_biceps_4")
   }
  ],
  "Triceps": [
@@ -597,44 +658,48 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Overhead Cable Extension",
     "Overhead Dumbbell Extension"
    ],
-   "note": "Kol yukarıdayken yapılan hareket, pushdown'dan daha çok kas büyüttü; tek büyük çalışma var."
+   "note": t("muscles.ev_triceps_1")
   },
   {
    "level": "orta",
    "ex": [
-    "Triceps Pushdown (Halat)",
+    "Triceps Pushdown (Rope)",
     "Triceps Pushdown (Bar)"
    ],
-   "note": "Pushdown'un triceps'i büyüttüğü birden fazla çalışmada görüldü; overhead kadar iyi olmayabilir."
+   "note": t("muscles.ev_triceps_2")
   },
   {
    "level": "orta",
    "ex": [
     "Skull Crusher (EZ-Bar)",
-    "Tek Kol Cable Pushdown",
+    "Single-Arm Cable Pushdown",
     "Bench Press (Barbell)",
-    "Şınav (Push-up)"
+    "Push-up"
    ],
-   "note": "Triceps'i büyüttükleri gösterildi; bench ve şınav uzun başı izoleden az büyütüyor."
+   "note": t("muscles.ev_triceps_3")
   },
   {
    "level": "zayıf",
    "ex": [
     "Machine Triceps Extension",
     "Close-Grip Bench Press",
-    "Dips (Triceps)",
+    "Triceps Dip",
     "Bench Dips",
-    "Diamond Şınav",
+    "Diamond Push-up",
     "Dumbbell Skull Crusher"
    ],
-   "note": "Doğrudan büyüme çalışması yok; kas aktivasyonu ve benzer hareketlerden çıkarıldı."
+   "note": t("muscles.ev_triceps_4")
   },
   {
    "level": "yok",
    "ex": [
-    "JM Press"
+    "JM Press",
+    "Reverse-Grip Triceps Pushdown",
+    "Lying Cable Triceps Extension",
+    "Assisted Dip Machine",
+    "Machine Seated Dip"
    ],
-   "note": "Bu hareket için hiç çalışma yok; ağırlığı benzer hareketlerden tahmin edildi."
+   "note": t("muscles.ev_triceps_5")
   }
  ],
  "Önkol": [
@@ -643,7 +708,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "ex": [
     "Wrist Curl"
    ],
-   "note": "Bilek bükenleri büyüten iki küçük eğitim çalışması var."
+   "note": t("muscles.ev_onkol_1")
   },
   {
    "level": "orta",
@@ -651,7 +716,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Incline Dumbbell Curl",
     "Preacher Curl"
    ],
-   "note": "12 haftalık MRI çalışmasında önkolun üst-dış kasını büyüttü."
+   "note": t("muscles.ev_onkol_2")
   },
   {
    "level": "zayıf",
@@ -666,14 +731,15 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Bayesian Cable Curl",
     "Spider Curl",
     "Drag Curl",
-    "21'ler",
+    "21s",
     "Hammer Curl",
-    "Cable Hammer Curl (Halat)",
+    "Cable Hammer Curl (Rope)",
     "Reverse Curl",
     "Zottman Curl",
-    "Farmer's Walk"
+    "Farmer's Walk",
+    "Suitcase Carry"
    ],
-   "note": "Doğrudan büyüme verisi yok; diğer curl ve kavrama çalışmalarından çıkarım."
+   "note": t("muscles.ev_onkol_3")
   },
   {
    "level": "yok",
@@ -683,7 +749,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Dead Hang",
     "Plate Pinch"
    ],
-   "note": "Bu hareketler için büyüme çalışması yok; yalnızca mantıklı bir tahmin."
+   "note": t("muscles.ev_onkol_4")
   }
  ],
  "Quadriceps": [
@@ -691,12 +757,12 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "level": "güçlü",
    "ex": [
     "Leg Press",
-    "Tek Bacak Leg Press",
+    "Single-Leg Leg Press",
     "Leg Extension",
     "Back Squat",
     "High-Bar Squat"
    ],
-   "note": "Düzgün ölçümlü çalışmalarda ön uyluğu benzer büyüttüler; leg extension ayrıca rectus femoris'te en iyisi."
+   "note": t("muscles.ev_quadriceps_1")
   },
   {
    "level": "orta",
@@ -705,7 +771,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Front Squat",
     "Low-Bar Squat"
    ],
-   "note": "Doğrudan çalışma az; back squat sonuçlarından ve benzer kas aktivasyonundan çıkarılıyor."
+   "note": t("muscles.ev_quadriceps_2")
   },
   {
    "level": "zayıf",
@@ -715,9 +781,12 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Walking Lunge",
     "Forward Lunge",
     "Step-up",
-    "Pistol Squat"
+    "Pistol Squat",
+    "Dumbbell Sumo Squat",
+    "Overhead Squat",
+    "Safety Bar Squat"
    ],
-   "note": "Tek başına büyütme çalışması yok veya çok küçük; kas aktivasyonu ve modellemeye dayanıyor."
+   "note": t("muscles.ev_quadriceps_3")
   },
   {
    "level": "yok",
@@ -729,9 +798,13 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Belt Squat",
     "Reverse Lunge",
     "Sissy Squat",
-    "Lateral Lunge"
+    "Lateral Lunge",
+    "Split Squat",
+    "Curtsy Lunge",
+    "Reverse Nordic",
+    "Cossack Squat"
    ],
-   "note": "Hiç çalışma yok; benzer hareketlere bakılarak tahmin edildi."
+   "note": t("muscles.ev_quadriceps_4")
   }
  ],
  "Hamstring": [
@@ -740,14 +813,14 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "ex": [
     "Nordic Curl"
    ],
-   "note": "Birden fazla bağımsız çalışmada tüm arka uyluğu büyüttü"
+   "note": t("muscles.ev_hamstring_1")
   },
   {
    "level": "orta",
    "ex": [
     "Seated Leg Curl"
    ],
-   "note": "Diğer curl ve Nordic'ten fazla büyüttü; ama çalışma sayısı az ve küçük"
+   "note": t("muscles.ev_hamstring_2")
   },
   {
    "level": "orta",
@@ -756,11 +829,11 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Standing Leg Curl",
     "Romanian Deadlift",
     "Dumbbell Romanian Deadlift",
-    "Tek Bacak RDL",
+    "Single-Leg RDL",
     "Stiff-Leg Deadlift",
-    "Back Extension (Hiperekstansiyon)"
+    "Back Extension"
    ],
-   "note": "Arka uyluğu büyüttüğü ölçüldü; birbirine üstünlük gösterilmedi (bir kısmı benzer harekete dayalı çıkarım)"
+   "note": t("muscles.ev_hamstring_3")
   },
   {
    "level": "zayıf",
@@ -768,9 +841,10 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Glute-Ham Raise",
     "Good Morning",
     "Deadlift",
-    "Kettlebell Swing"
+    "Kettlebell Swing",
+    "Slider Leg Curl"
    ],
-   "note": "Sadece kas aktivitesi ölçümü var; büyüme çalışması yok"
+   "note": t("muscles.ev_hamstring_4")
   },
   {
    "level": "yok",
@@ -778,7 +852,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Reverse Hyperextension",
     "Cable Pull-through"
    ],
-   "note": "Doğrudan veri yok; benzer harekete bakılarak tahmin edildi"
+   "note": t("muscles.ev_hamstring_5")
   }
  ],
  "Kalça": [
@@ -788,38 +862,38 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Back Squat",
     "Hip Thrust (Barbell)"
    ],
-   "note": "İkisi de kalçayı kanıtlı büyütür; paralel squat ile hip thrust bir çalışmada eşit çıktı."
+   "note": t("muscles.ev_kalca_1")
   },
   {
    "level": "orta",
    "ex": [
     "High-Bar Squat",
     "Low-Bar Squat",
-    "Hip Thrust Makinesi",
-    "Cable Kickback (Kalça)",
+    "Machine Hip Thrust",
+    "Cable Glute Kickback",
     "Leg Press",
-    "Tek Bacak Leg Press"
+    "Single-Leg Leg Press"
    ],
-   "note": "Doğrudan ölçüm var ama tek çalışma ya da squat/hip thrust'tan çıkarım; çok iyi ama daha az kanıtlı."
+   "note": t("muscles.ev_kalca_2")
   },
   {
    "level": "orta",
    "ex": [
-    "Hip Abduction Makinesi"
+    "Machine Hip Abduction"
    ],
-   "note": "Üst kalçayı ve yan kalçayı biraz büyütür; genel kalça için ekstansiyondan az."
+   "note": t("muscles.ev_kalca_3")
   },
   {
    "level": "zayıf",
    "ex": [
     "Glute Bridge",
-    "Tek Bacak Glute Bridge",
+    "Single-Leg Glute Bridge",
     "Bulgarian Split Squat",
     "Walking Lunge",
     "Reverse Lunge",
     "Forward Lunge",
     "Step-up",
-    "Tek Bacak RDL",
+    "Single-Leg RDL",
     "Romanian Deadlift",
     "Dumbbell Romanian Deadlift",
     "Stiff-Leg Deadlift",
@@ -834,12 +908,12 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Cable Pull-through",
     "Hack Squat",
     "Pendulum Squat",
-    "Air Squat (Vücut Ağırlığı)",
+    "Air Squat",
     "Lateral Lunge",
     "Deadlift",
     "Trap Bar Deadlift",
     "Sumo Deadlift",
-    "Back Extension (Hiperekstansiyon)",
+    "Back Extension",
     "Reverse Hyperextension",
     "Good Morning",
     "Kettlebell Swing",
@@ -849,9 +923,14 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Clean and Jerk",
     "Snatch",
     "Power Snatch",
-    "Thruster"
+    "Thruster",
+    "Safety Bar Squat",
+    "Cable Hip Abduction",
+    "Banded Clamshell",
+    "Banded Lateral Walk",
+    "Kettlebell Snatch"
    ],
-   "note": "Kalçayı çalıştırdığı kas ölçümlerinden biliniyor; büyüme çalışması yok, gerisi çıkarım."
+   "note": t("muscles.ev_kalca_4")
   }
  ],
  "İç Bacak": [
@@ -861,13 +940,13 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Back Squat",
     "Leg Press"
    ],
-   "note": "İki küçük MRI çalışmasında iç bacak hacmi arttı; tam derinlikte çömelmek önemli"
+   "note": t("muscles.ev_ic_bacak_1")
   },
   {
    "level": "zayıf",
    "ex": [
     "Lateral Lunge",
-    "Tek Bacak Leg Press",
+    "Single-Leg Leg Press",
     "High-Bar Squat",
     "Low-Bar Squat",
     "Front Squat",
@@ -877,9 +956,10 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Hack Squat",
     "Pendulum Squat",
     "Belt Squat",
-    "Hip Adduction Makinesi"
+    "Machine Hip Adduction",
+    "Copenhagen Plank"
    ],
-   "note": "Tek çalışma veya benzer harekete bakarak çıkarım; aralarında üstünlük gösterilmedi"
+   "note": t("muscles.ev_ic_bacak_2")
   }
  ],
  "Baldır": [
@@ -889,23 +969,23 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Standing Calf Raise",
     "Leg Press Calf Raise",
     "Smith Machine Calf Raise",
-    "Tek Bacak Calf Raise"
+    "Single-Leg Calf Raise"
    ],
-   "note": "Dizi düz yapılan calf raise'ler tüm baldırı büyütür; kendi aralarında karşılaştırma yok"
+   "note": t("muscles.ev_baldir_1")
   },
   {
    "level": "orta",
    "ex": [
     "Seated Calf Raise"
    ],
-   "note": "Yalnız alttaki soleus kasını büyütür; üst baldırı (gastrocnemius) neredeyse hiç"
+   "note": t("muscles.ev_baldir_2")
   },
   {
    "level": "zayıf",
    "ex": [
     "Donkey Calf Raise"
    ],
-   "note": "Diz düz olduğu için aynı etki beklenir ama doğrudan çalışma yok"
+   "note": t("muscles.ev_baldir_3")
   }
  ],
  "Karın": [
@@ -914,20 +994,21 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
    "ex": [
     "Crunch"
    ],
-   "note": "Crunch/curl-up tipi programlarda karın kalınlığı arttı; tek kontrollü çalışma, etki küçük"
+   "note": t("muscles.ev_karin_1")
   },
   {
    "level": "zayıf",
    "ex": [
-    "Mekik (Sit-up)",
+    "Sit-up",
     "Cable Crunch",
     "Machine Crunch",
     "Reverse Crunch",
     "Hanging Leg Raise",
     "Hanging Knee Raise",
-    "Ab Wheel Rollout"
+    "Ab Wheel Rollout",
+    "Toes-to-Bar"
    ],
-   "note": "Kas aktivitesi yüksek ama büyüme ölçen çalışma yok; aralarında fark gösterilmedi"
+   "note": t("muscles.ev_karin_2")
   },
   {
    "level": "zayıf",
@@ -935,7 +1016,7 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Lying Leg Raise",
     "Plank"
    ],
-   "note": "Daha düşük destekli; plank programları kontrole üstünlük sağlamadı"
+   "note": t("muscles.ev_karin_3")
   },
   {
    "level": "yok",
@@ -947,9 +1028,10 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Bicycle Crunch",
     "Hollow Body Hold",
     "L-Sit",
-    "Mountain Climber"
+    "Mountain Climber",
+    "Bear Crawl"
    ],
-   "note": "Doğrudan veri yok; benzer hareketlerden tahmin edildi"
+   "note": t("muscles.ev_karin_4")
   }
  ],
  "Oblik": [
@@ -963,9 +1045,13 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Hanging Knee Raise",
     "Ab Wheel Rollout",
     "Plank",
-    "Farmer's Walk"
+    "Farmer's Walk",
+    "Copenhagen Plank",
+    "Cable Side Bend",
+    "Landmine Twist",
+    "Suitcase Carry"
    ],
-   "note": "Ölçümlerde obliği yüksek çalıştırıyor ama büyüme karşılaştırması yok; birbirinden ayrılamaz"
+   "note": t("muscles.ev_oblik_1")
   },
   {
    "level": "yok",
@@ -975,46 +1061,47 @@ export const EVIDENCE: Record<string, { level: Level; ex: string[]; note: string
     "Bicycle Crunch",
     "Captain's Chair Leg Raise"
    ],
-   "note": "Doğrudan ölçüm yok; mantıkla obliği çalıştırdığı düşünülüyor"
+   "note": t("muscles.ev_oblik_2")
   }
  ],
  "Rotator Manşet": [
   {
    "level": "zayıf",
    "ex": [
-    "Dumbbell External Rotation (Yan Yatarak)",
+    "Side-Lying Dumbbell External Rotation",
     "Cable External Rotation"
    ],
-   "note": "İki dış rotasyon hareketi arasında fark gösterilmedi; büyüme verisi küçük ve koşula bağlı."
+   "note": t("muscles.ev_rotator_1")
   },
   {
    "level": "yok",
    "ex": [
     "Cuban Press",
-    "Face Pull"
+    "Face Pull",
+    "Cable Internal Rotation"
    ],
-   "note": "Bu hareketler için çalışma yok; değerler dış rotasyon benzerliğinden tahmin edildi."
+   "note": t("muscles.ev_rotator_2")
   }
  ]
 };
 export const SUMMARY: Record<string, string> = {
- "Göğüs": "Tek bir en iyi göğüs egzersizi yok: bench, şınav ve makineler benzer sonuç veriyor. Eğim üst göğüse hafif katkı verebilir; fly ve kablo hareketleri için büyüme verisi yok.",
- "Lat": "Lat için tek bir en iyi hareket yok: egzersizleri karşılaştıran büyüme çalışması bulunmadı. Barfiks, pulldown ve row eşit sayılır; kavrama genişliği önemli değil.",
- "Trapez": "Trapez büyümesini hareketler arasında kıyaslayan çalışma yok. Shrug ve upright row üst trapez için en iyi destekli; row'lar orta-alt trapezi çalıştırır. Hepsi kas aktivitesi ve çıkarıma dayanıyor.",
- "Bel": "Bel kasının büyümesini hareketler arasında kıyaslayan çalışma yok. Ağırlıklar EMG ve mekaniğe dayanan çıkarımdır; deadlift ve back extension türleri eşit iyi sayılır.",
- "Ön Omuz": "Ön omuz için en iyi tek hareket belli değil. Tek doğrudan veri bench press; omuz presleri ve front raise'in büyümesi ölçülmedi. Presler ve eğimli itişler makul seçim; bench yapıyorsan ek pres azalan getiri verir.",
- "Yan Omuz": "Yan omuz büyümesi için veri yalnızca lateral raise ailesinde var (dambıl, kablo, makine); aralarında sıralanacak fark yok. Presler yan omuzu çalıştırır ama büyüttüğü ölçülmedi.",
- "Arka Omuz": "Arka omuz için büyüme çalışması yok; kanıt EMG'ye dayanıyor. Reverse pec deck ve arka omuz fly hareketleri ana seçenek; kürekler yardımcı. Aralarında tek en iyi yok.",
- "Biceps": "Tek bir en iyi biceps hareketi yok: incline, preacher, kablo ve dumbbell curl'ler eşit büyütüyor. Çekişler yarım set sayılır. Hammer ve ters curl'de pay önkola kayar.",
- "Triceps": "Kolu yukarıda yapılan overhead extension en iyi desteklenen seçenek; pushdown ve skull crusher da iyi. Bench ve şınav triceps'i büyütür ama izole hareketlerden az. En iyi: bir itme hareketi + bir overhead.",
- "Önkol": "Önkol üç bölge: bilek bükenler (en net kanıt Wrist Curl), üst-dış kas (tüm curl'ler büyütür; Hammer'ın üstünlüğü gösterilmedi), ekstansörler (veri yok). Tek en iyi hareket yok.",
- "Quadriceps": "Tek bir en iyi hareket yok: leg press, squat ve leg extension ön uyluğu benzer büyütür. Rectus femoris için leg extension şart; tam gelişim için bir çok eklemli hareket ve leg extension birlikte seçilmeli.",
- "Hamstring": "Tek bir kesin en iyi yok. Nordic en sağlam kanıtlı; oturarak leg curl umut verici. Tam arka uyluk için bir diz bükme (curl) ve bir kalça menteşesi (RDL, back extension) birlikte mantıklı.",
- "Kalça": "Tek bir en iyi kalça hareketi yok: paralel squat ve hip thrust kalçayı benzer büyüttü. Squat'ta derine inmek önemli. Ekstansiyon alt, abdüksiyon üst kalçayı daha çok çalıştırır.",
- "İç Bacak": "Tek bir en iyi hareket yok: tam derinlik squat ve leg press iç bacağı büyüttü. İç bacak makinesi için büyüme çalışması yok. Ağırlıkların çoğu çıkarımdır.",
- "Baldır": "Tek bir en iyi hareket yok: dizi düz yapılan calf raise'ler eşit derecede iyi. Oturarak yapılan yalnız soleus'u çalıştırır; leg curl'ler yardımcıdır. Tibialis Raise baldır değildir.",
- "Karın": "Karın hareketlerini kıyaslayan büyüme çalışması yok, tek bir en iyi hareket denemez. En iyi destek crunch tipi hareketlerde; yük eklenebilen seçenekler ilerlemeyi kolaylaştırır.",
- "Oblik": "Oblik büyümesini karşılaştıran çalışma yok; tek bir en iyi hareket belli değil. Side plank, yan eğilme, kablo rotasyonu ve asılı bacak kaldırma kas ölçümlerinde yüksek, ama kanıt zayıf.",
- "Rotator Manşet": "Rotator manşet için tek en iyi hareket yok: yan yatarak dambıl ve kablo dış rotasyon eşit. Büyüme kanıtı küçük ve zayıf; diğer hareketler yalnızca tahmini yardımcıdır."
+ "Göğüs": t("muscles.summary_gogus"),
+ "Lat": t("muscles.summary_lat"),
+ "Trapez": t("muscles.summary_trapez"),
+ "Bel": t("muscles.summary_bel"),
+ "Ön Omuz": t("muscles.summary_on_omuz"),
+ "Yan Omuz": t("muscles.summary_yan_omuz"),
+ "Arka Omuz": t("muscles.summary_arka_omuz"),
+ "Biceps": t("muscles.summary_biceps"),
+ "Triceps": t("muscles.summary_triceps"),
+ "Önkol": t("muscles.summary_onkol"),
+ "Quadriceps": t("muscles.summary_quadriceps"),
+ "Hamstring": t("muscles.summary_hamstring"),
+ "Kalça": t("muscles.summary_kalca"),
+ "İç Bacak": t("muscles.summary_ic_bacak"),
+ "Baldır": t("muscles.summary_baldir"),
+ "Karın": t("muscles.summary_karin"),
+ "Oblik": t("muscles.summary_oblik"),
+ "Rotator Manşet": t("muscles.summary_rotator")
 };
-export const INFERENCE: Record<string, string[]> = {"Göğüs":["Decline Dumbbell Press","Smith Machine Incline Press","Incline Dumbbell Press","Incline Chest Press Makinesi","Low-to-High Cable Fly","High-to-Low Cable Fly","Dips (Göğüs)","Incline Şınav","Decline Şınav","Dumbbell Pullover","Landmine Press","Svend Press","Floor Press"],"Lat":["Ağırlıklı Barfiks","Asistanlı Barfiks Makinesi","Pendlay Row","T-Bar Row","Meadows Row","Seal Row","Machine Row","Muscle-up","Tek Kol Lat Pulldown","Barbell Row","Dumbbell Row (Tek Kol)","Seated Cable Row","Chest-Supported Row","Inverted Row"],"Trapez":["Pendlay Row","T-Bar Row","Machine Row","Inverted Row","Meadows Row","Cable Lateral Raise","Machine Lateral Raise","Reverse Pec Deck","Cable Rear Delt Fly","Face Pull","Clean and Jerk","Clean & Press","Rack Pull","Trap Bar Deadlift","Farmer's Walk","Cuban Press","Kettlebell Goblet Clean","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Sled Pull","Thruster","Man Maker","Plate Pinch","Wrist Roller","Dead Hang"],"Bel":["Deadlift","Back Extension (Hiperekstansiyon)","Reverse Hyperextension","Rack Pull","Good Morning","Sumo Deadlift","Trap Bar Deadlift","Romanian Deadlift","Stiff-Leg Deadlift","Dumbbell Romanian Deadlift","Kettlebell Swing","Tek Bacak RDL","Superman","Back Squat","High-Bar Squat","Low-Bar Squat","Box Squat","Front Squat","Zercher Squat","Power Clean","Hang Clean","Snatch","Power Snatch","Clean and Jerk","Hip Thrust (Barbell)","Cable Pull-through","Glute-Ham Raise","Barbell Row","Pendlay Row","T-Bar Row","Meadows Row","Bird Dog","Farmer's Walk","Sled Pull","Sled Push"],"Ön Omuz":["Arnold Press","Push Press","Landmine Shoulder Press","Plate Front Raise","Cable Front Raise","Handstand Push-up","Smith Machine Incline Press","Incline Chest Press Makinesi","Incline Dumbbell Fly","Cable Crossover","Low-to-High Cable Fly","High-to-Low Cable Fly","Dips (Göğüs)","Şınav (Push-up)","Incline Şınav","Decline Şınav","Landmine Press","Svend Press","Floor Press","Close-Grip Bench Press","Dips (Triceps)","Bench Dips","JM Press","Diamond Şınav","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Cable Lateral Raise","Machine Lateral Raise","Y-Raise","Cuban Press","Man Maker","Burpee","Muscle-up"],"Yan Omuz":["Upright Row","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Handstand Push-up","Y-Raise","Cuban Press","Landmine Shoulder Press","Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Front Raise (Dumbbell)","Plate Front Raise","Cable Front Raise","Clean & Press","Thruster","Man Maker","Clean and Jerk","Snatch","Power Snatch","Seated Cable Row"],"Arka Omuz":["Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Chest-Supported Row","Seal Row","Seated Cable Row","Machine Row","Barbell Row","Pendlay Row","T-Bar Row","Inverted Row","Meadows Row","Y-Raise","Dumbbell Row (Tek Kol)","Barfiks (Pull-up)","Ağırlıklı Barfiks","Asistanlı Barfiks Makinesi","Lat Pulldown (Geniş)","Lat Pulldown (Dar / V-Bar)","Chin-up","Tek Kol Lat Pulldown","Muscle-up","Straight-Arm Pulldown","Dumbbell External Rotation (Yan Yatarak)","Cuban Press","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Upright Row","Cable External Rotation"],"Biceps":["Machine Preacher Curl","Cable Curl","EZ-Bar Curl","Alternating Dumbbell Curl","Concentration Curl","Spider Curl","Drag Curl","21'ler","Zottman Curl","Hammer Curl","Cable Hammer Curl (Halat)","Reverse Curl","Chin-up","Ağırlıklı Barfiks","Asistanlı Barfiks Makinesi","Tek Kol Lat Pulldown","Seated Cable Row","Barbell Row","Pendlay Row","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Inverted Row","Muscle-up","Straight-Arm Pulldown"],"Triceps":["Triceps Pushdown (Bar)","Overhead Dumbbell Extension","Dumbbell Skull Crusher","Machine Triceps Extension","Triceps Kickback","Cable Kickback (Triceps)","Close-Grip Bench Press","JM Press","Dips (Triceps)","Bench Dips","Diamond Şınav","Incline Bench Press","Incline Dumbbell Press","Decline Bench Press","Decline Dumbbell Press","Smith Machine Incline Press","Chest Press Makinesi","Incline Chest Press Makinesi","Incline Şınav","Decline Şınav","Landmine Press","Svend Press","Floor Press","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Thruster","Wall Ball","Clean & Press","Clean and Jerk","Man Maker","Muscle-up","Burpee","Dumbbell Pullover","Dumbbell Pullover (Sırt)","Straight-Arm Pulldown"],"Önkol":["Reverse Wrist Curl","Wrist Roller","Farmer's Walk","Dead Hang","Plate Pinch","Barbell Curl","EZ-Bar Curl","Dumbbell Curl","Alternating Dumbbell Curl","Machine Preacher Curl","Concentration Curl","Cable Curl","Bayesian Cable Curl","Spider Curl","Drag Curl","21'ler","Hammer Curl","Cable Hammer Curl (Halat)","Reverse Curl","Zottman Curl","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Barbell Shrug","Dumbbell Shrug","Barfiks (Pull-up)","Chin-up","Ağırlıklı Barfiks","Barbell Row","Pendlay Row","Dumbbell Row (Tek Kol)","T-Bar Row","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Tek Bacak RDL","Hanging Leg Raise","Hanging Knee Raise","Muscle-up","Power Clean","Hang Clean","Sled Pull","Kettlebell Swing","Inverted Row","Lat Pulldown (Geniş)","Lat Pulldown (Dar / V-Bar)","Seated Cable Row"],"Quadriceps":["Low-Bar Squat","Box Squat","Goblet Squat","Zercher Squat","Pendulum Squat","Belt Squat","Reverse Lunge","Lateral Lunge","Sissy Squat","Pistol Squat","Step-up","Wall Sit","Bulgarian Split Squat","Hack Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Sled Push","Box Jump","Hip Thrust (Barbell)","Hip Thrust Makinesi","Kettlebell Swing"],"Hamstring":["Standing Leg Curl","Dumbbell Romanian Deadlift","Tek Bacak RDL","Glute-Ham Raise","Good Morning","Cable Pull-through","Reverse Hyperextension","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Hip Thrust Makinesi","Glute Bridge","Frog Pump","Cable Kickback (Kalça)","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Lateral Lunge","Step-up","Pistol Squat","Superman","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Clean & Press","Kettlebell Goblet Clean","Romanian Deadlift","Stiff-Leg Deadlift","Hip Abduction Makinesi","Tek Bacak Glute Bridge"],"Kalça":["High-Bar Squat","Low-Bar Squat","Hip Thrust Makinesi","Tek Bacak Glute Bridge","Glute Bridge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Tek Bacak RDL","Front Squat","Goblet Squat","Belt Squat","Smith Machine Squat","Box Squat","Zercher Squat","Pistol Squat","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Frog Pump","Cable Pull-through","Tek Bacak Leg Press","Hack Squat","Pendulum Squat","Air Squat (Vücut Ağırlığı)","Lateral Lunge","Deadlift","Trap Bar Deadlift","Sumo Deadlift","Back Extension (Hiperekstansiyon)","Reverse Hyperextension","Good Morning","Kettlebell Swing","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Wall Sit","Superman","Glute-Ham Raise","Nordic Curl"],"İç Bacak":["High-Bar Squat","Low-Bar Squat","Front Squat","Goblet Squat","Zercher Squat","Smith Machine Squat","Hack Squat","Pendulum Squat","Belt Squat","Box Squat","Air Squat (Vücut Ağırlığı)","Wall Sit","Tek Bacak Leg Press","Lateral Lunge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Pistol Squat","Sumo Deadlift","Deadlift","Trap Bar Deadlift","Romanian Deadlift","Dumbbell Romanian Deadlift","Tek Bacak RDL","Stiff-Leg Deadlift","Good Morning","Hip Thrust (Barbell)","Hip Thrust Makinesi","Glute Bridge","Kettlebell Swing","Cable Pull-through","Hip Adduction Makinesi","Hip Abduction Makinesi"],"Baldır":["Tek Bacak Calf Raise","Donkey Calf Raise","Seated Calf Raise","Lying Leg Curl","Standing Leg Curl","Seated Leg Curl","Nordic Curl","Glute-Ham Raise","Box Jump","Sled Push"],"Karın":["Decline Sit-up","Captain's Chair Leg Raise","Dragon Flag","V-Up","Bicycle Crunch","Hollow Body Hold","L-Sit","Mountain Climber","Dead Bug","Russian Twist","Cable Woodchopper","Pallof Press","Side Bend (Dumbbell)","Back Squat","Front Squat","High-Bar Squat","Low-Bar Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Overhead Press (Barbell)","Standing Dumbbell Press","Cable Crunch","Machine Crunch","Mekik (Sit-up)"],"Oblik":["Side Bend (Dumbbell)","Cable Woodchopper","Pallof Press","Russian Twist","Bicycle Crunch","Captain's Chair Leg Raise","Decline Sit-up","Farmer's Walk"],"Rotator Manşet":["Cuban Press","Face Pull","Y-Raise","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Rear Delt Fly (Dumbbell)","Reverse Pec Deck","Cable Rear Delt Fly","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Seated Cable Row","Barbell Row","Pendlay Row","Dumbbell Row (Tek Kol)","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Bench Press (Barbell)","Dumbbell Bench Press","Şınav (Push-up)","Barfiks (Pull-up)","Chin-up"]};
+export const INFERENCE: Record<string, string[]> = {"Göğüs":["Decline Dumbbell Press","Smith Machine Incline Press","Incline Dumbbell Press","Machine Incline Chest Press","Low-to-High Cable Fly","High-to-Low Cable Fly","Chest Dip","Incline Push-up","Decline Push-up","Dumbbell Pullover","Landmine Press","Svend Press","Floor Press","Cable Chest Press","Reverse-Grip Bench Press","Deficit Push-up","Weighted Push-up","Squeeze Press (Dumbbell)"],"Lat":["Weighted Pull-up","Assisted Pull-up Machine","Pendlay Row","T-Bar Row","Meadows Row","Seal Row","Machine Row","Muscle-up","Single-Arm Lat Pulldown","Barbell Row","Single-Arm Dumbbell Row","Seated Cable Row","Chest-Supported Row","Inverted Row","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover"],"Trapez":["Pendlay Row","T-Bar Row","Machine Row","Inverted Row","Meadows Row","Cable Lateral Raise","Machine Lateral Raise","Reverse Pec Deck","Cable Rear Delt Fly","Face Pull","Clean and Jerk","Clean & Press","Rack Pull","Trap Bar Deadlift","Farmer's Walk","Cuban Press","Kettlebell Goblet Clean","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Sled Pull","Thruster","Man Maker","Plate Pinch","Wrist Roller","Dead Hang","Landmine Row","Band Pull-Apart","Pike Push-up","Suitcase Carry"],"Bel":["Deadlift","Back Extension","Reverse Hyperextension","Rack Pull","Good Morning","Sumo Deadlift","Trap Bar Deadlift","Romanian Deadlift","Stiff-Leg Deadlift","Dumbbell Romanian Deadlift","Kettlebell Swing","Single-Leg RDL","Superman","Back Squat","High-Bar Squat","Low-Bar Squat","Box Squat","Front Squat","Zercher Squat","Power Clean","Hang Clean","Snatch","Power Snatch","Clean and Jerk","Hip Thrust (Barbell)","Cable Pull-through","Glute-Ham Raise","Barbell Row","Pendlay Row","T-Bar Row","Meadows Row","Bird Dog","Farmer's Walk","Sled Pull","Sled Push","Landmine Row","Reverse-Grip Barbell Row","Deficit Deadlift","Overhead Squat","Safety Bar Squat","Suitcase Carry","Kettlebell Snatch","Dumbbell Snatch"],"Ön Omuz":["Arnold Press","Push Press","Landmine Shoulder Press","Plate Front Raise","Cable Front Raise","Handstand Push-up","Smith Machine Incline Press","Machine Incline Chest Press","Incline Dumbbell Fly","Cable Crossover","Low-to-High Cable Fly","High-to-Low Cable Fly","Chest Dip","Push-up","Incline Push-up","Decline Push-up","Landmine Press","Svend Press","Floor Press","Close-Grip Bench Press","Triceps Dip","Bench Dips","JM Press","Diamond Push-up","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Cable Lateral Raise","Machine Lateral Raise","Y-Raise","Cuban Press","Man Maker","Burpee","Muscle-up","Deficit Push-up","Weighted Push-up","Pike Push-up","Assisted Dip Machine","Machine Seated Dip"],"Yan Omuz":["Upright Row","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Handstand Push-up","Y-Raise","Cuban Press","Landmine Shoulder Press","Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Front Raise (Dumbbell)","Plate Front Raise","Cable Front Raise","Clean & Press","Thruster","Man Maker","Clean and Jerk","Snatch","Power Snatch","Seated Cable Row","Single-Arm Cable Row","Band Pull-Apart","Pike Push-up","Chest-Supported Rear Delt Raise","Dumbbell Scaption"],"Arka Omuz":["Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Chest-Supported Row","Seal Row","Seated Cable Row","Machine Row","Barbell Row","Pendlay Row","T-Bar Row","Inverted Row","Meadows Row","Y-Raise","Single-Arm Dumbbell Row","Pull-up","Weighted Pull-up","Assisted Pull-up Machine","Wide-Grip Lat Pulldown","Close-Grip Lat Pulldown (V-Bar)","Chin-up","Single-Arm Lat Pulldown","Muscle-up","Straight-Arm Pulldown","Side-Lying Dumbbell External Rotation","Cuban Press","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Upright Row","Cable External Rotation","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover","Band Pull-Apart","Cable Internal Rotation","Chest-Supported Rear Delt Raise","Dumbbell Scaption"],"Biceps":["Machine Preacher Curl","Cable Curl","EZ-Bar Curl","Alternating Dumbbell Curl","Concentration Curl","Spider Curl","Drag Curl","21s","Zottman Curl","Hammer Curl","Cable Hammer Curl (Rope)","Reverse Curl","Chin-up","Weighted Pull-up","Assisted Pull-up Machine","Single-Arm Lat Pulldown","Seated Cable Row","Barbell Row","Pendlay Row","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Inverted Row","Muscle-up","Straight-Arm Pulldown","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover","High Cable Curl"],"Triceps":["Triceps Pushdown (Bar)","Overhead Dumbbell Extension","Dumbbell Skull Crusher","Machine Triceps Extension","Triceps Kickback","Cable Kickback (Triceps)","Close-Grip Bench Press","JM Press","Triceps Dip","Bench Dips","Diamond Push-up","Incline Bench Press","Incline Dumbbell Press","Decline Bench Press","Decline Dumbbell Press","Smith Machine Incline Press","Machine Chest Press","Machine Incline Chest Press","Incline Push-up","Decline Push-up","Landmine Press","Svend Press","Floor Press","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Thruster","Wall Ball","Clean & Press","Clean and Jerk","Man Maker","Muscle-up","Burpee","Dumbbell Pullover","Dumbbell Pullover (Lats)","Straight-Arm Pulldown","Machine Pullover","Pike Push-up","Reverse-Grip Triceps Pushdown","Lying Cable Triceps Extension","Assisted Dip Machine","Machine Seated Dip"],"Önkol":["Reverse Wrist Curl","Wrist Roller","Farmer's Walk","Dead Hang","Plate Pinch","Barbell Curl","EZ-Bar Curl","Dumbbell Curl","Alternating Dumbbell Curl","Machine Preacher Curl","Concentration Curl","Cable Curl","Bayesian Cable Curl","Spider Curl","Drag Curl","21s","Hammer Curl","Cable Hammer Curl (Rope)","Reverse Curl","Zottman Curl","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Barbell Shrug","Dumbbell Shrug","Pull-up","Chin-up","Weighted Pull-up","Barbell Row","Pendlay Row","Single-Arm Dumbbell Row","T-Bar Row","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Single-Leg RDL","Hanging Leg Raise","Hanging Knee Raise","Muscle-up","Power Clean","Hang Clean","Sled Pull","Kettlebell Swing","Inverted Row","Wide-Grip Lat Pulldown","Close-Grip Lat Pulldown (V-Bar)","Seated Cable Row","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Deficit Deadlift","High Cable Curl","Toes-to-Bar","Suitcase Carry","Kettlebell Snatch","Dumbbell Snatch"],"Quadriceps":["Low-Bar Squat","Box Squat","Goblet Squat","Zercher Squat","Pendulum Squat","Belt Squat","Reverse Lunge","Lateral Lunge","Sissy Squat","Pistol Squat","Step-up","Wall Sit","Bulgarian Split Squat","Hack Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Sled Push","Box Jump","Hip Thrust (Barbell)","Machine Hip Thrust","Kettlebell Swing","Deficit Deadlift","Split Squat","Curtsy Lunge","Dumbbell Sumo Squat","Reverse Nordic","Overhead Squat","Safety Bar Squat","Cossack Squat","Kettlebell Snatch","Dumbbell Snatch"],"Hamstring":["Standing Leg Curl","Dumbbell Romanian Deadlift","Single-Leg RDL","Glute-Ham Raise","Good Morning","Cable Pull-through","Reverse Hyperextension","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Machine Hip Thrust","Glute Bridge","Frog Pump","Cable Glute Kickback","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Lateral Lunge","Step-up","Pistol Squat","Superman","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Clean & Press","Kettlebell Goblet Clean","Romanian Deadlift","Stiff-Leg Deadlift","Machine Hip Abduction","Single-Leg Glute Bridge","Deficit Deadlift","Split Squat","Curtsy Lunge","Cossack Squat","Slider Leg Curl","Machine Glute Kickback"],"Kalça":["High-Bar Squat","Low-Bar Squat","Machine Hip Thrust","Single-Leg Glute Bridge","Glute Bridge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Single-Leg RDL","Front Squat","Goblet Squat","Belt Squat","Smith Machine Squat","Box Squat","Zercher Squat","Pistol Squat","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Frog Pump","Cable Pull-through","Single-Leg Leg Press","Hack Squat","Pendulum Squat","Air Squat","Lateral Lunge","Deadlift","Trap Bar Deadlift","Sumo Deadlift","Back Extension","Reverse Hyperextension","Good Morning","Kettlebell Swing","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Wall Sit","Superman","Glute-Ham Raise","Nordic Curl","Deficit Deadlift","Split Squat","Jump Squat","Curtsy Lunge","Dumbbell Sumo Squat","Overhead Squat","Safety Bar Squat","Cossack Squat","Machine Glute Kickback","Cable Hip Abduction","Banded Clamshell","Banded Lateral Walk","Kettlebell Snatch","Dumbbell Snatch"],"İç Bacak":["High-Bar Squat","Low-Bar Squat","Front Squat","Goblet Squat","Zercher Squat","Smith Machine Squat","Hack Squat","Pendulum Squat","Belt Squat","Box Squat","Air Squat","Wall Sit","Single-Leg Leg Press","Lateral Lunge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Pistol Squat","Sumo Deadlift","Deadlift","Trap Bar Deadlift","Romanian Deadlift","Dumbbell Romanian Deadlift","Single-Leg RDL","Stiff-Leg Deadlift","Good Morning","Hip Thrust (Barbell)","Machine Hip Thrust","Glute Bridge","Kettlebell Swing","Cable Pull-through","Machine Hip Adduction","Machine Hip Abduction","Deficit Deadlift","Split Squat","Jump Squat","Curtsy Lunge","Dumbbell Sumo Squat","Overhead Squat","Cossack Squat","Copenhagen Plank","Kettlebell Snatch","Dumbbell Snatch"],"Baldır":["Single-Leg Calf Raise","Donkey Calf Raise","Seated Calf Raise","Lying Leg Curl","Standing Leg Curl","Seated Leg Curl","Nordic Curl","Glute-Ham Raise","Box Jump","Sled Push","Slider Leg Curl"],"Karın":["Decline Sit-up","Captain's Chair Leg Raise","Dragon Flag","V-Up","Bicycle Crunch","Hollow Body Hold","L-Sit","Mountain Climber","Dead Bug","Russian Twist","Cable Woodchopper","Pallof Press","Side Bend (Dumbbell)","Back Squat","Front Squat","High-Bar Squat","Low-Bar Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Overhead Press (Barbell)","Standing Dumbbell Press","Cable Crunch","Machine Crunch","Sit-up","Deficit Deadlift","Pike Push-up","Overhead Squat","Safety Bar Squat","Toes-to-Bar","Cable Side Bend","Landmine Twist","Bear Crawl"],"Oblik":["Side Bend (Dumbbell)","Cable Woodchopper","Pallof Press","Russian Twist","Bicycle Crunch","Captain's Chair Leg Raise","Decline Sit-up","Farmer's Walk","Copenhagen Plank","Cable Side Bend","Landmine Twist","Suitcase Carry"],"Rotator Manşet":["Cuban Press","Face Pull","Y-Raise","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Rear Delt Fly (Dumbbell)","Reverse Pec Deck","Cable Rear Delt Fly","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Seated Cable Row","Barbell Row","Pendlay Row","Single-Arm Dumbbell Row","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Bench Press (Barbell)","Dumbbell Bench Press","Push-up","Pull-up","Chin-up","Cable Chest Press","Reverse-Grip Bench Press","Deficit Push-up","Weighted Push-up","Squeeze Press (Dumbbell)","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Band Pull-Apart","Pike Push-up","Cable Internal Rotation","Chest-Supported Rear Delt Raise","Dumbbell Scaption"]};

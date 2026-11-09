@@ -1,4 +1,5 @@
 import { ymd } from "../core/dates.ts";
+import { t } from "../core/i18n.ts";
 import { BADGES, FREEZES_PER_MONTH, WEEK_BADGES, WEEK_FREEZES_PER_MONTH, computeStreak, computeWeekStreak, earnedBadges, nextBadge } from "../core/streak.ts";
 import { $, ic, state } from "./store.js";
 import { dayLoad } from "./stats.js";
@@ -16,25 +17,25 @@ function calc(skip = ""){
   const now = new Date();
   if (weekly()) {
     const r = computeWeekStreak(workoutDates(skip), state.goal, now);
-    return { ...r, kind: "week", count: r.weeks, unit: "hafta", adj: "haftalık", was: "haftaydı", done: r.goalMet, badges: WEEK_BADGES, freezes: WEEK_FREEZES_PER_MONTH };
+    return { ...r, kind: "week", count: r.weeks, unit: t("streak.unit_week"), adj: t("streak.adj_week"), was: t("streak.was_week"), done: r.goalMet, badges: WEEK_BADGES, freezes: WEEK_FREEZES_PER_MONTH };
   }
   const r = computeStreak(workoutDates(skip), Object.keys(state.plan.days), state.goal, now);
-  return { ...r, kind: "day", count: r.days, unit: "gün", adj: "günlük", was: "gündü", done: r.doneToday, badges: BADGES, freezes: FREEZES_PER_MONTH };
+  return { ...r, kind: "day", count: r.days, unit: t("streak.unit_day"), adj: t("streak.adj_day"), was: t("streak.was_day"), done: r.doneToday, badges: BADGES, freezes: FREEZES_PER_MONTH };
 }
 export const streakOn = () => streakMode() !== "off";
 export const streakNow = () => calc();
 
-export const flameHTML = (r, cls = "") => `<span class="streak${r.count ? "" : " off"}${cls ? " " + cls : ""}" title="Seri: ${r.count} ${r.unit}">${ic("flame")}<b>${r.count}</b>${r.kind === "week" ? `<small>hf</small>` : ""}</span>`;
+export const flameHTML = (r, cls = "") => `<span class="streak${r.count ? "" : " off"}${cls ? " " + cls : ""}" title="${t("streak.title", { n: r.count, unit: r.unit })}">${ic("flame")}<b>${r.count}</b>${r.kind === "week" ? `<small>${t("streak.wk_abbr")}</small>` : ""}</span>`;
 
 // Ana sayfadaki hatırlatma satırı
 export function streakNote(r){
   if (r.kind === "week") {
-    if (r.goalMet) return r.weeks > 1 ? `Hedef tamam · ${r.weeks} hafta` : "Hedef tamam";
-    if (r.atRisk) return `Bugün antrenman · ${r.thisWeek}/${state.goal}`;
+    if (r.goalMet) return r.weeks > 1 ? t("streak.goal_done_weeks", { n: r.weeks }) : t("streak.goal_done");
+    if (r.atRisk) return t("streak.train_today_progress", { a: r.thisWeek, b: state.goal });
     return "";
   }
   if (r.doneToday) return "";
-  if (r.atRisk) return r.days ? "Bugün antrenman · seriyi koru" : "Bugün antrenman · seri başlat";
+  if (r.atRisk) return r.days ? t("streak.keep") : t("streak.start");
   return "";
 }
 
@@ -42,13 +43,13 @@ export function streakNote(r){
 export function streakCardHTML(r){
   const got = new Set(earnedBadges(r.best, r.badges)), u = r.unit;
   const rule = r.kind === "week"
-    ? `Haftalık hedefini (${state.goal} gün) tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.${streakMode() === "auto" ? " Haftalık plan kurarsan seri planlı günlerine göre günlük işler." : ""}`
-    : "Planlı günleri kaçırmadıkça seri sürer; dinlenme günleri bozmaz.";
-  const freeze = r.kind === "week" ? "eksik kalan hafta" : "kaçırılan gün";
+    ? t("streak.rule_week", { goal: state.goal }) + (streakMode() === "auto" ? " " + t("streak.rule_week_auto") : "")
+    : t("streak.rule_day");
+  const freeze = r.kind === "week" ? t("streak.freeze_week") : t("streak.freeze_day");
   return `<div class="row" style="gap:14px;align-items:center">${flameHTML(r, "lg")}
-      <div class="grow"><b style="font-size:18px">${r.count} ${r.adj} seri</b>${infoBtn()}<div class="muted small">En uzun ${r.best} ${u}</div></div></div>
-    <div class="muted small help" style="margin-top:10px">${rule} Ayda ${r.freezes} kez ${freeze} seriyi bozmaz (dondurma): bu ay <b>${r.freezesLeft}</b> hakkın kaldı.</div>
-    <div class="badges">${r.badges.map(b => `<span class="badge${got.has(b) ? " on" : ""}" title="${b} ${r.adj} seri">${ic("flame")}${b}</span>`).join("")}</div>`;
+      <div class="grow"><b style="font-size:18px">${t("streak.count_streak", { n: r.count, adj: r.adj })}</b>${infoBtn()}<div class="muted small">${t("streak.longest", { n: r.best, unit: u })}</div></div></div>
+    <div class="muted small help" style="margin-top:10px">${rule} ${t("streak.freeze_html", { n: r.freezes, what: freeze, left: r.freezesLeft })}</div>
+    <div class="badges">${r.badges.map(b => `<span class="badge${got.has(b) ? " on" : ""}" title="${t("streak.badge_title", { b, adj: r.adj })}">${ic("flame")}${b}</span>`).join("")}</div>`;
 }
 
 // Antrenman bitince: bugünkü antrenman seriyi artırdıysa kutla; bir rozet eşiği geçildiyse büyük kutlama
@@ -60,13 +61,13 @@ export function celebrateStreak(){
   if (r.count <= before.count) return;
   const u = r.unit, badge = r.badges.find(b => before.best < b && r.best >= b), next = nextBadge(r.count, r.badges);
   buzz([30, 50, 30]);
-  const sub = badge ? `${badge} ${r.adj} seriye ulaştın. Böyle devam.`
-    : r.count === 1 ? (r.kind === "week" ? "Bu haftanın hedefi tamam: yeni bir seri başladı." : "Yeni bir seri başladı.")
-    : `${r.kind === "week" ? "Geçen hafta" : "Dün"} ${before.count} ${r.was}. ${next ? `Sıradaki rozet ${next} ${u}.` : ""}`;
+  const sub = badge ? t("streak.reached", { b: badge, adj: r.adj })
+    : r.count === 1 ? (r.kind === "week" ? t("streak.new_week") : t("streak.new_day"))
+    : t(r.kind === "week" ? "streak.prev_week" : "streak.prev_day", { n: before.count, was: r.was }) + (next ? " " + t("streak.next_badge", { b: next, unit: u }) : "");
   openSheet(`<div style="text-align:center;margin-top:8px">${flameHTML(r, "xl")}</div>`,
     `<div style="text-align:center">
-      <h3 style="font-size:24px;margin:8px 0 4px;letter-spacing:-.03em">${badge ? `Yeni rozet: ${badge} ${u}!` : `Serin ${r.count} ${u}!`}</h3>
+      <h3 style="font-size:24px;margin:8px 0 4px;letter-spacing:-.03em">${badge ? t("streak.new_badge", { b: badge, unit: u }) : t("streak.your_streak", { n: r.count, unit: u })}</h3>
       <p class="muted" style="margin:0 0 16px">${sub}</p>
-      <button class="btn primary" id="stOk" style="margin:0 auto">${ic("check")}Devam</button></div>`);
+      <button class="btn primary" id="stOk" style="margin:0 auto">${ic("check")}${t("streak.continue")}</button></div>`);
   $("#stOk").onclick = closeSheet;
 }

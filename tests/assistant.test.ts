@@ -171,7 +171,7 @@ describe("antrenman kaydetme", () => {
       { date: "2026-10-01", exercises: [
         { exercise: "squat", sets: [{ kg: 20, reps: 10, warmup: true }, { kg: 80, reps: 5, rir: 2 }, { kg: 80, reps: 5 }] },
         { exercise: "Plank", sets: [{ seconds: 60 }] },
-        { exercise: "Koşu (Bant)", sets: [{ minutes: 25, km: 4.2 }] },
+        { exercise: "Treadmill Run", sets: [{ minutes: 25, km: 4.2 }] },
         { exercise: "Barfiks", sets: [{ reps: 8 }], note: "kolay" },
       ] },
       { date: "3.10.2026", exercises: [{ exercise: "Garip Hareket", sets: [{ kg: 10, reps: 12 }] }] },
@@ -181,7 +181,7 @@ describe("antrenman kaydetme", () => {
     expect(s.entries[0]).toMatchObject({ date: "2026-10-01", sets: [{ w: 20, r: 10, t: "w" }, { w: 80, r: 5, rir: 2 }, { w: 80, r: 5 }] });
     expect(s.entries[0].ex).toMatch(/Squat/);
     expect(by("Plank").sets).toEqual([{ w: 0, r: 0, sec: 60 }]);
-    expect(by("Koşu (Bant)").sets).toEqual([{ w: 25, r: 4.2 }]);
+    expect(by("Treadmill Run").sets).toEqual([{ w: 25, r: 4.2 }]);
     expect(s.entries[3]).toMatchObject({ note: "kolay", sets: [{ w: 0, r: 8 }] });
     expect(by("Garip Hareket").date).toBe("2026-10-03");
     expect(s.custom.map(c => c.name)).toEqual(["Garip Hareket"]);
@@ -195,7 +195,7 @@ describe("antrenman kaydetme", () => {
       { exercise: "Downward Dog", sets: [{ seconds: 30 }, { seconds: 45 }] },
       { exercise: "ağaç", sets: [{ seconds: 20 }] },
     ] }], TODAY, uid);
-    expect(s.entries.map(e => e.ex)).toEqual(["Aşağı Bakan Köpek (Downward Dog)", "Ağaç (Tree Pose)"]);
+    expect(s.entries.map(e => e.ex)).toEqual(["Downward Dog", "Tree Pose"]);
     expect(s.entries[0].sets).toEqual([{ w: 0, r: 0, sec: 30 }, { w: 0, r: 0, sec: 45 }]);
     expect(s.custom).toEqual([]);
   });

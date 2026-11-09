@@ -1,0 +1,18 @@
+export default {
+  lang_label: "Dil",
+  lang_system: "Sistem",
+  lang_tr: "Türkçe",
+  lang_en: "English",
+  goal_days: "{n} gün",
+  goal_sum: "Haftada {goal} gün · {streak}",
+  streak_auto: "Haftalık planın varsa planlı günleri kaçırmadıkça seri gün gün artar; plan yoksa haftalık sayılır.",
+  streak_week: "Haftalık hedefini tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.",
+  streak_off: "Seri ve rozetler hiçbir yerde görünmez.",
+  focus_both: "Ağırlık, kardiyo ve yoga birlikte görünür.",
+  focus_lift: "Yoga pozları ve programları listelerde görünmez.",
+  focus_yoga: "Ağırlık hareketleri, rekorlar, güç skoru, hesap araçları, Kaslar sekmesi, kas analizi, başlangıç noktası ve toparlanma kartı gizlenir; yoga, kardiyo ve kendi hareketlerin kalır.",
+  theme_dark: "Koyu",
+  theme_light: "Açık",
+  theme_system: "Cihaz",
+  theme_aria: "Tema: {name}",
+};

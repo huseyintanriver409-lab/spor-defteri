@@ -1,0 +1,18 @@
+export default {
+  lang_label: "Language",
+  lang_system: "System",
+  lang_tr: "Türkçe",
+  lang_en: "English",
+  goal_days: "{n} days",
+  goal_sum: "{goal} days per week · {streak}",
+  streak_auto: "If you have a weekly plan, your streak increases day by day as long as you do not miss planned days; without a plan, it is counted weekly.",
+  streak_week: "Each week you meet your weekly goal, your streak increases by 1; the day you do it does not matter.",
+  streak_off: "Streak and badges are not shown anywhere.",
+  focus_both: "Strength, cardio, and yoga are shown together.",
+  focus_lift: "Yoga poses and programs are not shown in lists.",
+  focus_yoga: "Strength exercises, records, strength score, calculation tools, the Muscles tab, muscle analysis, starting point, and recovery card are hidden; yoga, cardio, and your custom exercises remain.",
+  theme_dark: "Dark",
+  theme_light: "Light",
+  theme_system: "System",
+  theme_aria: "Theme: {name}",
+};

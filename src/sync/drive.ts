@@ -1,6 +1,7 @@
 // Google Drive REST istemcisi: uygulamanın gizli klasöründe (appDataFolder) tek bir dosya okur/yazar.
 // Kapsam drive.appdata: uygulama kullanıcının Drive'daki diğer dosyalarını göremez.
 import type { RemoteStore } from "../core/sync.ts";
+import { t } from "../core/i18n.ts";
 
 export const FILE_NAME = "spor-defteri.json";
 const API = "https://www.googleapis.com/drive/v3/files";
@@ -15,9 +16,9 @@ async function checkStatus(res: Response) {
   if (res.status !== 401 && res.status !== 403) return;
   if (res.status === 403) {
     const text = await res.text().catch(() => "");
-    if (QUOTA_REASON.test(text)) throw new Error("Drive meşgul");
+    if (QUOTA_REASON.test(text)) throw new Error(t("cloud.err_drive_busy"));
   }
-  throw new AuthError(`Drive erişimi yok (${res.status})`);
+  throw new AuthError(t("cloud.err_drive_no_access", { status: res.status }));
 }
 
 export function driveStore(token: string, fetchFn: typeof fetch = fetch): RemoteStore {
@@ -25,7 +26,7 @@ export function driveStore(token: string, fetchFn: typeof fetch = fetch): Remote
   const call = async (url: string, init: RequestInit = {}) => {
     const res = await fetchFn(url, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init.headers || {}) } });
     await checkStatus(res);
-    if (!res.ok) throw new Error(`Drive hatası (${res.status})`);
+    if (!res.ok) throw new Error(t("cloud.err_drive_error", { status: res.status }));
     return res;
   };
   const find = async (): Promise<string | null> => {
@@ -59,7 +60,7 @@ export interface Account { name: string; email: string; photo: string }
 export async function driveAccount(token: string, fetchFn: typeof fetch = fetch): Promise<Account> {
   const res = await fetchFn(`https://www.googleapis.com/drive/v3/about?fields=user(displayName,emailAddress,photoLink)`, { headers: { Authorization: `Bearer ${token}` } });
   await checkStatus(res);
-  if (!res.ok) throw new Error(`Drive hatası (${res.status})`);
+  if (!res.ok) throw new Error(t("cloud.err_drive_error", { status: res.status }));
   const u = ((await res.json()) as any).user || {};
   return { name: String(u.displayName || ""), email: String(u.emailAddress || ""), photo: String(u.photoLink || "") };
 }

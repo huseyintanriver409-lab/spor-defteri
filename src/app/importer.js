@@ -8,6 +8,7 @@ import { renderProg, renderPlan, WEEKDAYS, openUrl, untilText } from "./programs
 import { ymd } from "../core/dates.ts";
 import { MCP_URL } from "../config.ts";
 import { refreshDatalist } from "./log.js";
+import { t } from "../core/i18n.ts";
 
 const LIVE = "https://huseyintanriver409-lab.github.io/spor-defteri/spor-defteri.html";
 // Bağlantılar her zaman yayındaki adrese gider; geliştirirken (localhost) kendi adresimiz
@@ -21,8 +22,7 @@ function applyPlan(days, times, until){
   for (const [code, prog] of days) next[code] = { prog, time: times[code] || (old[code] && old[code].time) || "19:00" };
   state.plan.days = next; state.plan.mode = "fixed"; state.goal = days.length; state.plan.until = until || "";
 }
-const calNote = () => state.gcal.plan ? "Google Takvim'e kendiliğinden yazılır."
-  : "Google Takvim'e yazılması için Profil > Yedek'te \"Haftalık planı…\" seçeneğini aç.";
+const calNote = () => state.gcal.plan ? t("importer.cal_auto") : t("importer.cal_enable");
 const untilLine = r => r.until ? ` · ${untilText(r.until)}` : "";
 
 // İçe aktarılan programı ekler; bilinmeyen hareketler özel hareket olur. plan: [gün kodu, gün sırası][]
@@ -38,7 +38,7 @@ function addImported(r, plan){
   if (plan && plan.length) applyPlan(plan.map(([code, i]) => [code, ids[i]]), r.times, r.until);
   state.onboarded = true;
   save(); refreshDatalist(); renderProg(); refreshAll(); buzz(15);
-  toast(plan && plan.length ? "Eklendi · plana yerleşti" : "Program eklendi", "check");
+  toast(plan && plan.length ? t("importer.added_planned") : t("importer.added"), "check");
 }
 
 // Bağlantıda plan yoksa: seçilen gün sayısına göre günleri sırayla dağıt
@@ -46,25 +46,25 @@ const autoPlan = (r, n) => (PLAN_DAYS[n] || PLAN_DAYS[3]).map((c, i) => [c, i % 
 
 // Programsız bağlantı: yalnız günler, saatler ve bitiş tarihi. Her güne mevcut programlardan biri seçilir.
 function openPlanPreview(r){
-  if (!state.programs.length) return toast("Önce program ekle");
+  if (!state.programs.length) return toast(t("importer.add_program_first"));
   // varsayılan: o gün zaten plandaki program, yoksa plandaki programlar sırayla, plan boşsa bütün programlar
   const inPlan = [...new Set(Object.values(state.plan.days).map(d => d.prog))].filter(id => state.programs.some(p => p.id === id));
   const pool = inPlan.length ? inPlan : state.programs.map(p => p.id);
   const pick = r.plan.map(([code], i) => [code, (state.plan.days[code] && pool.includes(state.plan.days[code].prog)) ? state.plan.days[code].prog : pool[i % pool.length]]);
   const opts = sel => state.programs.map(p => `<option value="${p.id}"${p.id === sel ? " selected" : ""}>${esc(p.name)}</option>`).join("");
-  openSheet(sheetHead("Planı ayarla"),
-    `<div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:2px 0 6px">Haftada ${r.plan.length} gün${esc(untilLine(r))}</div>
+  openSheet(sheetHead(t("importer.plan_title")),
+    `<div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:2px 0 6px">${t("importer.week_days", { n: r.plan.length })}${esc(untilLine(r))}</div>
      ${pick.map(([code, prog]) => `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span style="flex:0 0 74px;font-weight:600" class="small">${dayName(code)}</span>
        <select class="grow" data-ip="${code}">${opts(prog)}</select>
        <span class="chip" style="flex:none">${esc(r.times[code] || (state.plan.days[code] && state.plan.days[code].time) || "19:00")}</span></div>`).join("")}
      ${r.warnings.map(w => `<p class="muted small" style="margin:6px 0 0">${esc(w)}</p>`).join("")}
-     <p class="muted small" style="margin:10px 0 0">Mevcut haftalık planın yerine geçer. ${calNote()}</p>
-     <button class="btn primary xl" id="ipGo" style="margin-top:12px">${ic("calendar-days")}Planı uygula</button>`);
+     <p class="muted small" style="margin:10px 0 0">${t("importer.plan_replaces")} ${calNote()}</p>
+     <button class="btn primary xl" id="ipGo" style="margin-top:12px">${ic("calendar-days")}${t("importer.apply_plan")}</button>`);
   $("#ipGo").onclick = () => {
     applyPlan(pick.map(([code]) => [code, $(`[data-ip="${code}"]`).value]), r.times, r.until);
     state.onboarded = true;
     save(); renderPlan(); refreshAll(); buzz(15); closeSheet();
-    toast("Haftalık plan güncellendi", "check");
+    toast(t("importer.plan_updated"), "check");
   };
 }
 
@@ -74,16 +74,18 @@ export function openImportPreview(r){
   let n = hasPlan ? r.plan.length : Math.min(6, Math.max(2, r.days.length === 1 ? 3 : r.days.length)), place = true;
   const planText = () => (hasPlan ? r.plan : autoPlan(r, n)).map(([c, i]) => `${dayName(c)}${r.times[c] ? " " + r.times[c] : ""}: ${r.days[i].name}`).join(" · ") + untilLine(r);
   const unknown = r.days.flatMap(d => d.items).filter(i => !i.known).length;
-  openSheet(sheetHead("Bağlantıyla gelen program"),
+  // "yeni hareket" uyarıları zaten yukarıdaki nota yazılıyor; ayrı bir metin listesi olarak gösterilmez
+  const unknownWarn = new Set(r.unknown.map(n => t("ai.warn_unknown", { name: n })));
+  openSheet(sheetHead(t("importer.link_title")),
     `<div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:2px 0 6px">${esc(r.name)}</div>
-     ${r.days.map(d => `<div class="pk-head">${esc(r.days.length > 1 ? d.name : "Antrenman")}</div>
-       <div style="display:grid;gap:4px;margin-top:4px">${d.items.map(i => `<div class="row" style="flex-wrap:nowrap"><span class="grow">${esc(i.ex)}${i.known ? (i.original && i.original !== i.ex ? ` <span class="muted small">(${esc(i.original)})</span>` : "") : ` <span class="tag">yeni hareket</span>`}</span><span class="chip">${i.sets} × ${esc(i.reps || "–")}</span></div>`).join("")}</div>`).join("")}
-     ${unknown ? `<p class="muted small" style="margin-top:10px">${ic("lightbulb")} "Yeni hareket" olanlar özel hareket olarak eklenir.</p>` : ""}
-     ${r.warnings.filter(w => !/listede yok/.test(w)).map(w => `<p class="muted small" style="margin:6px 0 0">${esc(w)}</p>`).join("")}
-     ${hasPlan ? "" : `<div class="pk-head">Haftada kaç gün</div><div class="optgrid" id="imDays">${[2, 3, 4, 5, 6].map(x => `<button class="fchip${x === n ? " on" : ""}" data-v="${x}">${x} gün</button>`).join("")}</div>`}
-     <label class="check row" style="margin:14px 0 0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="imPlace" checked><span>Plana yerleştir${Object.keys(state.plan.days).length ? " (yerini alır)" : ""}</span></label>
+     ${r.days.map(d => `<div class="pk-head">${esc(r.days.length > 1 ? d.name : t("importer.workout"))}</div>
+       <div style="display:grid;gap:4px;margin-top:4px">${d.items.map(i => `<div class="row" style="flex-wrap:nowrap"><span class="grow">${esc(i.ex)}${i.known ? (i.original && i.original !== i.ex ? ` <span class="muted small">(${esc(i.original)})</span>` : "") : ` <span class="tag">${t("importer.new_move")}</span>`}</span><span class="chip">${i.sets} × ${esc(i.reps || "–")}</span></div>`).join("")}</div>`).join("")}
+     ${unknown ? `<p class="muted small" style="margin-top:10px">${ic("lightbulb")} ${t("importer.new_note")}</p>` : ""}
+     ${r.warnings.filter(w => !unknownWarn.has(w)).map(w => `<p class="muted small" style="margin:6px 0 0">${esc(w)}</p>`).join("")}
+     ${hasPlan ? "" : `<div class="pk-head">${t("importer.week_how_many")}</div><div class="optgrid" id="imDays">${[2, 3, 4, 5, 6].map(x => `<button class="fchip${x === n ? " on" : ""}" data-v="${x}">${t("importer.days_count", { n: x })}</button>`).join("")}</div>`}
+     <label class="check row" style="margin:14px 0 0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="imPlace" checked><span>${t("importer.place")}${Object.keys(state.plan.days).length ? ` ${t("importer.place_replace")}` : ""}</span></label>
      <p class="muted small" id="imPlan" style="margin:6px 0 0"></p>
-     <button class="btn primary xl" id="imGo" style="margin-top:12px">${ic("plus")}Ekle</button>`);
+     <button class="btn primary xl" id="imGo" style="margin-top:12px">${ic("plus")}${t("importer.add_btn")}</button>`);
   const render = () => { $("#imPlan").textContent = place ? planText() + ". " + calNote() : ""; };
   if ($("#imDays")) $("#imDays").querySelectorAll("button").forEach(b => b.onclick = () => {
     n = +b.dataset.v; $("#imDays").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); render(); buzz(5);
@@ -99,7 +101,7 @@ export function handleImportLink(){
   const url = location.href;
   history.replaceState(null, "", location.pathname + location.search);
   const r = parseProgram(url, knownNames());
-  if (!r) return toast("Program okunamadı");
+  if (!r) return toast(t("importer.read_failed"));
   openImportPreview(r);
 }
 
@@ -107,8 +109,8 @@ export async function shareProgram(p){
   if (!p) return;
   const link = buildLink(base(), p.name, [{ name: "A", items: p.items }]);
   try { if (navigator.share) { await navigator.share({ title: p.name, text: `${p.name} (Spor Defteri)`, url: link }); return; } } catch(e){ if (e && e.name === "AbortError") return; }
-  try { await navigator.clipboard.writeText(link); toast("Kopyalandı", "copy"); }
-  catch(e){ openSheet(sheetHead("Paylaşım bağlantısı"), `<p class="muted">Kopyalayıp gönder:</p><textarea readonly style="width:100%;min-height:120px">${esc(link)}</textarea>`); }
+  try { await navigator.clipboard.writeText(link); toast(t("importer.copied"), "copy"); }
+  catch(e){ openSheet(sheetHead(t("importer.share_title")), `<p class="muted">${t("importer.copy_send")}</p><textarea readonly style="width:100%;min-height:120px">${esc(link)}</textarea>`); }
 }
 
 // Yapay zekâlar: istek adreste taşınabiliyorsa (q=) doğrudan yazılı açılır, taşınamıyorsa panoya kopyalanıp açılır
@@ -122,38 +124,38 @@ const AIS = [
 // dönen bağlantı dokununca açılır, açılmazsa buraya yapıştırılır
 export function openAiSheet(){
   const canShare = !!navigator.share;
-  openSheet(sheetHead("Yapay zekâ ile"),
-    `<div class="pk-head" style="margin-top:0">1 İstek${helpTip("Kullandığın yapay zekâya (Claude, ChatGPT, Gemini…) ne istediğini anlat; sana bir program ya da haftalık plan ve uygulamaya ekleme bağlantısı versin. Plan Google Takvim'e de yazılır." + (canShare ? " Açılan menüden telefonundaki yapay zekâyı seç." : "") + " İstek panoya da kopyalanır; yapay zekâ boş açılırsa yapıştırıp gönder. Başka bir yapay zekâ kullanıyorsan kopyalayıp ona yapıştır.")}</div>
-     <input id="clWish" placeholder="ör. pazartesi, çarşamba, cumartesi 18:00, 6 Ocak'a kadar">
-     ${canShare ? `<button class="btn" id="clShare" style="margin-top:10px;width:100%;justify-content:center">${ic("share-2")}Yapay zekâ uygulamana gönder</button>` : ""}
+  openSheet(sheetHead(t("importer.ai_title")),
+    `<div class="pk-head" style="margin-top:0">${t("importer.step_1")}${helpTip(t("importer.ai_help") + (canShare ? " " + t("importer.ai_help_share") : "") + " " + t("importer.ai_help_copy"))}</div>
+     <input id="clWish" placeholder="${t("importer.wish_ph")}">
+     ${canShare ? `<button class="btn" id="clShare" style="margin-top:10px;width:100%;justify-content:center">${ic("share-2")}${t("importer.ai_send")}</button>` : ""}
      <div class="row" style="margin-top:10px;gap:8px;flex-wrap:wrap">${AIS.map(([n], i) => `<button class="btn sm" data-ai="${i}">${ic("sparkles")}${n}</button>`).join("")}
-       <button class="btn sm quiet" id="clCopy">${ic("copy")}Kopyala</button></div>
-     <div class="pk-head">2 Bağlantı${helpTip("Bağlantıya dokununca uygulama açılır. Açılmazsa bağlantıyı (ya da cevabın tamamını) kopyalayıp buraya yapıştır.")}</div>
+       <button class="btn sm quiet" id="clCopy">${ic("copy")}${t("importer.copy_btn")}</button></div>
+     <div class="pk-head">${t("importer.step_2")}${helpTip(t("importer.link_help"))}</div>
      <textarea id="clPaste" placeholder="https://…#ekle=p=…" style="width:100%;min-height:90px"></textarea>
      <div class="row" style="margin-top:8px">
-       <button class="btn" id="clClip">${ic("clipboard-list")}Yapıştır</button><span class="grow"></span>
-       <button class="btn primary" id="clAdd">${ic("plus")}Ekle</button>
+       <button class="btn" id="clClip">${ic("clipboard-list")}${t("importer.paste_btn")}</button><span class="grow"></span>
+       <button class="btn primary" id="clAdd">${ic("plus")}${t("importer.add_btn")}</button>
      </div>`);
   const prompt = () => aiPrompt(base(), $("#clWish").value.trim(), ymd(new Date()));
   const copy = async () => { try { await navigator.clipboard.writeText(prompt()); return true; } catch(e){ return false; } };
   if (canShare) $("#clShare").onclick = async () => {
     try { await navigator.share({ text: prompt() }); }
-    catch(e){ if (!e || e.name !== "AbortError") { await copy(); toast("Kopyalandı · yapay zekâna yapıştır"); } }
+    catch(e){ if (!e || e.name !== "AbortError") { await copy(); toast(t("importer.copied_ai")); } }
   };
   document.querySelectorAll("[data-ai]").forEach(b => b.onclick = async () => {
     const [name, url] = AIS[+b.dataset.ai], ok = await copy();
     // Gemini adresle istek almıyor: yapıştırmak gerekir
-    if (name === "Gemini") toast(ok ? "Kopyalandı · Gemini'de yapıştır" : "Kopyalanamadı", "copy");
+    if (name === "Gemini") toast(ok ? t("importer.copied_gemini") : t("importer.copy_failed"), "copy");
     openUrl(url(prompt()));
   });
-  $("#clCopy").onclick = async () => toast(await copy() ? "Kopyalandı" : "Kopyalanamadı", "copy");
+  $("#clCopy").onclick = async () => toast(await copy() ? t("importer.copied") : t("importer.copy_failed"), "copy");
   $("#clClip").onclick = async () => {
     try { $("#clPaste").value = await navigator.clipboard.readText(); }
-    catch(e){ toast("Panoya erişilemedi; uzun basıp yapıştır"); }
+    catch(e){ toast(t("importer.clip_failed")); }
   };
   $("#clAdd").onclick = () => {
     const r = parseProgram($("#clPaste").value, knownNames());
-    if (!r) return toast("Bağlantı bulunamadı");
+    if (!r) return toast(t("importer.link_not_found"));
     openImportPreview(r);
   };
 }
@@ -162,7 +164,7 @@ export function setup(){
   // Profil → Yapay zekâ bağlantısı: bağlayıcı adresi ve Gemini CLI ayarı
   $("#mcpUrl").value = MCP_URL;
   $("#mcpGemini").textContent = JSON.stringify({ mcpServers: { "spor-defteri": { httpUrl: MCP_URL } } }, null, 2);
-  $("#mcpCopy").onclick = async () => { try { await navigator.clipboard.writeText(MCP_URL); toast("Kopyalandı", "copy"); } catch(e){ $("#mcpUrl").select(); toast("Seçili adresi kopyala"); } };
+  $("#mcpCopy").onclick = async () => { try { await navigator.clipboard.writeText(MCP_URL); toast(t("importer.copied"), "copy"); } catch(e){ $("#mcpUrl").select(); toast(t("importer.copy_select")); } };
   // uygulama açıkken başka bir bağlantıyla gelinirse
   window.addEventListener("hashchange", handleImportLink);
 }

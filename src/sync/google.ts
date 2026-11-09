@@ -7,12 +7,14 @@
 // requestToken() bir tıklama işleyicisinin içinde, ondan önce hiçbir await olmadan çağrılmalı;
 // Google betiği de önceden preload() ile yüklenmiş olmalı.
 
+import { t } from "../core/i18n.ts";
+
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 export const CAL_SCOPE = "https://www.googleapis.com/auth/calendar.app.created";
 export const TASKS_SCOPE = "https://www.googleapis.com/auth/tasks";
 const TOKEN_KEY = "sporDefteri.gtoken";
 const GIS_SRC = "https://accounts.google.com/gsi/client";
-const NAMES: Record<string, string> = { [DRIVE_SCOPE]: "Drive", [CAL_SCOPE]: "Takvim", [TASKS_SCOPE]: "Görevler" };
+const scopeName = (x: string): string => x === DRIVE_SCOPE ? t("cloud.scope_drive") : x === CAL_SCOPE ? t("cloud.scope_calendar") : x === TASKS_SCOPE ? t("cloud.scope_tasks") : x;
 
 // s: anahtarın taşıdığı kapsamlar (boşlukla ayrılmış); eski kayıtlarda yoksa yalnız Drive sayılır
 type Stored = { t: string; exp: number; s?: string };
@@ -36,7 +38,7 @@ export function preload(): Promise<void> {
     const s = document.createElement("script");
     s.src = GIS_SRC; s.async = true;
     s.onload = () => res();
-    s.onerror = () => { gisLoading = null; rej(new Error("Google girişi yüklenemedi, bağlantını kontrol et")); };
+    s.onerror = () => { gisLoading = null; rej(new Error(t("cloud.err_gis_load"))); };
     document.head.appendChild(s);
   });
 }
@@ -62,10 +64,10 @@ export function tokenRequestOptions(firstTime: boolean, email?: string | null): 
 // Daha önce verilmiş izinler de yeni anahtara eklenir (include_granted_scopes).
 export function requestToken(clientId: string, firstTime: boolean, scopes: string[] = [DRIVE_SCOPE], email?: string | null): Promise<string> {
   return new Promise((res, rej0) => {
-    if (!gisReady()) return rej0(new Error("Google hazır değil, tekrar dene"));
+    if (!gisReady()) return rej0(new Error(t("cloud.err_gis_not_ready")));
     // GIS hiçbir geri çağrı vermezse söz asılı kalmasın
     let settled = false;
-    const timer = setTimeout(() => { settled = true; rej0(new PopupError("Giriş penceresi açılamadı", "timeout")); }, TOKEN_TIMEOUT_MS);
+    const timer = setTimeout(() => { settled = true; rej0(new PopupError(t("cloud.err_popup_failed"), "timeout")); }, TOKEN_TIMEOUT_MS);
     const rej = (e: any) => { if (settled) return; settled = true; clearTimeout(timer); rej0(e); };
     const oauth = window.google.accounts.oauth2;
     const client = oauth.initTokenClient({
@@ -77,11 +79,11 @@ export function requestToken(clientId: string, firstTime: boolean, scopes: strin
         const granted = String(r.scope || scopes.join(" ")).split(" ").filter(x => oauth.hasGrantedAllScopes(r, x));
         write({ t: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000, s: granted.join(" ") });
         const missing = scopes.filter(x => !granted.includes(x));
-        if (missing.length) return rej(new Error(`${missing.map(x => NAMES[x] || x).join(" ve ")} izni verilmedi`));
+        if (missing.length) return rej(new Error(t("cloud.err_scope_denied", { names: missing.map(scopeName).join(t("cloud.scope_and")) })));
         if (settled) return;  // zaman aşımından sonra gelen geçerli anahtar saklandı, söz zaten sonuçlandı
         settled = true; clearTimeout(timer); res(r.access_token);
       },
-      error_callback: (e: any) => rej(new PopupError(e && e.type === "popup_closed" ? "Giriş penceresi kapatıldı" : "Giriş penceresi açılamadı", String((e && e.type) || "unknown"))),
+      error_callback: (e: any) => rej(new PopupError(e && e.type === "popup_closed" ? t("cloud.err_popup_closed") : t("cloud.err_popup_failed"), String((e && e.type) || "unknown"))),
     });
     client.requestAccessToken(tokenRequestOptions(firstTime, email));
   });

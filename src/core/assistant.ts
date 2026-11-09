@@ -4,9 +4,10 @@
    damgalayıp dosyayı geri yazar, telefon da bir sonraki eşitlemede mergeStates ile alır.
    Program ekleme ve plan kurma, bağlantıyla eklemedeki (app/importer.js) kurallarla aynıdır.
    Tarayıcıya bağlı değildir; testleri tests/assistant.test.ts. */
+import { t } from "./i18n.ts";
 import { CARDIO, LIB, YOGA } from "./library.ts";
 import { dayCode, matchExercise, normalize, parseDate, parseTime } from "./importer.ts";
-import { e1rm, work, volume } from "./training.ts";
+import { e1rm, work, volume, timedExercise } from "./training.ts";
 import { parse, ymd } from "./dates.ts";
 import { MAX_UNTIL_DAYS, plannedDates } from "./calendar.ts";
 import { dropProgram, isRot, keepRotation, startRotation, type Plan } from "./plan.ts";
@@ -14,7 +15,7 @@ import type { State, Stamped } from "./schema.ts";
 import { buildBaseline } from "./baseline.ts";
 
 export const WEEK = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
-const DAY_NAMES: Record<string, string> = { MO: "Pazartesi", TU: "Salı", WE: "Çarşamba", TH: "Perşembe", FR: "Cuma", SA: "Cumartesi", SU: "Pazar" };
+const DAY_NAMES: Record<string, string> = { MO: t("assistant.day_mon"), TU: t("assistant.day_tue"), WE: t("assistant.day_wed"), TH: t("assistant.day_thu"), FR: t("assistant.day_fri"), SA: t("assistant.day_sat"), SU: t("assistant.day_sun") };
 export const MAX_ITEMS = 30;
 export const MAX_WORKOUTS = 100;
 
@@ -34,15 +35,15 @@ export interface ProgItem { ex: string; sets: number; reps: string }
 
 // Hareket adları kütüphanedeki yazımla eşlenir; bulunamayanlar yeni (özel) hareket olarak eklenir
 function toItems(s: State, items: ItemInput[], notes: string[], weights?: { ex: string; w: unknown; r: unknown }[]): ProgItem[] {
-  if (!Array.isArray(items) || !items.length) throw new Error("Programda en az bir hareket olmalı.");
-  if (items.length > MAX_ITEMS) throw new Error(`Bir günde en fazla ${MAX_ITEMS} hareket olabilir.`);
+  if (!Array.isArray(items) || !items.length) throw new Error(t("assistant.err_min_items"));
+  if (items.length > MAX_ITEMS) throw new Error(t("assistant.err_max_items", { max: MAX_ITEMS }));
   return items.map(it => {
     const raw = String(it.exercise || "").trim().slice(0, 80);
-    if (!raw) throw new Error("Hareket adı boş olamaz.");
+    if (!raw) throw new Error(t("assistant.err_ex_empty"));
     const m = matchExercise(raw, knownExercises(s));
     if (!m) {
       s.custom.push({ name: raw, group: "Diğer" });
-      notes.push(`"${raw}" listede yoktu, yeni hareket olarak eklendi.`);
+      notes.push(t("assistant.note_added", { name: raw }));
     } else if (m !== raw) notes.push(`"${raw}" → "${m}"`);
     const reps = String(it.reps ?? "").trim().match(/\d+(-\d+)?/)?.[0] || "";
     if (weights && +it.kg! > 0) weights.push({ ex: m || raw, w: it.kg, r: parseInt(reps) || 0 });
@@ -67,9 +68,9 @@ function saveWeights(s: State, weights: { ex: string; w: unknown; r: unknown }[]
 }
 
 export function addProgram(s: State, name: string, days: DayInput[], uid: () => string, today = new Date()) {
-  const base = String(name || "").trim().slice(0, 60) || "Claude'dan program";
-  if (!Array.isArray(days) || !days.length) throw new Error("En az bir gün gerekli.");
-  if (days.length > 7) throw new Error("En fazla 7 gün olabilir.");
+  const base = String(name || "").trim().slice(0, 60) || t("assistant.default_name");
+  if (!Array.isArray(days) || !days.length) throw new Error(t("assistant.err_min_days"));
+  if (days.length > 7) throw new Error(t("assistant.err_max_days"));
   const notes: string[] = [], weights: { ex: string; w: unknown; r: unknown }[] = [];
   const created = days.map((d, i) => {
     const dn = String(d.name || "").trim().slice(0, 30) || String.fromCharCode(65 + i);
@@ -83,7 +84,7 @@ export function addProgram(s: State, name: string, days: DayInput[], uid: () => 
 
 export function updateProgram(s: State, ref: string, change: { name?: string; items?: ItemInput[] }, today = new Date()) {
   const p = findProgram(s, ref);
-  if (!p) throw new Error(`Program bulunamadı: ${ref}`);
+  if (!p) throw new Error(t("assistant.err_prog_missing", { name: ref }));
   const notes: string[] = [];
   if (change.name != null && String(change.name).trim()) {
     const n = String(change.name).trim().slice(0, 60);
@@ -97,7 +98,7 @@ export function updateProgram(s: State, ref: string, change: { name?: string; it
 // Program silinir; haftalık planda o programa ayrılmış günler boşalır
 export function deleteProgram(s: State, ref: string) {
   const p = findProgram(s, ref);
-  if (!p) throw new Error(`Program bulunamadı: ${ref}`);
+  if (!p) throw new Error(t("assistant.err_prog_missing", { name: ref }));
   s.programs = s.programs.filter(x => x !== p);
   const freed = dropProgram(s.plan, p.id, new Date());
   if (freed.length) s.goal = Object.keys(s.plan.days).length || s.goal;
@@ -114,15 +115,15 @@ export const CALENDAR_MODES = ["gorev", "etkinlik", "kapali"];
 // rotation: programlar sırayla dönsün (A, B → A-B-A, sonraki hafta B-A-B); verilince günlerdeki program yok sayılır,
 // ilk antrenman günü listenin ilkini alır. Verilmezse ve günlere program yazılmamışsa önceki sırayla plan sürer.
 export function setPlan(s: State, days: PlanDayInput[], until: string | undefined, today: Date, calendar?: string, rotation?: string[]) {
-  if (!Array.isArray(days)) throw new Error("Günler listesi gerekli.");
-  if (days.length && !s.programs.length) throw new Error("Önce bir program ekle; plan programlara göre kurulur.");
+  if (!Array.isArray(days)) throw new Error(t("assistant.err_days_list"));
+  if (days.length && !s.programs.length) throw new Error(t("assistant.err_need_program"));
   const prev: Plan = { ...s.plan, days: { ...s.plan.days } };
   // araç tanımını eski hâliyle tutan istemciler listeyi metin olarak gönderebilir: '["A","B"]' ya da "A, B"
   if (typeof rotation === "string") {
-    const t = String(rotation).trim();
-    try { rotation = JSON.parse(t); } catch { rotation = t ? t.split(",").map(x => x.trim()).filter(Boolean) : []; }
+    const txt = String(rotation).trim();
+    try { rotation = JSON.parse(txt); } catch { rotation = txt ? txt.split(",").map(x => x.trim()).filter(Boolean) : []; }
   }
-  const order = (Array.isArray(rotation) ? rotation : []).map(r => { const p = findProgram(s, String(r)); if (!p) throw new Error(`Program bulunamadı: ${r}`); return p.id; });
+  const order = (Array.isArray(rotation) ? rotation : []).map(r => { const p = findProgram(s, String(r)); if (!p) throw new Error(t("assistant.err_prog_missing", { name: String(r) })); return p.id; });
   const keepRot = !order.length && rotation === undefined && isRot(prev) && days.every(d => !d.program);
   const old = s.plan.days, next: Record<string, { prog: string; time: string }> = {};
   const pool = [...new Set(Object.values(old).map((d: any) => d.prog).filter((id: string) => s.programs.some(p => p.id === id)))];
@@ -130,31 +131,31 @@ export function setPlan(s: State, days: PlanDayInput[], until: string | undefine
   let rot = 0;
   for (const d of days) {
     const code = dayCode(String(d.day || ""));
-    if (!code) throw new Error(`Gün anlaşılamadı: ${d.day}`);
-    if (next[code]) throw new Error(`${DAY_NAMES[code]} iki kez yazılmış.`);
+    if (!code) throw new Error(t("assistant.err_day", { day: String(d.day) }));
+    if (next[code]) throw new Error(t("assistant.err_day_twice", { day: DAY_NAMES[code] }));
     let prog: string;
     if (d.program) {
       const p = findProgram(s, d.program);
-      if (!p) throw new Error(`Program bulunamadı: ${d.program}`);
+      if (!p) throw new Error(t("assistant.err_prog_missing", { name: String(d.program) }));
       prog = p.id;
     } else prog = old[code]?.prog && s.programs.some(p => p.id === old[code].prog) ? old[code].prog : pool[rot++ % pool.length];
     let time = old[code]?.time || "19:00";
-    if (d.time) { time = parseTime(String(d.time)); if (!time) throw new Error(`Saat anlaşılamadı: ${d.time}`); }
+    if (d.time) { time = parseTime(String(d.time)); if (!time) throw new Error(t("assistant.err_time", { time: String(d.time) })); }
     next[code] = { prog, time };
   }
   if (until !== undefined) {
     const u = String(until).trim();
     if (u) {
       const v = parseDate(u);
-      if (!v) throw new Error(`Bitiş tarihi anlaşılamadı: ${u}`);
-      if (v < ymd(today)) throw new Error("Bitiş tarihi geçmişte olamaz.");
+      if (!v) throw new Error(t("assistant.err_until", { date: u }));
+      if (v < ymd(today)) throw new Error(t("assistant.err_until_past"));
       const max = new Date(today.getFullYear(), today.getMonth(), today.getDate() + MAX_UNTIL_DAYS);
-      if (parse(v) > max) throw new Error("Bitiş tarihi en fazla bir yıl ileride olabilir.");
+      if (parse(v) > max) throw new Error(t("assistant.err_until_far"));
       s.plan.until = v;
     } else s.plan.until = "";
   }
   if (calendar !== undefined) {
-    if (!CALENDAR_MODES.includes(calendar)) throw new Error(`Takvim seçeneği anlaşılamadı: ${calendar}`);
+    if (!CALENDAR_MODES.includes(calendar)) throw new Error(t("assistant.err_calendar", { value: calendar }));
     s.gcal = { ...s.gcal, plan: calendar !== "kapali" };
     if (calendar !== "kapali") s.gcal.mode = calendar === "gorev" ? "task" : "event";
     // görevde tik yeterli: biten antrenman ayrıca etkinlik yazılmaz (uygulamadaki gibi)
@@ -174,13 +175,13 @@ export function planView(s: State, today: Date) {
   return {
     type: rot ? "sirayla" : "sabit",
     ...(rot ? { rotation: s.plan.rot!.map((id: string) => progName(s, id)) } : {}),
-    days: WEEK.filter(c => s.plan.days[c]).map(c => ({ day: DAY_NAMES[c], code: c, time: s.plan.days[c].time || "19:00", program: rot ? "sırayla" : progName(s, s.plan.days[c].prog) })),
+    days: WEEK.filter(c => s.plan.days[c]).map(c => ({ day: DAY_NAMES[c], code: c, time: s.plan.days[c].time || "19:00", program: rot ? t("assistant.in_rotation") : progName(s, s.plan.days[c].prog) })),
     // önümüzdeki iki hafta: sırayla planda hangi tarihte hangi program
     next14: plannedDates(s.plan, s.programs as any, today).filter(x => x.date < ymd(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14)))
       .map(x => ({ date: x.date, day: DAY_NAMES[x.code], program: x.p.name })),
     until: s.plan.until || "",
     durationMin: s.plan.dur, reminderMin: s.plan.remind,
-    googleCalendar: !s.gcal?.plan ? "kapali" : s.gcal.mode === "task" ? "gorev (tikli, saatsiz)" : "etkinlik (saatli, hatırlatmalı)",
+    googleCalendar: !s.gcal?.plan ? "kapali" : s.gcal.mode === "task" ? t("assistant.cal_task") : t("assistant.cal_event"),
   };
 }
 
@@ -236,7 +237,7 @@ export interface WorkoutInput { date: string; exercises: { exercise: string; set
 const num = (v: unknown, max: number) => { const n = +(v as any); return Number.isFinite(n) && n > 0 ? Math.min(n, max) : 0; };
 const isCardioEx = (s: State, ex: string) => LIB[CARDIO].includes(ex) || s.custom.some(c => c.name === ex && c.group === CARDIO);
 const isYogaEx = (s: State, ex: string) => LIB[YOGA].includes(ex) || s.custom.some(c => c.name === ex && c.group === YOGA);
-const isTimedEx = (s: State, ex: string) => { const p = (s.exPrefs?.[ex] || {}).timed; return p != null ? !!p : isYogaEx(s, ex) || /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer/i.test(ex); };
+const isTimedEx = (s: State, ex: string) => timedExercise(ex, isCardioEx(s, ex), isYogaEx(s, ex), s.exPrefs?.[ex]?.timed);
 
 // Uygulamanın set biçimine çevirir: ağırlık w/tekrar r; süreli harekette sec; kardiyoda w = dakika, r = km; ısınma t: "w"
 function toSet(s: State, ex: string, x: SetInput) {
@@ -252,26 +253,26 @@ function toSet(s: State, ex: string, x: SetInput) {
 // Uygulamadaki elle kayıt gibi: aynı gün aynı harekete eklenen setler aynı kayda girer. Aynı setler zaten
 // kayıtlıysa tekrar yazılmaz, böylece aynı liste iki kez gönderilse de çift kayıt olmaz.
 export function logWorkouts(s: State, workouts: WorkoutInput[], today: Date, uid: () => string) {
-  if (!Array.isArray(workouts) || !workouts.length) throw new Error("En az bir antrenman gerekli.");
-  if (workouts.length > MAX_WORKOUTS) throw new Error(`Bir seferde en fazla ${MAX_WORKOUTS} antrenman yazılabilir; kalanını ayrı çağrıda gönder.`);
+  if (!Array.isArray(workouts) || !workouts.length) throw new Error(t("assistant.err_min_workouts"));
+  if (workouts.length > MAX_WORKOUTS) throw new Error(t("assistant.err_max_workouts", { max: MAX_WORKOUTS }));
   const notes: string[] = [], todayS = ymd(today);
   let added = 0, sets = 0, skipped = 0;
   const days = new Set<string>();
   for (const w of workouts) {
     const date = parseDate(String(w.date || ""));
-    if (!date) throw new Error(`Tarih anlaşılamadı: ${w.date}`);
-    if (date > todayS) throw new Error(`Gelecekteki bir tarihe antrenman yazılamaz: ${date}`);
-    if (date < "1990-01-01") throw new Error(`Tarih çok eski: ${date}`);
-    if (!Array.isArray(w.exercises) || !w.exercises.length) throw new Error(`${date}: hareket yok.`);
+    if (!date) throw new Error(t("assistant.err_date_w", { date: String(w.date) }));
+    if (date > todayS) throw new Error(t("assistant.err_future", { date }));
+    if (date < "1990-01-01") throw new Error(t("assistant.err_old", { date }));
+    if (!Array.isArray(w.exercises) || !w.exercises.length) throw new Error(t("assistant.err_no_ex", { date }));
     for (const e of w.exercises) {
       const raw = String(e.exercise || "").trim().slice(0, 80);
-      if (!raw) throw new Error(`${date}: hareket adı boş.`);
+      if (!raw) throw new Error(t("assistant.err_ex_name_empty", { date }));
       let ex = matchExercise(raw, knownExercises(s));
-      if (!ex) { ex = raw; s.custom.push({ name: raw, group: "Diğer" }); notes.push(`"${raw}" listede yoktu, yeni hareket olarak eklendi.`); }
+      if (!ex) { ex = raw; s.custom.push({ name: raw, group: "Diğer" }); notes.push(t("assistant.note_added", { name: raw })); }
       else if (ex !== raw && !notes.includes(`"${raw}" → "${ex}"`)) notes.push(`"${raw}" → "${ex}"`);
-      if (!Array.isArray(e.sets) || e.sets.length > 50) throw new Error(`${date} ${ex}: 1-50 set olmalı.`);
+      if (!Array.isArray(e.sets) || e.sets.length > 50) throw new Error(t("assistant.err_sets_count", { date, ex }));
       const list = e.sets.map(x => toSet(s, ex!, x || {})).filter(x => x.w || x.r || x.sec);
-      if (!list.length) throw new Error(`${date} ${ex}: setlerde değer yok (kg/tekrar, saniye ya da dakika/km).`);
+      if (!list.length) throw new Error(t("assistant.err_sets_empty", { date, ex }));
       const note = String(e.note || "").trim().slice(0, 300);
       const same = s.entries.find(x => x.ex === ex && x.date === date);
       if (same && JSON.stringify(same.sets).includes(JSON.stringify(list).slice(1, -1))) { skipped++; continue; }
@@ -287,13 +288,13 @@ export function logWorkouts(s: State, workouts: WorkoutInput[], today: Date, uid
 // Bir günün kayıtlarını (ya da o gün tek bir hareketi) siler
 export function deleteLog(s: State, date: string, exercise?: string) {
   const d = parseDate(String(date || ""));
-  if (!d) throw new Error(`Tarih anlaşılamadı: ${date}`);
+  if (!d) throw new Error(t("assistant.err_date_w", { date: String(date) }));
   let list = s.entries.filter(e => e.date === d);
   if (exercise) {
     const ex = matchExercise(exercise, [...new Set(list.map(e => e.ex as string))]);
     list = ex ? list.filter(e => e.ex === ex) : [];
   }
-  if (!list.length) throw new Error(`${d} için ${exercise ? `"${exercise}" ` : ""}kayıt bulunamadı.`);
+  if (!list.length) throw new Error(t("assistant.err_no_log", { date: d, ex: exercise ? `"${exercise}" ` : "" }));
   s.entries = s.entries.filter(e => !list.includes(e));
   // o günden hiç kayıt kalmadıysa antrenman oturumu da gider
   if (!s.entries.some(e => e.date === d)) s.sessions = s.sessions.filter(x => x.date !== d);
@@ -305,13 +306,13 @@ export interface BaseInput { exercise: string; kg?: number; reps?: number; secon
 // Başlangıç noktası (Mevcut verilerim): hareketlerin şu anki kilosu ve tekrarı. Antrenman sayılmaz;
 // kaydı olmayan harekette öneri buradan gelir. replace: true ise eski liste silinir.
 export function setBaseline(s: State, items: BaseInput[], replace: boolean, today: Date) {
-  if (!Array.isArray(items)) throw new Error("Hareket listesi gerekli.");
+  if (!Array.isArray(items)) throw new Error(t("assistant.err_list"));
   const notes: string[] = [];
   const rows = items.map(it => {
     const raw = String(it.exercise || "").trim().slice(0, 80);
-    if (!raw) throw new Error("Hareket adı boş olamaz.");
+    if (!raw) throw new Error(t("assistant.err_ex_empty"));
     let ex = matchExercise(raw, knownExercises(s));
-    if (!ex) { ex = raw; s.custom.push({ name: raw, group: "Diğer" }); notes.push(`"${raw}" listede yoktu, yeni hareket olarak eklendi.`); }
+    if (!ex) { ex = raw; s.custom.push({ name: raw, group: "Diğer" }); notes.push(t("assistant.note_added", { name: raw })); }
     else if (ex !== raw) notes.push(`"${raw}" → "${ex}"`);
     return { ex, w: it.kg, r: it.reps, sec: it.seconds };
   });

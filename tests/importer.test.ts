@@ -15,9 +15,9 @@ describe("hareket eşleştirme", () => {
     expect(matchExercise("Bench Press (Barbell)", known)).toBe("Bench Press (Barbell)");
     expect(matchExercise("bench press", known)).toBe("Bench Press (Barbell)");
     expect(matchExercise("BACK-SQUAT", known)).toBe("Back Squat");
-    expect(matchExercise("Sinav", known)).toBe("Şınav (Push-up)");
+    expect(matchExercise("Sinav", known)).toBe("Push-up");
     expect(matchExercise("Romanian Deadlift", known)).toBe("Romanian Deadlift");
-    expect(matchExercise("Lat Pulldown", known)).toMatch(/^Lat Pulldown/);
+    expect(matchExercise("Lat Pulldown", known)).toMatch(/Lat Pulldown/);
     expect(matchExercise("Overhead Press", known)).toBe("Overhead Press (Barbell)");
   });
 
@@ -116,6 +116,13 @@ describe("programı çözme", () => {
     const r = parseProgram("p=X;g=A:Sandbag Carry*3*20", known)!;
     expect(r.days[0].items[0]).toMatchObject({ ex: "Sandbag Carry", known: false });
     expect(r.warnings[0]).toMatch(/Sandbag Carry/);
+    expect(r.unknown).toEqual(["Sandbag Carry"]);
+  });
+
+  it("bilinen hareketler unknown listesine girmez", () => {
+    const r = parseProgram("p=X;g=A:Back Squat*3*5,Sandbag Carry*3*20", known)!;
+    expect(r.unknown).toEqual(["Sandbag Carry"]);
+    expect(r.warnings).toHaveLength(1);
   });
 
   it("eksik değerlere makul varsayılanlar; aşırı set sayısını sınırlar", () => {
@@ -134,7 +141,7 @@ describe("programı çözme", () => {
 describe("paylaşım bağlantısı", () => {
   it("buildLink → parseProgram aynı programı geri verir (Türkçe karakterler ve parantezler dahil)", () => {
     const days = [
-      { name: "Gün A", items: [{ ex: "Bench Press (Barbell)", sets: 4, reps: "6-8" }, { ex: "Şınav (Push-up)", sets: 3, reps: "10" }] },
+      { name: "Gün A", items: [{ ex: "Bench Press (Barbell)", sets: 4, reps: "6-8" }, { ex: "Push-up", sets: 3, reps: "10" }] },
       { name: "Gün B", items: [{ ex: "Back Squat", sets: 5, reps: "5" }] },
     ];
     const link = buildLink(BASE, "Güç; Programı", days, [["MO", 0], ["TH", 1]]);

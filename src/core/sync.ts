@@ -4,6 +4,7 @@
    İki cihaz aynı anda yüklerse biri diğerinin yüklemesini ezebilir; ezilen cihaz verisini yerelde
    tuttuğu için bir sonraki eşitlemede yeniden birleştirir (mergeStates sıradan bağımsızdır). */
 import { COLLECTIONS, SETTINGS, withDefaults, mergeStates, type State, type MergeStats } from "./schema.ts";
+import { t } from "./i18n.ts";
 
 export interface RemoteStore {
   // Dosyanın içeriği; dosya yoksa null
@@ -37,17 +38,18 @@ export interface SyncResult {
 export async function syncOnce(local: State, store: RemoteStore, now = Date.now(), { firstSync = false } = {}): Promise<SyncResult> {
   const raw = await store.read();
   let remote: State | null = null;
+  let rawPayload: State | null = null;
   if (raw != null) {
-    try { remote = withDefaults(JSON.parse(raw)); }
-    catch { throw new Error("Drive'daki eşitleme dosyası bozuk"); }
+    try { rawPayload = JSON.parse(raw); remote = withDefaults(rawPayload); }
+    catch { throw new Error(t("cloud.err_sync_file_corrupt")); }
   }
   const base = remote && firstSync ? { ...local, settingsU: 0 } : local;
-  const { state, stats } = remote ? mergeStates(base, remote) : { state: local, stats: { added: 0, updated: 0, removed: 0 } };
+  const { state, stats } = remote ? mergeStates(base, rawPayload) : { state: local, stats: { added: 0, updated: 0, removed: 0 } };
   if (base !== local && !state.profile?.sex && local.profile?.sex) {
     state.profile = { ...state.profile, sex: local.profile.sex }; state.settingsU = now;
   }
   const localChanged = canon(state) !== canon(local);
-  const uploaded = !remote || canon(state) !== canon(remote);
+  const uploaded = !remote || canon(state) !== canon(rawPayload!);
   if (uploaded) await store.write(JSON.stringify({ ...toPayload(state), syncedAt: now, writer: local.deviceId }));
   return { state, stats, localChanged, uploaded };
 }

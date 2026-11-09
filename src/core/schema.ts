@@ -5,6 +5,8 @@
    - Ayarlar tek parça olarak "settingsU" zamanıyla tutulur (son yazan kazanır).
    Bu dosya tarayıcıya ve global duruma bağımlı değildir; birim testleri tests/schema.test.ts içinde. */
 
+import { migrateExNames } from "./renames.ts";
+
 export const SCHEMA = 2;
 export const TOMBSTONE_DAYS = 365;
 
@@ -42,7 +44,7 @@ const collNames = Object.keys(COLLECTIONS) as Coll[];
 export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal", "baseline", "streakMode"];
 
 // eksik alanları varsayılanlarla tamamlar ve eski şemaları yükseltir (eski kayıtlar ve yedekler için)
-export function withDefaults(s: any): State {
+export function withDefaults(s: any, migrateNames = true): State {
   const d = DEFAULTS();
   const out: State = { ...d, ...s, profile: { ...d.profile, ...(s.profile || {}) }, plan: { ...d.plan, ...(s.plan || {}) }, prefs: { ...d.prefs, ...(s.prefs || {}) }, gcal: { ...d.gcal, ...(s.gcal || {}) } };
   for (const c of collNames) if (!Array.isArray(out[c])) out[c] = [];
@@ -52,7 +54,8 @@ export function withDefaults(s: any): State {
     for (const c of collNames) out[c].forEach(x => { if (!x.u) x.u = x.ts || 1; });
     out.settingsU = out.settingsU || 1; out.v = SCHEMA;
   }
-  return out;
+  // kütüphane adları İngilizceye çevrildi: eski adlı yerel veri, Drive dosyası ve yedekler burada yeni ada taşınır (core/renames.ts)
+  return migrateNames ? migrateExNames(out) : out;
 }
 
 // "u" dışındaki içerik imzası: aynı imza = içerik değişmemiş
@@ -95,7 +98,7 @@ export interface MergeStats { added: number; updated: number; removed: number }
 // İki veri setini birleştirir: her kayıt için en son değiştirilen sürüm kazanır, mezar taşları silmeleri taşır.
 // Google Drive senkronizasyonu da ileride bu fonksiyonu kullanacak.
 export function mergeStates(local: State, remoteRaw: any): { state: State; stats: MergeStats } {
-  const remote = withDefaults(remoteRaw);
+  const remote = withDefaults(remoteRaw, false);
   const out: State = { ...local }, stats: MergeStats = { added: 0, updated: 0, removed: 0 };
   const tomb = new Map<string, Tombstone>();
   [...local.deleted, ...remote.deleted].forEach(t => { const k = t.c + "\u0000" + t.k; if (!tomb.has(k) || tomb.get(k)!.at < t.at) tomb.set(k, t); });
@@ -122,5 +125,5 @@ export function mergeStates(local: State, remoteRaw: any): { state: State; stats
   out.deleted = [...tomb.values()];
   // aktif program, canlı antrenman ve taslak bu cihaza özeldir
   out.active = local.active; out.live = local.live; out.draft = local.draft; out.deviceId = local.deviceId;
-  return { state: out, stats };
+  return { state: migrateExNames(out), stats };
 }

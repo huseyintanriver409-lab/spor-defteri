@@ -8,13 +8,14 @@ import { openBaseline } from "./baseline.js";
 import { liftOn, yogaOn } from "./exercises.js";
 import { sessionLoadHTML } from "./bodymap.js";
 import { startRotation } from "../core/plan.ts";
+import { t } from "../core/i18n.ts";
 
-const LEVEL = { yeni: "Yeni başlayan", orta: "Orta seviye", ileri: "İleri seviye" };
-const GOAL = { genel: "Genel sağlık", kas: "Kas", guc: "Güç", esneklik: "Esneklik, yoga" };
-const EQUIP = { salon: "Spor salonu", ev: "Evde dumbbell", yok: "Ekipmansız" };
+const LEVEL = { yeni: t("presets.level_new"), orta: t("presets.level_mid"), ileri: t("presets.level_adv") };
+const GOAL = { genel: t("presets.goal_general"), kas: t("presets.goal_muscle"), guc: t("presets.goal_strength"), esneklik: t("presets.goal_flex") };
+const EQUIP = { salon: t("presets.equip_gym"), ev: t("presets.equip_home"), yok: t("presets.equip_none") };
 const dayName = code => (WEEKDAYS.find(w => w[0] === code) || [code, code])[1];
-const chips = p => `<div class="row" style="gap:6px;margin:8px 0 4px;flex-wrap:wrap">${[...p.levels.map(l => LEVEL[l]), EQUIP[p.equip], p.days.join(" / ") + " gün/hafta"].map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>`;
-const list = arr => `<ul style="margin:6px 0 0;padding-left:20px;display:grid;gap:6px">${arr.map(t => `<li>${esc(t)}</li>`).join("")}</ul>`;
+const chips = p => `<div class="row" style="gap:6px;margin:8px 0 4px;flex-wrap:wrap">${[...p.levels.map(l => LEVEL[l]), EQUIP[p.equip], t("presets.days_per_week", { days: p.days.join(" / ") })].map(x => `<span class="chip">${esc(x)}</span>`).join("")}</div>`;
+const list = arr => `<ul style="margin:6px 0 0;padding-left:20px;display:grid;gap:6px">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
 
 // Gün sayısı antrenman sayısına tam bölünmüyorsa (3 gün, A ve B) plan sırayla kurulur: A-B-A, sonraki hafta B-A-B.
 // Programın kendi haftalık düzeni varsa (4 günde A-B-A-B gibi) o kullanılır. Plan ekranından sabite çevrilebilir.
@@ -39,7 +40,7 @@ export function applyProgram(p, days, placeInPlan){
     else state.plan.mode = "fixed";
   }
   save(); renderProg(); refreshAll(); buzz(15);
-  toast(placeInPlan ? "Eklendi · plana yerleşti" : "Program eklendi", "check");
+  toast(placeInPlan ? t("presets.added_placed") : t("presets.added"), "check");
 }
 
 // Program ayrıntısı. onClose: ilk açılıştan gelindiyse kapanınca "ilk açılış tamam" işaretlemek için.
@@ -47,25 +48,25 @@ export function openProgramDetail(p, days, onClose){
   let d = p.days.includes(days) ? days : p.days[0], place = true;
   const planSummary = () => {
     const w = weeklyPlan(p, d);
-    if (!rotates(p, d)) return w.map(([c, i]) => `${dayName(c)}: ${p.sessions.length > 1 ? p.sessions[i].name : "antrenman"}`).join(" · ");
+    if (!rotates(p, d)) return w.map(([c, i]) => `${dayName(c)}: ${p.sessions.length > 1 ? p.sessions[i].name : t("presets.workout")}`).join(" · ");
     const week = k => w.map(([c], j) => `${dayName(c)} ${p.sessions[(k * w.length + j) % p.sessions.length].name}`).join(" · ");
-    return `Sırayla: ${week(0)}; sonraki hafta ${week(1)}`;
+    return t("presets.rot_summary", { this_week: week(0), next_week: week(1) });
   };
   const hasPlan = Object.keys(state.plan.days).length > 0;
   openSheet(sheetHead(p.name),
     `<p class="muted" style="margin:0">${esc(p.short)}</p>${chips(p)}
-     <div class="pk-head">Kime uygun</div><p style="margin:4px 0 0">${esc(p.who)}</p>
-     <div class="pk-head">Haftada kaç gün</div><div class="optgrid" id="pdDays">${p.days.map(n => `<button class="fchip${n === d ? " on" : ""}" data-v="${n}">${n} gün</button>`).join("")}</div>
+     <div class="pk-head">${t("presets.who")}</div><p style="margin:4px 0 0">${esc(p.who)}</p>
+     <div class="pk-head">${t("presets.days_q")}</div><div class="optgrid" id="pdDays">${p.days.map(n => `<button class="fchip${n === d ? " on" : ""}" data-v="${n}">${t("presets.n_days", { n })}</button>`).join("")}</div>
      <p class="muted small" id="pdPlan" style="margin:8px 0 0"></p>
      <div id="pdMap"></div>
-     ${p.sessions.map(s => `<div class="pk-head">${esc(p.sessions.length > 1 ? "Antrenman " + s.name : "Antrenman")}</div>
+     ${p.sessions.map(s => `<div class="pk-head">${esc(p.sessions.length > 1 ? t("presets.workout_named", { name: s.name }) : t("presets.workout_cap"))}</div>
        <div style="display:grid;gap:4px;margin-top:4px">${s.items.map(([ex, sets, reps]) => `<div class="row" style="flex-wrap:nowrap"><span class="grow">${esc(ex)}</span><span class="chip">${sets} × ${esc(reps)}</span></div>`).join("")}</div>`).join("")}
-     <div class="pk-head">Nasıl ilerlenir</div>${list(p.progression)}
-     <div class="pk-head">Takılırsan</div><p style="margin:4px 0 0">${esc(p.stall)}</p>
-     <div class="pk-head">Başlarken</div>${list(p.tips)}
-     <p class="muted small" style="margin-top:14px">Kaynak: ${esc(p.source)}</p>
-     <label class="check row" style="margin:14px 0 0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="pdPlace" checked><span>Plana yerleştir${hasPlan ? " (yerini alır)" : ""}</span></label>
-     <button class="btn primary xl" id="pdGo" style="margin-top:12px">${ic("play")}Başla</button>`,
+     <div class="pk-head">${t("presets.progression")}</div>${list(p.progression)}
+     <div class="pk-head">${t("presets.stall")}</div><p style="margin:4px 0 0">${esc(p.stall)}</p>
+     <div class="pk-head">${t("presets.tips")}</div>${list(p.tips)}
+     <p class="muted small" style="margin-top:14px">${t("presets.source", { src: esc(p.source) })}</p>
+     <label class="check row" style="margin:14px 0 0;gap:10px;flex-wrap:nowrap"><input type="checkbox" id="pdPlace" checked><span>${t("presets.place")}${hasPlan ? " " + t("presets.place_replaces") : ""}</span></label>
+     <button class="btn primary xl" id="pdGo" style="margin-top:12px">${ic("play")}${t("presets.start")}</button>`,
     onClose);
   const renderPlan = () => {
     $("#pdPlan").textContent = planSummary();
@@ -74,8 +75,8 @@ export function openProgramDetail(p, days, onClose){
   let si = 0;
   const renderMap = () => {
     const html = sessionLoadHTML(p.sessions[si].items.map(([ex, sets]) => ({ ex, sets })));
-    $("#pdMap").innerHTML = html ? `<div class="pk-head">Bir antrenman kaslarını ne kadar çalıştırır</div>
-      ${p.sessions.length > 1 ? `<div class="fchips" style="margin:6px 0 4px">${p.sessions.map((x, i) => `<button class="fchip${i === si ? " on" : ""}" data-si="${i}">Antrenman ${esc(x.name)}</button>`).join("")}</div>` : ""}${html}` : "";
+    $("#pdMap").innerHTML = html ? `<div class="pk-head">${t("presets.map_head")}</div>
+      ${p.sessions.length > 1 ? `<div class="fchips" style="margin:6px 0 4px">${p.sessions.map((x, i) => `<button class="fchip${i === si ? " on" : ""}" data-si="${i}">${t("presets.workout_named", { name: esc(x.name) })}</button>`).join("")}</div>` : ""}${html}` : "";
     $("#pdMap").querySelectorAll("[data-si]").forEach(b => b.onclick = () => { si = +b.dataset.si; renderMap(); buzz(5); });
   };
   renderMap();
@@ -93,10 +94,10 @@ export function openLibrary(yoga){
   const item = p => `<button class="libitem" data-pid="${p.id}"><b>${esc(p.name)}</b><span class="muted small" style="display:block;margin-top:2px">${esc(p.short)}</span>${chips(p)}</button>`;
   const part = (title, list) => `<div class="pk-head" style="margin:14px 0 8px">${title}</div>${list.map(item).join("")}`;
   const lift = liftOn() ? PROGRAMS.filter(p => !isYoga(p)) : [], yogas = yogaOn() ? PROGRAMS.filter(isYoga) : [];
-  openSheet(sheetHead(yoga ? "Yoga programları" : "Hazır programlar"),
-    `${helpTip("Bir programa dokun: kime uygun olduğunu, haftalık düzenini ve nasıl ilerleneceğini gör.")}
-     ${yoga || !lift.length ? yogas.map(item).join("") : yogas.length ? part("Ağırlık ve kondisyon", lift) + part("Yoga ve esneme", yogas) : lift.map(item).join("")}
-     <button class="btn" id="libRec" style="width:100%;justify-content:center;margin-top:4px">${ic("lightbulb")}Hangisi bana uygun?</button>`);
+  openSheet(sheetHead(yoga ? t("presets.yoga_programs") : t("presets.ready_programs")),
+    `${helpTip(t("presets.lib_help"))}
+     ${yoga || !lift.length ? yogas.map(item).join("") : yogas.length ? part(t("presets.part_lift"), lift) + part(t("presets.part_yoga"), yogas) : lift.map(item).join("")}
+     <button class="btn" id="libRec" style="width:100%;justify-content:center;margin-top:4px">${ic("lightbulb")}${t("presets.which_fits")}</button>`);
   $("#bsBody").querySelectorAll("[data-pid]").forEach(b => b.onclick = () => openProgramDetail(programById(b.dataset.pid), 3));
   $("#libRec").onclick = () => openRecommender(yoga || !lift.length ? { goal: "esneklik" } : {});
 }
@@ -108,31 +109,31 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
   const q = (key, title, opts) => `<div class="pk-head">${title}</div><div class="optgrid" data-q="${key}">${opts.map(([v, l]) => `<button class="fchip${String(a[key]) === String(v) ? " on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;
   const head = onboarding
     ? `<div class="row" style="align-items:flex-start;margin-top:6px"><div class="grow">
-         <h3 style="font-size:26px;margin:4px 0 6px;letter-spacing:-.035em">Programını bulalım</h3></div>
-         <button class="btn quiet" id="obSkip" style="flex:none">Atla</button></div>`
-    : sheetHead("Bana program öner");
+         <h3 style="font-size:26px;margin:4px 0 6px;letter-spacing:-.035em">${t("presets.find_program")}</h3></div>
+         <button class="btn quiet" id="obSkip" style="flex:none">${t("presets.skip")}</button></div>`
+    : sheetHead(t("presets.suggest_title"));
   openSheet(head,
-    (onboarding ? q("sex", "Cinsiyetin", [["m", "Erkek"], ["f", "Kadın"], ["o", "Diğer"]]) : "")
-    + q("level", "Deneyimin", [["yeni", "Hiç / çok az"], ["orta", "6 ay – 2 yıl"], ["ileri", "2 yıldan fazla"]])
-    + q("goal", "Önceliğin", [...(liftOn() ? [["genel", "Sağlık, kondisyon"], ["kas", "Kas kazanmak"], ["guc", "Güçlenmek"]] : []), ...(yogaOn() ? [["esneklik", "Esneklik, yoga"]] : [])])
-    + (liftOn() ? q("equip", "Nerede çalışacaksın", [["salon", "Spor salonu"], ["ev", "Evde, dumbbell var"], ["yok", "Ekipmansız"]]) : "")
-    + q("days", "Haftada kaç gün", [2, 3, 4, 5, 6].map(n => [n, n + " gün"]))
+    (onboarding ? q("sex", t("presets.q_sex"), [["m", t("presets.sex_m")], ["f", t("presets.sex_f")], ["o", t("presets.sex_o")]]) : "")
+    + q("level", t("presets.q_level"), [["yeni", t("presets.lv_new")], ["orta", t("presets.lv_mid")], ["ileri", t("presets.lv_adv")]])
+    + q("goal", t("presets.q_goal"), [...(liftOn() ? [["genel", t("presets.g_general")], ["kas", t("presets.g_muscle")], ["guc", t("presets.g_strength")]] : []), ...(yogaOn() ? [["esneklik", t("presets.goal_flex")]] : [])])
+    + (liftOn() ? q("equip", t("presets.q_equip"), [["salon", t("presets.equip_gym")], ["ev", t("presets.e_home")], ["yok", t("presets.equip_none")]]) : "")
+    + q("days", t("presets.days_q"), [2, 3, 4, 5, 6].map(n => [n, t("presets.n_days", { n })]))
     + `<div id="recOut" style="margin-top:16px"></div>`
-    + (onboarding ? `<button class="ghost" id="obBase" style="width:100%;justify-content:center;margin-top:8px">${ic("trending-up")}Kilolarımı gireyim</button>` : "")
-    + (onboarding && syncCanRun() ? `<button class="ghost" id="obDrive" style="width:100%;justify-content:center;margin-top:8px">${ic("cloud")}Drive'dan getir</button>` : ""),
+    + (onboarding ? `<button class="ghost" id="obBase" style="width:100%;justify-content:center;margin-top:8px">${ic("trending-up")}${t("presets.enter_weights")}</button>` : "")
+    + (onboarding && syncCanRun() ? `<button class="ghost" id="obDrive" style="width:100%;justify-content:center;margin-top:8px">${ic("cloud")}${t("presets.from_drive")}</button>` : ""),
     markDone);
 
   const render = () => {
     const r = recommend(a), p = r.program;
     $("#recOut").innerHTML = `<div class="card" style="margin:0;background:var(--card2)">
         <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:2px 0 4px">${esc(p.name)}</div>
-        <div class="muted small">${esc(p.short)} · haftada ${r.days} gün</div>
+        <div class="muted small">${esc(p.short)} · ${t("presets.weekly_days", { n: r.days })}</div>
         ${list(r.reasons)}
         <div class="row" style="margin-top:12px">
-          <button class="btn primary" id="${onboarding ? "obGo" : "recGo"}">${ic("play")}Başla</button>
-          <button class="btn quiet" id="recMore">Ayrıntı</button>
+          <button class="btn primary" id="${onboarding ? "obGo" : "recGo"}">${ic("play")}${t("presets.start")}</button>
+          <button class="btn quiet" id="recMore">${t("presets.detail")}</button>
         </div>
-        ${r.alternatives.length ? `<div class="pk-head">Alternatif</div>${r.alternatives.map(x => `<button class="libitem" data-alt="${x.program.id}" data-days="${x.days}" style="margin:6px 0 0"><b>${esc(x.program.name)}</b><span class="muted small" style="display:block">${esc(x.why)}</span></button>`).join("")}` : ""}
+        ${r.alternatives.length ? `<div class="pk-head">${t("presets.alternative")}</div>${r.alternatives.map(x => `<button class="libitem" data-alt="${x.program.id}" data-days="${x.days}" style="margin:6px 0 0"><b>${esc(x.program.name)}</b><span class="muted small" style="display:block">${esc(x.why)}</span></button>`).join("")}` : ""}
       </div>`;
     $("#recOut").querySelector(onboarding ? "#obGo" : "#recGo").onclick = () => {
       applyProgram(p, r.days, true); closeSheet();

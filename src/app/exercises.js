@@ -1,6 +1,8 @@
 import { CARDIO, LIB, YOGA, fmt, state } from "./store.js";
 import { WEIGHTS } from "../core/muscledata.ts";
 import { MAIN_SHARE } from "../core/musclemap.ts";
+import { TIMED_RE, timedExercise } from "../core/training.ts";
+import { t } from "../core/i18n.ts";
 
 /* ---------- Exercise metadata ---------- */
 export function allEx(){
@@ -31,7 +33,7 @@ export const MUSCLE_RULES = [
   [/rear delt|reverse pec/, ["Arka Omuz"], ["Trapez"]],
   [/front raise/, ["Ön Omuz"], []],
   [/shoulder press|overhead press|arnold|push press|handstand|standing dumbbell press/, ["Ön Omuz"], ["Yan Omuz","Triceps"]],
-  [/close-grip bench|jm press|diamond|dips \(triceps\)|bench dips/, ["Triceps"], ["Göğüs","Ön Omuz"]],
+  [/close-grip bench|jm press|diamond|dips \(triceps\)|triceps dip|bench dips/, ["Triceps"], ["Göğüs","Ön Omuz"]],
   [/pullover/, ["Lat"], ["Göğüs"]],
   [/fly|crossover|pec deck/, ["Göğüs"], ["Ön Omuz"]],
   [/romanian|stiff-leg|rdl|good morning/, ["Hamstring","Kalça"], ["Bel"]],
@@ -45,7 +47,7 @@ export const MUSCLE_RULES = [
   [/lunge|split squat|step-up|pistol/, ["Quadriceps","Kalça"], ["Hamstring"]],
   [/leg curl|nordic|glute-ham/, ["Hamstring"], ["Baldır"]],
   [/adduction/, ["İç Bacak"], []],
-  [/hip thrust|glute bridge|kickback \(kalça\)|frog|pull-through|abduction/, ["Kalça"], ["Hamstring"]],
+  [/hip thrust|glute bridge|kickback \(kalça\)|glute kickback|frog|pull-through|abduction/, ["Kalça"], ["Hamstring"]],
   [/swing/, ["Kalça","Hamstring"], ["Bel"]],
   [/clean|snatch|jerk/, ["Kalça","Quadriceps","Trapez"], ["Ön Omuz","Hamstring"]],
   [/thruster|wall ball/, ["Quadriceps","Ön Omuz"], ["Kalça","Triceps"]],
@@ -85,23 +87,41 @@ export function equipOf(name){
   if (/smith/.test(n)) return "Smith";
   if (/kettlebell|turkish/.test(n)) return "Kettlebell";
   if (/cable|pulldown|pushdown|face pull|crossover|pull-through|woodchop|pallof/.test(n)) return "Kablo";
+  if (/slider|\bband|clamshell|medicine ball|slam/.test(n)) return "Diğer";
   if (/makine|machine|leg press|hack squat|pec deck|pendulum|belt squat|leg extension|leg curl|standing calf|seated calf|donkey|chest-supported|reverse pec|t-bar|glute-ham|reverse hyper/.test(n)) return "Makine";
   if (/plate|sled|battle|wall ball|man maker|ab wheel/.test(n)) return "Diğer";
-  if (/dumbbell|goblet|arnold|hammer curl|concentration|kickback|farmer|bulgarian|lunge|step-up|spider|zottman|side bend|seal row|y-raise|lateral raise|front raise|rear delt|svend|pullover|wrist/.test(n)) return "Dumbbell";
-  if (/şınav|push-up|barfiks|pull-up|chin-up|dips|plank|crunch|mekik|sit-up|leg raise|knee raise|burpee|mountain|v-up|hollow|l-sit|dead bug|bird dog|superman|nordic|pistol|sissy|inverted|dead hang|glute bridge|frog|wall sit|muscle-up|box jump|handstand|dragon|tek bacak calf|tibialis|back extension|russian|air squat/.test(n)) return "Vücut Ağırlığı";
+  if (/curtsy/.test(n) && !/dumbbell/.test(n)) return "Vücut Ağırlığı";
+  if (/dumbbell|goblet|arnold|hammer curl|concentration|kickback|farmer|bulgarian|split squat|suitcase|lunge|step-up|spider|zottman|side bend|seal row|y-raise|lateral raise|front raise|rear delt|svend|pullover|wrist/.test(n)) return "Dumbbell";
+  if (/şınav|push-up|barfiks|pull-up|chin-up|dips?\b|plank|crunch|mekik|sit-up|leg raise|knee raise|burpee|mountain|v-up|hollow|l-sit|dead bug|bird dog|superman|nordic|pistol|sissy|inverted|dead hang|glute bridge|frog|wall sit|muscle-up|box jump|handstand|dragon|tek bacak calf|single-leg calf|tibialis|back extension|russian|air squat|jump squat|bear crawl|toes-to-bar|copenhagen|reverse nordic|cossack|curtsy/.test(n)) return "Vücut Ağırlığı";
   if (g === "Diğer") return "Diğer";
   return "Barbell";
 }
 // set türleri: w = ısınma (istatistiklere girmez), d = drop set, f = tükenişe kadar
-export const SET_TYPES = { w: "Isınma", d: "Drop", f: "Tükeniş" };
-export const TYPE_LETTER = { w: "I", d: "D", f: "T" };
+export const SET_TYPES = { w: t("exercises.set_w"), d: t("exercises.set_d"), f: t("exercises.set_f") };
+export const TYPE_LETTER = { w: t("exercises.letter_w"), d: t("exercises.letter_d"), f: t("exercises.letter_f") };
 // Süreli hareketler (plank, wall sit…): set { w: ek ağırlık, sec: süre, r: 0 }. r=0 olduğu için hacim, 1RM ve tekrar rekorlarına girmez.
-export const TIMED_RE = /plank|wall sit|dead hang|l-sit|hollow body|battle rope|farmer/i;
+export { TIMED_RE };
 // yoga pozları da süreli; kullanıcı hareket ayarından değiştirebilir (exPrefs.timed)
-export const timedByDefault = name => !isCardio(name) && (isYoga(name) || TIMED_RE.test(name));
-export const isTimed = name => { const p = (state.exPrefs[name] || {}).timed; return p != null ? p : timedByDefault(name); };
-export const fmtSec = s => { s = Math.round(+s || 0); return s < 60 ? `${s} sn` : `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")} dk`; };
-export const setLabel = (s, cardio) => s.sec != null ? `${fmtSec(s.sec)}${+s.w ? ` · +${fmt(+s.w)} kg` : ""}`
-  : cardio ? `${fmt(+s.w||0)} dk${+s.r ? " · "+fmt(+s.r)+" km" : ""}`
-  : `${fmt(+s.w||0)} kg × ${+s.r||0}${s.rir != null && s.rir !== "" ? ` @${s.rir}` : ""}`;
-export const durText = ms => { const m = Math.round(ms/60000); return m >= 60 ? `${Math.floor(m/60)} sa ${m%60} dk` : `${m} dk`; };
+export const timedByDefault = name => timedExercise(name, isCardio(name), isYoga(name));
+export const isTimed = name => { return timedExercise(name, isCardio(name), isYoga(name), state.exPrefs[name]?.timed); };
+export const fmtSec = s => { s = Math.round(+s || 0); return s < 60 ? t("exercises.sec_val", { n: s }) : t("exercises.clock_val", { t: `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}` }); };
+export const setLabel = (s, cardio) => s.sec != null ? `${fmtSec(s.sec)}${+s.w ? ` · +${t("exercises.kg_val", { n: fmt(+s.w) })}` : ""}`
+  : cardio ? `${t("exercises.min_val", { n: fmt(+s.w||0) })}${+s.r ? " · "+t("exercises.km_val", { n: fmt(+s.r) }) : ""}`
+  : `${t("exercises.kg_val", { n: fmt(+s.w||0) })} × ${+s.r||0}${s.rir != null && s.rir !== "" ? ` @${s.rir}` : ""}`;
+export const durText = ms => { const m = Math.round(ms/60000); return m >= 60 ? t("exercises.dur_hm", { h: Math.floor(m/60), m: m%60 }) : t("exercises.min_val", { n: m }); };
+
+// görünen ekipman adı (saklanan/equipOf değeri Türkçe kalır, yalnız görüntüde çevrilir)
+export function equipLabel(e) {
+  switch (e) {
+    case "Barbell": return t("exercises.equip_barbell");
+    case "Dumbbell": return t("exercises.equip_dumbbell");
+    case "Kablo": return t("exercises.equip_cable");
+    case "Makine": return t("exercises.equip_machine");
+    case "Smith": return t("exercises.equip_smith");
+    case "Kettlebell": return t("exercises.equip_kettlebell");
+    case "Vücut Ağırlığı": return t("exercises.equip_bodyweight");
+    case "Diğer": return t("exercises.equip_other");
+    case "Kardiyo": return t("exercises.equip_cardio");
+    default: return e;
+  }
+}

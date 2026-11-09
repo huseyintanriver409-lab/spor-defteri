@@ -1,0 +1,16 @@
+export default {
+  undo_done: "Undone",
+  info_aria: "Description",
+  recent_lbl: "Recently used",
+  favs_lbl: "Favorites",
+  all_lbl: "All",
+  new_ex: "Add “{raw}”",
+  new_ex_sub: "Saved as your own exercise",
+  fav_remove: "Remove from favorites",
+  fav_add: "Add to favorites",
+  no_favs: "No favorites",
+  no_records: "No records",
+  ex_added: "\"{raw}\" added",
+  close: "Close",
+  ex_search: "Search exercises",
+} as Record<string, string>;

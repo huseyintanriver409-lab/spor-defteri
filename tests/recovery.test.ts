@@ -5,13 +5,13 @@ import { parse } from "../src/core/dates.ts";
 const H = 36e5;
 const muscles: Record<string, { p: string[]; s: string[] }> = {
   "Bench Press (Barbell)": { p: ["Göğüs"], s: ["Triceps"] },
-  "Triceps Pushdown (Halat)": { p: ["Triceps"], s: [] },
+  "Triceps Pushdown (Rope)": { p: ["Triceps"], s: [] },
   "Deadlift": { p: ["Kalça", "Hamstring", "Bel"], s: ["Quadriceps"] },
   "Back Squat": { p: ["Quadriceps"], s: ["Kalça"] },
-  "Koşu (Bant)": { p: ["Quadriceps"], s: [] },
+  "Treadmill Run": { p: ["Quadriceps"], s: [] },
 };
 const base = {
-  isCardio: (ex: string) => ex.startsWith("Koşu"),
+  isCardio: (ex: string) => ex.startsWith("Treadmill"),
   musclesOf: (ex: string) => muscles[ex] || { p: [], s: [] },
 };
 const sets = (n: number, t?: string) => Array.from({ length: n }, () => ({ w: 60, r: 8, ...(t ? { t } : {}) }));
@@ -42,7 +42,7 @@ describe("toparlanma", () => {
     const entries = [
       { ex: "Back Squat", date: "2026-10-01", sets: sets(4) },
       { ex: "Bench Press (Barbell)", date: "2026-10-03", sets: sets(1) }, // triceps ½ set
-      { ex: "Triceps Pushdown (Halat)", date: "2026-10-01", sets: sets(3) },
+      { ex: "Triceps Pushdown (Rope)", date: "2026-10-01", sets: sets(3) },
     ];
     const r = recoveryMap({ ...base, entries, sessions: [], now: at6pm("2026-10-03") });
     expect(r["Triceps"]).toMatchObject({ date: "2026-10-01", sets: 3 });
@@ -52,7 +52,7 @@ describe("toparlanma", () => {
   it("aynı gündeki setler toplanır; 8+ set dinlenmeyi 24 sa uzatır", () => {
     const entries = [
       { ex: "Bench Press (Barbell)", date: "2026-10-01", sets: sets(4) },
-      { ex: "Triceps Pushdown (Halat)", date: "2026-10-01", sets: sets(6) },
+      { ex: "Triceps Pushdown (Rope)", date: "2026-10-01", sets: sets(6) },
     ];
     const r = recoveryMap({ ...base, entries, sessions: [], now: parse("2026-10-03").getTime() });
     expect(r["Triceps"].sets).toBe(8);
@@ -82,7 +82,7 @@ describe("toparlanma", () => {
       entries: [
         { ex: "Bench Press (Barbell)", date: "2026-09-20", sets: sets(10) },
         { ex: "Bench Press (Barbell)", date: "2026-10-01", sets: [...sets(2), { w: 20, r: 10, t: "w" }] },
-        { ex: "Koşu (Bant)", date: "2026-10-01", sets: [{ w: 30, r: 5 }] },
+        { ex: "Treadmill Run", date: "2026-10-01", sets: [{ w: 30, r: 5 }] },
       ],
       sessions: [],
       now: parse("2026-10-02").getTime(),

@@ -1,0 +1,20 @@
+export default {
+ "warn_unknown": "\"{name}\" is not in the list and will be added as a new exercise.",
+ "warn_plan": "Could not understand plan entry: \"{pair}\"",
+ "warn_time": "Could not understand time: \"{time}\"",
+ "warn_until": "Could not understand end date: \"{date}\"",
+ "default_name": "Program from Claude",
+ "prompt_intro": "I use my training app called Spor Defteri. Prepare a weight training program for me or set up my weekly plan (which day, at what time, until when); the app writes the plan to my Google Calendar on its own.",
+ "prompt_wish": " My request: {wish}",
+ "prompt_today": "Today's date: {today}. ",
+ "prompt_ask": "If necessary, ask a brief question first (experience, goal, equipment, which days, time).",
+ "prompt_explain": "Briefly explain the program (what to train on which day, how to progress). Then give me a single link to add it to the app. Link format:",
+ "prompt_example": "Example: g=Upper+Body:Bench+Press/4/6-8,Barbell+Row/4/8-10,Plank/3/45",
+ "prompt_rules": "Rules: use + instead of spaces; write a separate ;g= for each day; separate exercises with commas; exercise/set/reps (reps like 8 or 8-12; seconds for timed exercises like plank).",
+ "prompt_w": "w is the weekly plan: day code (MO TU WE TH FR SA SU) : program day order (starts from 0) @ time (SS:DD). If the time is unknown, do not write the @ part.",
+ "prompt_u": "u is the plan end date (YYYY-AA-GG); write it for a request like \"by January 6\"; if indefinite, do not write it.",
+ "prompt_planonly": "If I do not want a new program and only want to change the days, times, or end date, give only the plan without p and g; my existing programs are placed on the days: {link}",
+ "prompt_chars": "Do not use an asterisk (*), vertical bar (|), parentheses, spaces, or Turkish letters in the link; the link gets cut off on phones.",
+ "prompt_names": "Write exercise names using their common English names (Back Squat, Bench Press, Romanian Deadlift, Lat Pulldown, Seated Cable Row, Overhead Press, Leg Press, Plank…).",
+ "prompt_clickable": "Write the link as clickable, without putting it in a code block."
+} as Record<string, string>;

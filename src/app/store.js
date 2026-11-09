@@ -1,12 +1,13 @@
 import { DEFAULTS, stampChanges as stampState, takeSnapshot as snapshotOf, withDefaults } from "../core/schema.ts";
 import { calSoon } from "./cloud.js";
+import { fmtNum, t } from "../core/i18n.ts";
 
 export { LIB, CARDIO, YOGA } from "../core/library.ts";
 export const KEY = "sporDefteri.v1";
 export const $ = s => document.querySelector(s);
 export const ic = (n, cls = "") => `<svg class="ic${cls ? " " + cls : ""}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 export const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-export const fmt = n => (Math.round(n*10)/10).toLocaleString("tr-TR");
+export const fmt = n => fmtNum(Math.round(n*10)/10);
 export const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 /* ---------- Data layer ----------
@@ -20,14 +21,14 @@ export function load(){
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) state = withDefaults(JSON.parse(raw));
-  } catch(e){ toast("Kayıtlar okunamadı"); }
+  } catch(e){ toast(t("app.read_failed")); }
   if (!state.deviceId) state.deviceId = "d-" + uid();
   takeSnapshot();
 }
 export function save(){
   stampChanges();
   try { localStorage.setItem(KEY, JSON.stringify(state)); }
-  catch(e){ toast("Kaydedilemedi · yedek al"); }
+  catch(e){ toast(t("app.save_failed")); }
   // plan ya da programlar değiştiyse takvimdeki planı birkaç saniye sonra güncelle (art arda değişiklikler tek seferde)
   if (state.gcal.plan || state.gcal.planSig || state.gcal.taskSig) calSoon();
 }
@@ -43,7 +44,7 @@ export function choose(msg, choices){
     $("#modal").onclick = e => { if (e.target.id === "modal") done(null); };
   });
 }
-export const ask = (msg, yes = "Sil") => choose(msg, [{ label: "Vazgeç", value: false }, { label: yes, value: true, primary: true }]).then(v => !!v);
+export const ask = (msg, yes = t("app.delete")) => choose(msg, [{ label: t("app.cancel"), value: false }, { label: yes, value: true, primary: true }]).then(v => !!v);
 export function toast(msg, icon = "info"){ const t=$("#toast"); t.innerHTML = ic(icon) + "<span>" + esc(msg) + "</span>"; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
 
 // başka modüllerden atanabilmesi için

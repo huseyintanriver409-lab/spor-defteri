@@ -1,16 +1,33 @@
 // Vücut haritası: kas başına yorgunluk ve yük kademeleri, kasa göre hareketler (araştırmaya dayalı).
 import type { MuscleRecovery } from "./recovery.ts";
+import { t } from "./i18n.ts";
+// ad alanı "muscles" içinde dinamik anahtar (kas kimliği / kademe adıyla)
+const mt = (k: string) => t("muscles." + k);
+import trMuscles from "../i18n/tr/muscles.ts";
+import enMuscles from "../i18n/en/muscles.ts";
 import { EVIDENCE, type Level } from "./muscledata.ts";
 export { EVIDENCE, SUMMARY, INFERENCE, WEIGHTS, type Level } from "./muscledata.ts";
 
 export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omuz", "Arka Omuz", "Biceps", "Triceps", "Önkol", "Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır", "Karın", "Oblik", "Rotator Manşet"];
 
+// Görünen ad (anatomik Latince) ve yaygın ad. İç kimlik (MUSCLES, anahtarlar, kayıtlar) Türkçe kalır; yalnız ekranda bu adlar gösterilir.
+// Kalça: araştırma ağırlıkla gluteus maximus'u ölçüyor (medius/minimus ayrıca not edildi), bu yüzden "Gluteus maximus".
+export const MUSCLE_LABEL: Record<string, string> = {
+  "Göğüs": "Pectoralis major", "Lat": "Latissimus dorsi", "Trapez": "Trapezius", "Bel": "Erector spinae", "Ön Omuz": "Deltoideus anterior", "Yan Omuz": "Deltoideus medius",
+  "Arka Omuz": "Deltoideus posterior", "Biceps": "Biceps brachii", "Triceps": "Triceps brachii", "Önkol": "Musculi antebrachii", "Quadriceps": "Quadriceps femoris",
+  "Hamstring": "Ischiocrurales", "Kalça": "Gluteus maximus", "İç Bacak": "Adductores", "Baldır": "Triceps surae", "Karın": "Rectus abdominis", "Oblik": "Obliqui abdominis", "Rotator Manşet": "Rotator cuff",
+};
+// sözlük anahtarı için kısa ascii ad
+const MUSCLE_KEY: Record<string, string> = {"Göğüs":"gogus","Lat":"lat","Trapez":"trapez","Bel":"bel","Ön Omuz":"on_omuz","Yan Omuz":"yan_omuz","Arka Omuz":"arka_omuz","Biceps":"biceps","Triceps":"triceps","Önkol":"onkol","Quadriceps":"quadriceps","Hamstring":"hamstring","Kalça":"kalca","İç Bacak":"ic_bacak","Baldır":"baldir","Karın":"karin","Oblik":"oblik","Rotator Manşet":"rotator"};
+export const MUSCLE_COMMON: Record<string, string> = Object.fromEntries(Object.entries(MUSCLE_KEY).map(([id, k]) => [id, mt("common_" + k)]));
+export const muscleLabel = (id: string): string => MUSCLE_LABEL[id] ?? id;
+// arama: kimlik, Latince ad ve yaygın ad birlikte
+export const muscleSearchText = (id: string): string => `${id} ${MUSCLE_LABEL[id] ?? ""} ${MUSCLE_COMMON[id] ?? ""} ${trMuscles["common_" + MUSCLE_KEY[id]] ?? ""} ${enMuscles["common_" + MUSCLE_KEY[id]] ?? ""}`;
+
 // Haftalık etkili set (set × hareketin kasa payı). Pelland ve ark. 2025 (Sports Medicine), kas büyümesi:
 // 4 set en az etkili doz, 5–10 en verimli, 11–18 orta verim, 19+ düşük verim (zarar değil; ek setin getirisi azalır).
 export type LoadTier = "yok" | "baslangic" | "verimli" | "orta" | "dusukverim";
-export const LOAD_TIERS: [LoadTier, string, string][] = [
-  ["baslangic", "Başlangıç", "1–3 set: gelişim için az"], ["verimli", "En verimli", "4–10 set"], ["orta", "Orta verim", "11–18 set: daha fazla gelişim, set başına daha az"], ["dusukverim", "Düşük verim", "19+ set: ek setin getirisi az"],
-];
+export const LOAD_TIERS: [LoadTier, string, string][] = (["baslangic", "verimli", "orta", "dusukverim"] as LoadTier[]).map(id => [id, mt("load_" + id), mt("load_" + id + "_d")]);
 export const MIN_EFFECTIVE_WEEK = 4;
 export function loadTier(sets: number): LoadTier {
   if (!(sets > 0)) return "yok";
@@ -19,9 +36,7 @@ export function loadTier(sets: number): LoadTier {
 
 // Şu anki durum: toparlanma oranı ve son gün yapılan set sayısıyla
 export type FatigueTier = "yok" | "hazir" | "toparlaniyor" | "yorgun" | "asiri";
-export const FATIGUE_TIERS: [FatigueTier, string, string][] = [
-  ["hazir", "Hazır", "dinlenmiş"], ["toparlaniyor", "Toparlanıyor", "hafif çalışılabilir"], ["yorgun", "Yorgun", "dinlendir"], ["asiri", "Aşırı yorgun", "kas hasarı riski"],
-];
+export const FATIGUE_TIERS: [FatigueTier, string, string][] = (["hazir", "toparlaniyor", "yorgun", "asiri"] as FatigueTier[]).map(id => [id, mt("fatigue_" + id), mt("fatigue_" + id + "_d")]);
 export const HEAVY_DAY = 12;
 export function fatigueTier(r?: MuscleRecovery): FatigueTier {
   if (!r) return "yok";
@@ -36,10 +51,7 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
 // ön baskı): tek antrenmanda ~11 setten sonra ek büyüme ölçülemiyor, yorgunluk ve hasar artmaya devam ediyor.
 // Yorum (araştırmada ayrı eşik yok): 3–11 arası verimli aralık ikiye bölündü; 6+ set "maksimum", 11'i aşınca "kas hasarı".
 export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "iyi" | "maksimum" | "hasar";
-export const SESSION_TIERS: [SessionTier, string, string][] = [
-  ["dusuk", "Çok az", "1 setten az"], ["koruma", "Koruma düzeyi", "1–2 set"], ["minimum", "Minimum gelişim", "2–3 set"],
-  ["iyi", "İyi gelişim", "3–6 set"], ["maksimum", "Maksimum gelişim", "6–11 set"], ["hasar", "Kas hasarı", "11+ set: ek gelişim yok"],
-];
+export const SESSION_TIERS: [SessionTier, string, string][] = (["dusuk", "koruma", "minimum", "iyi", "maksimum", "hasar"] as SessionTier[]).map(id => [id, mt("session_" + id), mt("session_" + id + "_d")]);
 export const SESSION_TOO_MUCH = 11;
 export function sessionTier(sets: number): SessionTier {
   if (!(sets > 0)) return "yok";

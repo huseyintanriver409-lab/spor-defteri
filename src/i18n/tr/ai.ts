@@ -1,0 +1,20 @@
+export default {
+ "warn_unknown": "\"{name}\" listede yok, yeni hareket olarak eklenecek.",
+ "warn_plan": "Plan girdisi anlaşılamadı: \"{pair}\"",
+ "warn_time": "Saat anlaşılamadı: \"{time}\"",
+ "warn_until": "Bitiş tarihi anlaşılamadı: \"{date}\"",
+ "default_name": "Claude'dan program",
+ "prompt_intro": "Spor Defteri adlı antrenman uygulamamı kullanıyorum. Bana bir ağırlık antrenmanı programı hazırla ya da haftalık planımı (hangi gün, saat kaçta, ne zamana kadar) ayarla; uygulama planı Google Takvim'ime kendisi yazıyor.",
+ "prompt_wish": " İsteğim: {wish}",
+ "prompt_today": "Bugünün tarihi: {today}. ",
+ "prompt_ask": "Gerekirse önce kısaca soru sor (deneyim, hedef, ekipman, hangi günler, saat).",
+ "prompt_explain": "Programı kısaca açıkla (hangi gün ne çalışılır, nasıl ilerlenir). Sonra uygulamaya eklemem için TEK bir bağlantı ver. Bağlantı biçimi:",
+ "prompt_example": "Örnek: g=Ust+Vucut:Bench+Press/4/6-8,Barbell+Row/4/8-10,Plank/3/45",
+ "prompt_rules": "Kurallar: boşluk yerine + kullan; her gün için ayrı bir ;g= yaz; hareketleri virgülle ayır; hareket/set/tekrar (tekrar 8 ya da 8-12 gibi; plank gibi süreli hareketlerde saniye).",
+ "prompt_w": "w haftalık plandır: gün kodu (MO TU WE TH FR SA SU) : programın gün sırası (0'dan başlar) @ saat (SS:DD). Saat bilinmiyorsa @ kısmını yazma.",
+ "prompt_u": "u planın bitiş tarihidir (YYYY-AA-GG); \"6 Ocak'a kadar\" gibi bir istekte yaz, süresizse yazma.",
+ "prompt_planonly": "Yeni program istemeyip yalnız günleri, saatleri ya da bitiş tarihini değiştirmek istersem p ve g olmadan yalnız planı ver; günlere mevcut programlarım konur: {link}",
+ "prompt_chars": "Bağlantıda yıldız (*), dikey çizgi (|), parantez, boşluk ve Türkçe harf kullanma; telefonda bağlantı yarıda kesiliyor.",
+ "prompt_names": "Hareket adlarını yaygın İngilizce adlarıyla yaz (Back Squat, Bench Press, Romanian Deadlift, Lat Pulldown, Seated Cable Row, Overhead Press, Leg Press, Plank…).",
+ "prompt_clickable": "Bağlantıyı tıklanabilir olarak, kod bloğu içine koymadan yaz."
+} as Record<string, string>;

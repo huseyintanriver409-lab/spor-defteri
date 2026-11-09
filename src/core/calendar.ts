@@ -16,11 +16,12 @@
    görevler okunup tarihlerine göre eşlenir (iki cihaz aynı anda yazsa da fazlası silinir). Son BACKFILL_DAYS
    içinde antrenman yapılmış (oturumu ya da kaydı olan) ama görevi olmayan günler tamamlanmış görev olarak eklenir. */
 import { pad, parse, ymd } from "./dates.ts";
+import { t } from "./i18n.ts";
 import { isRot, progIdOn, type Plan } from "./plan.ts";
 export type { Plan };
 
 export const CAL_SUMMARY = "Spor Defteri";
-export const CAL_DESCRIPTION = "Spor Defteri uygulamasının yazdığı antrenmanlar ve haftalık plan.";
+export const CAL_DESCRIPTION = t("cloud.cal_description");
 // takvim açılınca en fazla bu kadar gün geriye bakılır; bir çalıştırmada en fazla bu kadar oturum yazılır
 export const BACKFILL_DAYS = 30;
 export const MAX_PER_RUN = 20;

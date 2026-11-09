@@ -7,6 +7,8 @@
      artı 150 dk orta ya da 75 dk yoğun kardiyo.
    Tarayıcıya bağlı değildir; testleri tests/programs.test.ts içinde. */
 
+import { t, lang } from "./i18n.ts";
+
 export type Level = "yeni" | "orta" | "ileri";
 export type Goal = "genel" | "kas" | "guc" | "esneklik";
 export type Equip = "salon" | "ev" | "yok";
@@ -34,238 +36,238 @@ export interface ProgramDef {
 }
 
 const COMMON_TIPS = [
-  "İlk 2-3 hafta tekniği öğrenmeye ayır: hafif başla, her tekrarı kontrollü yap. Ağırlık sonra çok hızlı artar.",
-  "Her ağır hareketten önce 2-3 hafif ısınma seti yap (uygulama bunları önerebilir).",
-  "Setleri tükenmeden bitir: çoğu sette 1-3 tekrar daha yapabilecek gücün kalsın (RIR 1-3).",
-  "Haftada en az 150 dk tempolu yürüyüş, bisiklet ya da benzeri kardiyo ekle; ağırlık antrenmanının yerini tutmaz, tamamlar.",
-  "Ağrı (eklemde batma, keskin acı) ile yorgunluğu ayır; ağrı varsa o hareketi bırak, gerekirse bir uzmana danış.",
+  t("core_programs.tips_common_1"),
+  t("core_programs.tips_common_2"),
+  t("core_programs.tips_common_3"),
+  t("core_programs.tips_common_4"),
+  t("core_programs.tips_common_5"),
 ];
 
 const YOGA_TIPS = [
-  "Bir mat yeterli; blok ve kayış zorlanılan pozları kolaylaştırır, yoksa kalın bir kitap ve kemer de olur.",
-  "Süreler saniyedir. Antrenmanda Başlat'a bas, poz bitince süre kendiliğinden kaydolur.",
-  "Tek taraflı pozlarda (Savaşçı, Ağaç, Güvercin…) her taraf bir settir: 2 set = sağ ve sol.",
-  "Nefesini tutma; burundan, yavaş ve düzenli nefes al. Pozda nefesin daralıyorsa biraz geri çık.",
-  "Esnemede hafif gerilme normaldir, acı değildir. Eklemde batma ya da uyuşma olursa pozu bırak.",
-  "Hamileysen, bel/boyun fıtığın ya da yüksek tansiyonun varsa ters ve derin geriye eğilme pozlarından önce bir uzmana danış.",
+  t("core_programs.tips_yoga_1"),
+  t("core_programs.tips_yoga_2"),
+  t("core_programs.tips_yoga_3"),
+  t("core_programs.tips_yoga_4"),
+  t("core_programs.tips_yoga_5"),
+  t("core_programs.tips_yoga_6"),
 ];
-const YOGA_SOURCE = "ACSM esneklik önerisi (her esneme 10-30 sn ve üstü, haftada en az 2-3 gün); NCCIH (ABD Ulusal Sağlık Enstitüleri) yoga güvenlik notları; yaygın hatha dizilimleri.";
+const YOGA_SOURCE = t("core_programs.yoga_source");
 
 export const PROGRAMS: ProgramDef[] = [
   {
     id: "baslangic-tam",
-    name: "Başlangıç Tam Vücut",
-    short: "Makine ve dumbbell ağırlıklı, 8-12 tekrarlı, bütün vücudu her antrenmanda çalıştıran ilk program.",
+    name: t("core_programs.baslangic_tam_name"),
+    short: t("core_programs.baslangic_tam_short"),
     levels: ["yeni"], goals: ["genel", "kas"], equip: "salon", days: [2, 3],
     sessions: [
-      { name: "A", items: [["Leg Press", 3, "10-12"], ["Chest Press Makinesi", 3, "10-12"], ["Lat Pulldown (Geniş)", 3, "10-12"], ["Dumbbell Romanian Deadlift", 3, "10-12"], ["Seated Dumbbell Shoulder Press", 2, "10-12"], ["Plank", 3, "30"]] },
+      { name: "A", items: [["Leg Press", 3, "10-12"], ["Machine Chest Press", 3, "10-12"], ["Wide-Grip Lat Pulldown", 3, "10-12"], ["Dumbbell Romanian Deadlift", 3, "10-12"], ["Seated Dumbbell Shoulder Press", 2, "10-12"], ["Plank", 3, "30"]] },
       { name: "B", items: [["Goblet Squat", 3, "10-12"], ["Dumbbell Bench Press", 3, "10-12"], ["Seated Cable Row", 3, "10-12"], ["Lying Leg Curl", 2, "10-12"], ["Lateral Raise (Dumbbell)", 2, "12-15"], ["Dead Bug", 3, "10"]] },
     ],
-    who: "Hiç ağırlık çalışmamış ya da uzun ara vermiş biri için. Makineler ve dumbbell'lar tekniği öğrenmeyi kolaylaştırır; 8-12 tekrar, ACSM'in yeni başlayanlar için önerdiği aralıktır.",
+    who: t("core_programs.baslangic_tam_who"),
     progression: [
-      "Çift ilerleme: bir hareketin bütün setlerinde üst sınıra (12) ulaşınca bir sonraki antrenmanda ağırlığı en küçük adımla artır (makinede bir kademe, dumbbell'da 1-2 kg).",
-      "Ağırlığı artırınca tekrarlar alt sınıra (10) düşer; yeniden 12'ye çıkana kadar o ağırlıkta kal.",
-      "A ve B'yi sırayla yap: A, B, A; bir sonraki hafta B, A, B.",
+      t("core_programs.baslangic_tam_prog1"),
+      t("core_programs.baslangic_tam_prog2"),
+      t("core_programs.baslangic_tam_prog3"),
     ],
-    stall: "Bir hareket 3 antrenman üst üste ilerlemiyorsa uykuna ve beslenmene bak; sonra ağırlığı %10 azaltıp yeniden çık.",
+    stall: t("core_programs.baslangic_tam_stall"),
     tips: COMMON_TIPS,
-    source: "ACSM 2009 (yeni başlayan: 2-3 gün, 8-12 RM); CDC/DSÖ haftalık kuvvet ve kardiyo önerileri.",
+    source: t("core_programs.baslangic_tam_source"),
   },
   {
     id: "3x5",
-    name: "3×5 Doğrusal Güç",
-    short: "Squat her antrenmanda; az hareket, ağır set, her antrenmanda biraz daha ağır (Starting Strength tarzı).",
+    name: t("core_programs.3x5_name"),
+    short: t("core_programs.3x5_short"),
     levels: ["yeni"], goals: ["guc"], equip: "salon", days: [2, 3],
     sessions: [
       { name: "A", items: [["Back Squat", 3, "5"], ["Bench Press (Barbell)", 3, "5"], ["Deadlift", 1, "5"]] },
       { name: "B", items: [["Back Squat", 3, "5"], ["Overhead Press (Barbell)", 3, "5"], ["Deadlift", 1, "5"]] },
     ],
-    who: "Güçlenmek isteyen, barbell ve squat sehpası olan yeni başlayan için. Yeni başlayan bir sonraki antrenmana kadar toparlanabildiği için ağırlık neredeyse her antrenmanda artar.",
+    who: t("core_programs.3x5_who"),
     progression: [
-      "Bütün setleri 5 tekrarla tamamladığın her antrenmanda ağırlığı artır: squat ve deadlift +2,5-5 kg, bench ve overhead press +1,25-2,5 kg.",
-      "Boş barla (20 kg) ya da rahatça 5 tekrar yapabildiğin hafif bir ağırlıkla başla.",
-      "Setler arası 3-5 dakika dinlen.",
+      t("core_programs.3x5_prog1"),
+      t("core_programs.3x5_prog2"),
+      t("core_programs.3x5_prog3"),
     ],
-    stall: "Aynı ağırlıkta 3 antrenman üst üste 5 tekrarı tamamlayamazsan ağırlığı %10 düşür ve yeniden çık. Bu birkaç kez tekrarlanırsa 5×5 yerine GZCLP gibi bir programa geçme zamanı.",
+    stall: t("core_programs.3x5_stall"),
     tips: COMMON_TIPS,
-    source: "Doğrusal ilerleme modeli (Rippetoe, Starting Strength); ACSM 2009 yük artışı ilkesi.",
+    source: t("core_programs.3x5_source"),
   },
   {
     id: "5x5",
-    name: "5×5 Güç",
-    short: "Üç temel hareket, 5 set 5 tekrar, her antrenmanda +2,5 kg (StrongLifts tarzı).",
+    name: t("core_programs.5x5_name"),
+    short: t("core_programs.5x5_short"),
     levels: ["yeni"], goals: ["guc", "genel"], equip: "salon", days: [3],
     sessions: [
       { name: "A", items: [["Back Squat", 5, "5"], ["Bench Press (Barbell)", 5, "5"], ["Barbell Row", 5, "5"]] },
       { name: "B", items: [["Back Squat", 5, "5"], ["Overhead Press (Barbell)", 5, "5"], ["Deadlift", 1, "5"]] },
     ],
-    who: "Güç ve genel kuvvet isteyen, haftada 3 gün gelebilen yeni başlayan için. Hareket sayısı az olduğu için öğrenmesi ve takip etmesi kolay.",
+    who: t("core_programs.5x5_who"),
     progression: [
-      "5 setin hepsini 5 tekrarla bitirdiğin her antrenmanda +2,5 kg (deadlift +5 kg).",
-      "Boş barla (20 kg) başla; ilk haftalar kolay gelecek, bu bilerek böyle.",
-      "A ve B'yi sırayla yap; setler arası 3-5 dakika dinlen.",
+      t("core_programs.5x5_prog1"),
+      t("core_programs.5x5_prog2"),
+      t("core_programs.5x5_prog3"),
     ],
-    stall: "Bir harekette 3 antrenman üst üste 5×5'i tamamlayamazsan o hareketin ağırlığını %10 düşür. Düşürmeler sıklaşınca GZCLP'ye geç.",
+    stall: t("core_programs.5x5_stall"),
     tips: COMMON_TIPS,
-    source: "5×5 doğrusal ilerleme düzeni (StrongLifts tarzı); ACSM 2009 yük artışı ilkesi.",
+    source: t("core_programs.5x5_source"),
   },
   {
     id: "gzclp",
-    name: "GZCLP",
-    short: "Her gün bir ağır (T1), bir orta (T2), bir hafif (T3) hareket: güç ve kası birlikte geliştirir.",
+    name: t("core_programs.gzclp_name"),
+    short: t("core_programs.gzclp_short"),
     levels: ["yeni", "orta"], goals: ["guc", "kas"], equip: "salon", days: [3, 4],
     sessions: [
-      { name: "1", items: [["Back Squat", 5, "3"], ["Bench Press (Barbell)", 3, "10"], ["Lat Pulldown (Geniş)", 3, "15"]] },
-      { name: "2", items: [["Overhead Press (Barbell)", 5, "3"], ["Deadlift", 3, "10"], ["Dumbbell Row (Tek Kol)", 3, "15"]] },
-      { name: "3", items: [["Bench Press (Barbell)", 5, "3"], ["Back Squat", 3, "10"], ["Lat Pulldown (Geniş)", 3, "15"]] },
-      { name: "4", items: [["Deadlift", 5, "3"], ["Overhead Press (Barbell)", 3, "10"], ["Dumbbell Row (Tek Kol)", 3, "15"]] },
+      { name: "1", items: [["Back Squat", 5, "3"], ["Bench Press (Barbell)", 3, "10"], ["Wide-Grip Lat Pulldown", 3, "15"]] },
+      { name: "2", items: [["Overhead Press (Barbell)", 5, "3"], ["Deadlift", 3, "10"], ["Single-Arm Dumbbell Row", 3, "15"]] },
+      { name: "3", items: [["Bench Press (Barbell)", 5, "3"], ["Back Squat", 3, "10"], ["Wide-Grip Lat Pulldown", 3, "15"]] },
+      { name: "4", items: [["Deadlift", 5, "3"], ["Overhead Press (Barbell)", 3, "10"], ["Single-Arm Dumbbell Row", 3, "15"]] },
     ],
-    who: "5×5 ya da 3×5'te takılmaya başlayan ya da güçle birlikte kas da isteyen biri için. Takılınca ne yapılacağı baştan belli olduğu için uzun süre ilerletir.",
+    who: t("core_programs.gzclp_who"),
     progression: [
-      "T1 (ilk hareket, 5×3): son seti yapabildiğin kadar tekrarla bitir; tamamlarsan bir sonraki sefer +2,5 kg (squat/deadlift +5 kg).",
-      "T2 (ikinci hareket, 3×10): tamamlarsan +2,5 kg.",
-      "T3 (üçüncü hareket, 3×15): son sette 25 tekrar yapabiliyorsan ağırlığı artır.",
-      "Günleri sırayla yap: 1, 2, 3, 4. Haftada 3 gün geliyorsan sıra haftalara kayar.",
+      t("core_programs.gzclp_prog1"),
+      t("core_programs.gzclp_prog2"),
+      t("core_programs.gzclp_prog3"),
+      t("core_programs.gzclp_prog4"),
     ],
-    stall: "T1'de 5×3 tamamlanmazsa aynı ağırlıkla 6×2'ye, o da olmazsa 10×1'e geç; o da olmazsa ağırlığı %15 düşürüp 5×3'e dön. T2'de 3×10 olmazsa 3×8, sonra 3×6; sonra ağırlığı düşür.",
+    stall: t("core_programs.gzclp_stall"),
     tips: COMMON_TIPS,
-    source: "GZCL yöntemi (Cody Lefever), GZCLP doğrusal sürümü; ACSM 2009.",
+    source: t("core_programs.gzclp_source"),
   },
   {
     id: "ust-alt",
-    name: "Üst / Alt",
-    short: "Haftada 4 gün: iki üst vücut, iki alt vücut; her kas grubu haftada iki kez.",
+    name: t("core_programs.ust_alt_name"),
+    short: t("core_programs.ust_alt_short"),
     levels: ["orta", "ileri"], goals: ["kas", "genel", "guc"], equip: "salon", days: [4],
     sessions: [
-      { name: "Üst", items: [["Bench Press (Barbell)", 4, "6-8"], ["Barbell Row", 4, "6-8"], ["Overhead Press (Barbell)", 3, "8-10"], ["Lat Pulldown (Geniş)", 3, "8-12"], ["EZ-Bar Curl", 2, "10-12"], ["Skull Crusher (EZ-Bar)", 2, "10-12"]] },
-      { name: "Alt", items: [["Back Squat", 4, "6-8"], ["Romanian Deadlift", 3, "8-10"], ["Bulgarian Split Squat", 3, "10"], ["Seated Leg Curl", 3, "10-12"], ["Seated Calf Raise", 4, "12-15"], ["Hanging Leg Raise", 3, "10-15"]] },
+      { name: t("core_programs.ust_alt_s_ust"), items: [["Bench Press (Barbell)", 4, "6-8"], ["Barbell Row", 4, "6-8"], ["Overhead Press (Barbell)", 3, "8-10"], ["Wide-Grip Lat Pulldown", 3, "8-12"], ["EZ-Bar Curl", 2, "10-12"], ["Skull Crusher (EZ-Bar)", 2, "10-12"]] },
+      { name: t("core_programs.ust_alt_s_alt"), items: [["Back Squat", 4, "6-8"], ["Romanian Deadlift", 3, "8-10"], ["Bulgarian Split Squat", 3, "10"], ["Seated Leg Curl", 3, "10-12"], ["Seated Calf Raise", 4, "12-15"], ["Hanging Leg Raise", 3, "10-15"]] },
     ],
     rotation: { 4: [0, 1, 0, 1] },
-    who: "En az 6 aydır düzenli çalışan, haftada 4 gün gelebilen ve kas kütlesi isteyen biri için. Her kas haftada iki kez, toparlanmaya yetecek aralıklarla çalışır.",
+    who: t("core_programs.ust_alt_who"),
     progression: [
-      "Çift ilerleme: bütün setlerde üst sınıra ulaşınca ağırlığı artır (büyük hareketlerde 2,5 kg, küçüklerde en küçük adım).",
-      "Ağır hareketlerde setler arası 2-3 dk, küçüklerde 1-2 dk dinlen.",
+      t("core_programs.ust_alt_prog1"),
+      t("core_programs.ust_alt_prog2"),
     ],
-    stall: "Bir hareket 2-3 hafta ilerlemiyorsa bir hafta setleri yarıya indir (deload), sonra devam et; yine olmazsa o hareketi benzeriyle değiştir.",
+    stall: t("core_programs.ust_alt_stall"),
     tips: COMMON_TIPS.slice(1),
-    source: "ACSM 2009 (orta seviye: 3-4 gün, kas grubu başına haftada iki çalışma).",
+    source: t("core_programs.ust_alt_source"),
   },
   {
     id: "ppl",
-    name: "Push / Pull / Legs",
-    short: "İtiş, çekiş ve bacak günleri; 3 günde her kas haftada bir, 6 günde iki kez.",
+    name: t("core_programs.ppl_name"),
+    short: t("core_programs.ppl_short"),
     levels: ["orta", "ileri"], goals: ["kas"], equip: "salon", days: [3, 5, 6],
     sessions: [
-      { name: "Push", items: [["Bench Press (Barbell)", 4, "6-8"], ["Incline Dumbbell Press", 3, "8-10"], ["Seated Dumbbell Shoulder Press", 3, "8-10"], ["Lateral Raise (Dumbbell)", 3, "12-15"], ["Triceps Pushdown (Halat)", 3, "10-12"], ["Overhead Cable Extension", 3, "10-12"]] },
-      { name: "Pull", items: [["Deadlift", 3, "5"], ["Barfiks (Pull-up)", 3, "6-10"], ["Seated Cable Row", 3, "8-12"], ["Face Pull", 3, "12-15"], ["Barbell Curl", 3, "8-12"], ["Hammer Curl", 3, "10-12"]] },
-      { name: "Legs", items: [["Back Squat", 4, "6-8"], ["Romanian Deadlift", 3, "8-10"], ["Leg Press", 3, "10-12"], ["Lying Leg Curl", 3, "10-12"], ["Leg Extension", 3, "12-15"], ["Standing Calf Raise", 4, "12-15"]] },
+      { name: t("core_programs.ppl_s_push"), items: [["Bench Press (Barbell)", 4, "6-8"], ["Incline Dumbbell Press", 3, "8-10"], ["Seated Dumbbell Shoulder Press", 3, "8-10"], ["Lateral Raise (Dumbbell)", 3, "12-15"], ["Triceps Pushdown (Rope)", 3, "10-12"], ["Overhead Cable Extension", 3, "10-12"]] },
+      { name: t("core_programs.ppl_s_pull"), items: [["Deadlift", 3, "5"], ["Pull-up", 3, "6-10"], ["Seated Cable Row", 3, "8-12"], ["Face Pull", 3, "12-15"], ["Barbell Curl", 3, "8-12"], ["Hammer Curl", 3, "10-12"]] },
+      { name: t("core_programs.ppl_s_legs"), items: [["Back Squat", 4, "6-8"], ["Romanian Deadlift", 3, "8-10"], ["Leg Press", 3, "10-12"], ["Lying Leg Curl", 3, "10-12"], ["Leg Extension", 3, "12-15"], ["Standing Calf Raise", 4, "12-15"]] },
     ],
-    who: "Deneyimli, kas kütlesi hedefleyen ve haftada 5-6 gün ayırabilen biri için. 3 günde de yapılır ama o zaman her kas haftada bir kez çalışır; 3 gün için Üst/Alt ya da tam vücut daha verimlidir.",
+    who: t("core_programs.ppl_who"),
     progression: [
-      "Çift ilerleme: bütün setlerde üst sınıra ulaşınca ağırlığı artır.",
-      "6 günde sıra: Push, Pull, Legs, Push, Pull, Legs; 5 günde döngü haftalara kayar.",
+      t("core_programs.ppl_prog1"),
+      t("core_programs.ppl_prog2"),
     ],
-    stall: "Bir hareket 2-3 hafta ilerlemiyorsa bir hafta hafiflet (deload); yorgunluk birikiyorsa gün sayısını azalt.",
+    stall: t("core_programs.ppl_stall"),
     tips: COMMON_TIPS.slice(1),
-    source: "ACSM 2009 (ileri seviye: 4-6 gün, bölünmüş programlar).",
+    source: t("core_programs.ppl_source"),
   },
   {
     id: "ev-dumbbell",
-    name: "Ev Dumbbell Tam Vücut",
-    short: "Yalnız bir çift ayarlanabilir dumbbell ile evde bütün vücut.",
+    name: t("core_programs.ev_dumbbell_name"),
+    short: t("core_programs.ev_dumbbell_short"),
     levels: ["yeni", "orta"], goals: ["genel", "kas"], equip: "ev", days: [2, 3],
     sessions: [
-      { name: "A", items: [["Goblet Squat", 3, "8-12"], ["Dumbbell Bench Press", 3, "8-12"], ["Dumbbell Row (Tek Kol)", 3, "8-12"], ["Dumbbell Romanian Deadlift", 3, "8-12"], ["Standing Dumbbell Press", 2, "8-12"], ["Plank", 3, "30"]] },
-      { name: "B", items: [["Reverse Lunge", 3, "8-12"], ["Şınav (Push-up)", 3, "5-15"], ["Dumbbell Row (Tek Kol)", 3, "8-12"], ["Glute Bridge", 3, "12-15"], ["Lateral Raise (Dumbbell)", 2, "12-15"], ["Dumbbell Curl", 2, "10-12"], ["Dead Bug", 3, "10"]] },
+      { name: "A", items: [["Goblet Squat", 3, "8-12"], ["Dumbbell Bench Press", 3, "8-12"], ["Single-Arm Dumbbell Row", 3, "8-12"], ["Dumbbell Romanian Deadlift", 3, "8-12"], ["Standing Dumbbell Press", 2, "8-12"], ["Plank", 3, "30"]] },
+      { name: "B", items: [["Reverse Lunge", 3, "8-12"], ["Push-up", 3, "5-15"], ["Single-Arm Dumbbell Row", 3, "8-12"], ["Glute Bridge", 3, "12-15"], ["Lateral Raise (Dumbbell)", 2, "12-15"], ["Dumbbell Curl", 2, "10-12"], ["Dead Bug", 3, "10"]] },
     ],
-    who: "Salona gidemeyen, evde bir çift dumbbell'ı olan biri için. Bench yoksa Dumbbell Bench Press'i yerde (floor press) yap.",
+    who: t("core_programs.ev_dumbbell_who"),
     progression: [
-      "Çift ilerleme: bütün setlerde üst sınıra ulaşınca dumbbell'ı bir adım ağırlaştır.",
-      "Ağırlık yetmeyince tekrarı değil yavaşlığı artır: 3 saniyede in, 1 saniye bekle, çık.",
-      "A ve B'yi sırayla yap.",
+      t("core_programs.ev_dumbbell_prog1"),
+      t("core_programs.ev_dumbbell_prog2"),
+      t("core_programs.ev_dumbbell_prog3"),
     ],
-    stall: "Dumbbell'lar hafif kalmaya başlarsa tek bacak/tek kol varyasyonlara geç (Bulgarian split squat, tek bacak RDL) ya da ağır bir çift edin.",
+    stall: t("core_programs.ev_dumbbell_stall"),
     tips: COMMON_TIPS,
-    source: "ACSM 2009; CDC/DSÖ kuvvet önerisi (bütün büyük kas grupları, haftada en az 2 gün).",
+    source: t("core_programs.ev_dumbbell_source"),
   },
   {
     id: "vucut-agirligi",
-    name: "Vücut Ağırlığı Başlangıç",
-    short: "Ekipmansız, evde ya da parkta; zorluğu varyasyonla artan tam vücut.",
+    name: t("core_programs.vucut_agirligi_name"),
+    short: t("core_programs.vucut_agirligi_short"),
     levels: ["yeni"], goals: ["genel", "kas"], equip: "yok", days: [2, 3],
     sessions: [
-      { name: "Tam vücut", items: [["Air Squat (Vücut Ağırlığı)", 3, "10-20"], ["Incline Şınav", 3, "5-12"], ["Inverted Row", 3, "5-12"], ["Glute Bridge", 3, "12-20"], ["Reverse Lunge", 2, "8-12"], ["Plank", 3, "30-60"]] },
+      { name: t("core_programs.vucut_agirligi_s_tam_vucut"), items: [["Air Squat", 3, "10-20"], ["Incline Push-up", 3, "5-12"], ["Inverted Row", 3, "5-12"], ["Glute Bridge", 3, "12-20"], ["Reverse Lunge", 2, "8-12"], ["Plank", 3, "30-60"]] },
     ],
-    who: "Hiç ekipmanı olmayan ya da önce kendi vücut ağırlığıyla başlamak isteyen için. Inverted row için sağlam bir masa ya da alçak bir bar yeterli; yoksa yerine Superman yap.",
+    who: t("core_programs.vucut_agirligi_who"),
     progression: [
-      "Bir hareketin bütün setlerinde üst sınıra ulaşınca daha zor varyasyona geç: Incline şınav → şınav → decline şınav; squat → reverse lunge → Bulgarian split squat; inverted row'da ayakları öne al.",
-      "Varyasyon değişince tekrarlar yeniden alt sınırdan başlar. Programdaki hareketi düzenleyerek yenisini yazabilirsin.",
+      t("core_programs.vucut_agirligi_prog1"),
+      t("core_programs.vucut_agirligi_prog2"),
     ],
-    stall: "Bir varyasyonda 3 antrenman ilerlemezsen tempoyu yavaşlat (3 sn in) ya da bir set ekle.",
+    stall: t("core_programs.vucut_agirligi_stall"),
     tips: COMMON_TIPS,
-    source: "Varyasyonla ilerleme ilkesi; CDC/DSÖ kuvvet önerisi.",
+    source: t("core_programs.vucut_agirligi_source"),
   },
   {
     id: "yoga-baslangic",
-    name: "Başlangıç Yogası",
-    short: "Hiç yoga yapmamış biri için 25 dakikalık sakin tam vücut akışı: esneklik, denge ve rahatlama.",
+    name: t("core_programs.yoga_baslangic_name"),
+    short: t("core_programs.yoga_baslangic_short"),
     levels: ["yeni", "orta"], goals: ["esneklik"], equip: "yok", days: [2, 3],
     sessions: [
-      { name: "Akış", items: [["Kedi-İnek (Cat-Cow)", 1, "60"], ["Çocuk Pozu (Child's Pose)", 1, "45"], ["Aşağı Bakan Köpek (Downward Dog)", 3, "20-30"], ["Alçak Hamle (Low Lunge)", 2, "20-30"], ["Savaşçı 2 (Warrior II)", 2, "20-30"], ["Ağaç (Tree Pose)", 2, "15-30"], ["Kobra (Cobra Pose)", 3, "15-20"], ["Köprü (Bridge Pose)", 3, "20-30"], ["Yatarak Omurga Bükme (Supine Twist)", 2, "30"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
+      { name: t("core_programs.yoga_baslangic_s_akis"), items: [["Cat-Cow", 1, "60"], ["Child's Pose", 1, "45"], ["Downward Dog", 3, "20-30"], ["Low Lunge", 2, "20-30"], ["Warrior II", 2, "20-30"], ["Tree Pose", 2, "15-30"], ["Cobra Pose", 3, "15-20"], ["Bridge Pose", 3, "20-30"], ["Supine Twist", 2, "30"], ["Corpse Pose", 1, "180"]] },
     ],
-    who: "Yogaya yeni başlayan ya da uzun süre ara vermiş biri için. Pozlar temel ve güvenli; amaç önce doğru duruşu ve nefesi oturtmak.",
+    who: t("core_programs.yoga_baslangic_who"),
     progression: [
-      "Bir pozun bütün setlerinde üst süreye rahat nefesle ulaşınca bir sonraki seferde 5 sn artır (uygulama bunu önerir).",
-      "Pozlarda 45-60 sn'ye rahat ulaştığında Yoga Akışı programına geç.",
+      t("core_programs.yoga_baslangic_prog1"),
+      t("core_programs.yoga_baslangic_prog2"),
     ],
-    stall: "Bir pozda ilerleyemiyorsan blok ya da duvar desteği kullan, dizi bük; süreyi kısaltıp kaliteyi koru.",
+    stall: t("core_programs.yoga_baslangic_stall"),
     tips: YOGA_TIPS,
     source: YOGA_SOURCE,
   },
   {
     id: "yoga-akis",
-    name: "Yoga Akışı",
-    short: "İki seans: A güç ve denge, B esneklik ve açılma. Güneşe selamla ısınır, derin rahatlamayla biter.",
+    name: t("core_programs.yoga_akis_name"),
+    short: t("core_programs.yoga_akis_short"),
     levels: ["orta", "ileri"], goals: ["esneklik"], equip: "yok", days: [2, 3, 4],
     sessions: [
-      { name: "A · Güç ve denge", items: [["Güneşe Selam (Sun Salutation)", 3, "60"], ["Sandalye (Chair Pose)", 3, "20-30"], ["Savaşçı 1 (Warrior I)", 2, "30"], ["Savaşçı 2 (Warrior II)", 2, "30"], ["Ters Savaşçı (Reverse Warrior)", 2, "20-30"], ["Yan Uzanma Açısı (Extended Side Angle)", 2, "30"], ["Yarım Ay (Half Moon)", 2, "15-30"], ["Kayık (Boat Pose)", 3, "20-30"], ["Plank", 3, "30-60"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
-      { name: "B · Esneklik", items: [["Güneşe Selam (Sun Salutation)", 3, "60"], ["Üçgen (Triangle Pose)", 2, "30"], ["Ayakta Öne Eğilme (Standing Forward Fold)", 2, "30-45"], ["Güvercin (Pigeon Pose)", 2, "45-60"], ["Deve (Camel Pose)", 2, "20-30"], ["Köprü (Bridge Pose)", 3, "30"], ["Oturarak Öne Eğilme (Seated Forward Fold)", 2, "45-60"], ["Kelebek (Butterfly Pose)", 2, "45-60"], ["Mutlu Bebek (Happy Baby)", 1, "45-60"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
+      { name: t("core_programs.yoga_akis_s_a_guc_denge"), items: [["Sun Salutation", 3, "60"], ["Chair Pose", 3, "20-30"], ["Warrior I", 2, "30"], ["Warrior II", 2, "30"], ["Reverse Warrior", 2, "20-30"], ["Extended Side Angle", 2, "30"], ["Half Moon", 2, "15-30"], ["Boat Pose", 3, "20-30"], ["Plank", 3, "30-60"], ["Corpse Pose", 1, "180"]] },
+      { name: t("core_programs.yoga_akis_s_b_esneklik"), items: [["Sun Salutation", 3, "60"], ["Triangle Pose", 2, "30"], ["Standing Forward Fold", 2, "30-45"], ["Pigeon Pose", 2, "45-60"], ["Camel Pose", 2, "20-30"], ["Bridge Pose", 3, "30"], ["Seated Forward Fold", 2, "45-60"], ["Butterfly Pose", 2, "45-60"], ["Happy Baby", 1, "45-60"], ["Corpse Pose", 1, "180"]] },
     ],
-    who: "Temel pozları bilen ve biraz daha güç, denge ve esneklik isteyen için. Kuvvet antrenmanıyla aynı haftada da yapılır.",
+    who: t("core_programs.yoga_akis_who"),
     progression: [
-      "Üst süreye rahat nefesle ulaştığın pozlarda 5-10 sn artır.",
-      "A ve B'yi sırayla yap: A, B, A; bir sonraki hafta B, A, B.",
-      "Dengede zorlanmıyorsan Ağaç ve Yarım Ay'da gözlerini yere değil ileriye, sonra yukarıya dik.",
+      t("core_programs.yoga_akis_prog1"),
+      t("core_programs.yoga_akis_prog2"),
+      t("core_programs.yoga_akis_prog3"),
     ],
-    stall: "Esneklik yavaş gelişir: haftalarca aynı yerde kalman normal. Düzenli devam et, esnemeleri ılık kaslarla (akışın sonunda) yap.",
+    stall: t("core_programs.yoga_akis_stall"),
     tips: YOGA_TIPS.slice(1),
     source: YOGA_SOURCE,
   },
   {
     id: "yoga-sabah",
-    name: "Sabah Akışı",
-    short: "15 dakikalık uyandıran kısa akış: güneşe selam, ayakta pozlar ve denge.",
+    name: t("core_programs.yoga_sabah_name"),
+    short: t("core_programs.yoga_sabah_short"),
     levels: ["yeni", "orta", "ileri"], goals: ["esneklik", "genel"], equip: "yok", days: [3, 4, 5],
     sessions: [
-      { name: "Sabah", items: [["Dağ Duruşu (Mountain Pose)", 1, "30"], ["Güneşe Selam (Sun Salutation)", 3, "60"], ["Savaşçı 2 (Warrior II)", 2, "20-30"], ["Ağaç (Tree Pose)", 2, "20-30"], ["Aşağı Bakan Köpek (Downward Dog)", 2, "30"], ["Çocuk Pozu (Child's Pose)", 1, "45"]] },
+      { name: t("core_programs.yoga_sabah_s_sabah"), items: [["Mountain Pose", 1, "30"], ["Sun Salutation", 3, "60"], ["Warrior II", 2, "20-30"], ["Tree Pose", 2, "20-30"], ["Downward Dog", 2, "30"], ["Child's Pose", 1, "45"]] },
     ],
-    who: "Güne hareketle başlamak isteyen, az vakti olan herkes için. Kuvvet programının olmadığı günlere de iyi gelir.",
-    progression: ["Güneşe selamı 3 turdan 5 tura çıkar; ayakta pozlarda süreyi 5 sn artır."],
-    stall: "Sabah kaslar daha serttir; zorlanırsan dizlerini bük ve güneşe selamı yavaş yap.",
+    who: t("core_programs.yoga_sabah_who"),
+    progression: [t("core_programs.yoga_sabah_prog1")],
+    stall: t("core_programs.yoga_sabah_stall"),
     tips: YOGA_TIPS,
     source: YOGA_SOURCE,
   },
   {
     id: "yoga-aksam",
-    name: "Akşam Esneme ve Rahatlama",
-    short: "Yatmadan önce 20 dakika: kalça, bel ve arka bacak esnemeleri, yavaş nefes.",
+    name: t("core_programs.yoga_aksam_name"),
+    short: t("core_programs.yoga_aksam_short"),
     levels: ["yeni", "orta", "ileri"], goals: ["esneklik", "genel"], equip: "yok", days: [2, 3, 4, 5],
     sessions: [
-      { name: "Akşam", items: [["Kedi-İnek (Cat-Cow)", 1, "60"], ["Çocuk Pozu (Child's Pose)", 1, "60"], ["Güvercin (Pigeon Pose)", 2, "45-60"], ["Oturarak Öne Eğilme (Seated Forward Fold)", 2, "45-60"], ["Kelebek (Butterfly Pose)", 1, "60"], ["Yatarak Omurga Bükme (Supine Twist)", 2, "45"], ["Duvara Bacak (Legs Up the Wall)", 1, "120-180"], ["Derin Rahatlama (Corpse Pose)", 1, "180"]] },
+      { name: t("core_programs.yoga_aksam_s_aksam"), items: [["Cat-Cow", 1, "60"], ["Child's Pose", 1, "60"], ["Pigeon Pose", 2, "45-60"], ["Seated Forward Fold", 2, "45-60"], ["Butterfly Pose", 1, "60"], ["Supine Twist", 2, "45"], ["Legs Up the Wall", 1, "120-180"], ["Corpse Pose", 1, "180"]] },
     ],
-    who: "Gün boyu oturan, beli ve kalçası tutulan ya da daha rahat uyumak isteyen için. Ağırlık antrenmanından sonra soğuma olarak da yapılır.",
-    progression: ["Esnemelerde süreyi 60 sn'ye kadar çıkar; zorlanmadan daha derine inebiliyorsan in."],
-    stall: "Esneklik yavaş gelişir; birkaç hafta aynı yerde kalman normal. Düzenli yapmak derin zorlamaktan daha etkilidir.",
+    who: t("core_programs.yoga_aksam_who"),
+    progression: [t("core_programs.yoga_aksam_prog1")],
+    stall: t("core_programs.yoga_aksam_stall"),
     tips: YOGA_TIPS,
     source: YOGA_SOURCE,
   },
@@ -298,60 +300,60 @@ export function recommend(a: Answers): Recommendation {
     // yoga için mat yeterli; ekipman sorusu önemsiz
     main = a.level === "yeni" ? P("yoga-baslangic") : P("yoga-akis");
     reasons.push(a.level === "yeni"
-      ? "Yogaya yeni başlıyorsan temel pozlarla, sakin bir akışla başla; doğru duruş ve nefes önce gelir."
-      : "Temel pozları biliyorsan güç ve denge ile esneklik günlerini dönüşümlü yapan bir akış.");
-    reasons.push("Yoga için bir mat yeterli; salon gerekmez.");
-    alts = [["yoga-sabah", "Az vaktin varsa: 15 dakikalık sabah akışı."], ["yoga-aksam", "Esneme ve rahat uyku için akşam rutini."]];
+      ? t("core_programs.rec_1")
+      : t("core_programs.rec_2"));
+    reasons.push(t("core_programs.rec_3"));
+    alts = [["yoga-sabah", t("core_programs.rec_4")], ["yoga-aksam", t("core_programs.rec_5")]];
   } else if (a.equip === "yok") {
     main = P("vucut-agirligi");
-    reasons.push("Ekipmanın olmadığı için vücut ağırlığıyla, zorluğu varyasyonla artan bir program.");
-    alts = [["ev-dumbbell", "Bir çift dumbbell edinirsen daha hızlı ilerlersin."]];
+    reasons.push(t("core_programs.rec_6"));
+    alts = [["ev-dumbbell", t("core_programs.rec_7")]];
   } else if (a.equip === "ev") {
     main = P("ev-dumbbell");
-    reasons.push("Evde dumbbell'la bütün büyük kas gruplarını çalıştıran bir program.");
-    alts = [["vucut-agirligi", "Dumbbell'lar yanında değilken ekipmansız gün."]];
+    reasons.push(t("core_programs.rec_8"));
+    alts = [["vucut-agirligi", t("core_programs.rec_9")]];
   } else if (a.level === "yeni") {
     if (a.goal === "guc") {
       main = a.days >= 3 ? P("5x5") : P("3x5");
-      reasons.push("Yeni başlayan güç hedefinde en hızlı ilerlemeyi, her antrenmanda biraz ağırlık eklenen doğrusal programlar sağlar.");
-      alts = a.days >= 3 ? [["3x5", "Daha kısa antrenman isteyene: aynı mantık, daha az set."], ["gzclp", "Güçle birlikte kas da istersen."]] : [["baslangic-tam", "Ağır barbell yerine makinelerle başlamak istersen."]];
+      reasons.push(t("core_programs.rec_10"));
+      alts = a.days >= 3 ? [["3x5", t("core_programs.rec_11")], ["gzclp", t("core_programs.rec_12")]] : [["baslangic-tam", t("core_programs.rec_13")]];
     } else if (a.goal === "kas" && a.days >= 4) {
       main = P("gzclp");
-      reasons.push("Haftada 4 gün ayırabildiğin ve kas istediğin için ağır, orta ve hafif setleri birleştiren GZCLP.");
-      alts = [["baslangic-tam", "Önce 2-3 ay tam vücutla tekniği oturtmak istersen."]];
+      reasons.push(t("core_programs.rec_14"));
+      alts = [["baslangic-tam", t("core_programs.rec_15")]];
     } else {
       main = P("baslangic-tam");
-      reasons.push("Yeni başlayan için en güvenli ve verimli başlangıç: haftada 2-3 gün tam vücut, 8-12 tekrar (ACSM'in önerdiği aralık).");
-      alts = [["5x5", "Barbell'la güç odaklı çalışmak istersen."]];
+      reasons.push(t("core_programs.rec_16"));
+      alts = [["5x5", t("core_programs.rec_17")]];
     }
-    if (a.days >= 5) reasons.push("Yeni başlarken 5-6 gün gerekmez: kaslar dinlenirken büyür. Kalan günlerde yürüyüş ya da bisiklet gibi kardiyo yap.");
+    if (a.days >= 5) reasons.push(t("core_programs.rec_18"));
   } else {
     if (a.goal === "guc") {
       main = P("gzclp");
-      reasons.push("Doğrusal programlarda takılmaya başlayan seviyede, takılınca ne yapılacağı belli olan GZCLP uzun süre ilerletir.");
-      alts = [["ust-alt", "Güçle birlikte daha çok kas hacmi istersen, 4 gün."]];
+      reasons.push(t("core_programs.rec_19"));
+      alts = [["ust-alt", t("core_programs.rec_20")]];
     } else if (a.days >= 5 && a.goal === "kas") {
       main = P("ppl");
-      reasons.push("5-6 gün ayırabildiğin ve kas istediğin için her kası haftada iki kez çalıştıran Push/Pull/Legs.");
-      alts = [["ust-alt", "Daha az gün ve daha çok dinlenme istersen."]];
+      reasons.push(t("core_programs.rec_21"));
+      alts = [["ust-alt", t("core_programs.rec_22")]];
     } else if (a.days >= 4) {
       main = P("ust-alt");
-      reasons.push("Haftada 4 günle her kas grubunu iki kez çalıştırmanın en dengeli yolu Üst/Alt.");
-      alts = [["gzclp", "Güç tarafını öne çıkarmak istersen."]];
+      reasons.push(t("core_programs.rec_23"));
+      alts = [["gzclp", t("core_programs.rec_24")]];
     } else {
       main = a.goal === "kas" ? P("gzclp") : P("baslangic-tam");
       reasons.push(a.goal === "kas"
-        ? "Haftada 2-3 günle kas için her antrenmanda bütün vücudu çalıştırmak, bölünmüş programdan daha verimli."
-        : "Genel sağlık için haftada 2-3 gün tam vücut yeterli ve sürdürülebilir.");
-      alts = [["ppl", "İleride gün sayını artırırsan."]];
+        ? t("core_programs.rec_25")
+        : t("core_programs.rec_26"));
+      alts = [["ppl", t("core_programs.rec_27")]];
     }
   }
 
   const days = fitDays(main, a.days);
-  if (days !== a.days) reasons.push(`${main.name} haftada ${main.days.join(" ya da ")} gün için tasarlandı; planını ${days} güne göre kurdum.`);
+  if (days !== a.days) reasons.push(t("core_programs.rec_days_fit", { name: main.name, days: main.days.join(lang() === "tr" ? " ya da " : " or "), fit: days }));
   reasons.push(a.goal === "esneklik"
-    ? "DSÖ haftada en az 2 gün kas güçlendirici hareket ve 150 dk orta tempolu kardiyo önerir; yogayı tempolu yürüyüşle tamamla."
-    : "Haftada en az 150 dk orta tempolu kardiyo da ekle (CDC/DSÖ önerisi).");
+    ? t("core_programs.rec_28")
+    : t("core_programs.rec_29"));
   return {
     program: main, days, reasons,
     alternatives: alts.filter(([id]) => id !== main.id).map(([id, why]) => ({ program: P(id), days: fitDays(P(id), a.days), why })),

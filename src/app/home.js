@@ -1,4 +1,4 @@
-import { DAYS, mondayOf, ymd } from "../core/dates.ts";
+import { DAYS, MONTHS_LONG, mondayOf, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, esc, ic, state } from "./store.js";
 import { focus, isCardio, isYoga, liftOn, musclesOf } from "./exercises.js";
@@ -12,9 +12,10 @@ import { openAddProgram } from "./programs.js";
 import { dayLoad, recoveryMap } from "./stats.js";
 import { renderBackupBanner } from "./backup.js";
 import { flameHTML, streakNote, streakNow, streakOn } from "./streak.js";
+import { t } from "../core/i18n.ts";
 
 /* ---------- Ana sayfa ---------- */
-export const MONTHS_LONG = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+export { MONTHS_LONG };
 // sırayla planda da doğru program: core/plan.ts
 export const todayPlan = () => plannedOn(state.plan, state.programs, ymd(new Date()));
 export function weekProgress(){
@@ -36,7 +37,7 @@ export const planMinutes = sets => Math.max(5, Math.round(sets * 3.5 / 5) * 5);
 // Kısayollar Antrenman sekmesinde, son antrenman Takvim'de.
 export function renderHome(){
   const now = new Date(), today = ymd(now), p = todayPlan(), trainedToday = state.entries.some(e => e.date === today);
-  $("#homeDate").textContent = `${DAYS[now.getDay()]} · hafta ${isoWeek(now)}`;
+  $("#homeDate").textContent = t("home.week_label", { day: DAYS[now.getDay()], w: isoWeek(now) });
   const R = recoveryMap();
   const score = x => { const ms = [...new Set(x.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a, m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };
   const best = state.programs.map(x => ({ x, s: score(x) })).filter(o => o.s > 0).sort((a, b) => b.s - a.s)[0];
@@ -44,26 +45,26 @@ export function renderHome(){
   if (state.live) {
     const items = liveItems(), it = items[state.live.idx || 0];
     const n = state.entries.filter(e => e.date === state.live.date).reduce((a, e) => a + work(e.sets).length, 0);
-    title = it ? it.ex : "Antrenman";
+    title = it ? it.ex : t("home.workout");
     main = `<div class="card"><div class="bignum" id="homeLiveT">${elapsedText()}</div>
-      <p class="muted" style="margin:6px 0 16px">${n} set</p><div class="home-start"><button class="btn primary xl" id="homeResume">${ic("play")}Devam</button></div></div>`;
+      <p class="muted" style="margin:6px 0 16px">${t("home.set_count", { n })}</p><div class="home-start"><button class="btn primary xl" id="homeResume">${ic("play")}${t("home.resume")}</button></div></div>`;
   } else if (p) {
-    title = trainedToday ? "Bugün çalıştın" : p.name;
+    title = trainedToday ? t("home.trained_today") : p.name;
     const totalSets = p.items.reduce((a, i) => a + (+i.sets || 0), 0);
-    if (!trainedToday) sub = `${p.items.length} hareket · ${totalSets} set · ${planMinutes(totalSets)} dk`;
+    if (!trainedToday) sub = t("home.plan_summary", { n: p.items.length, s: totalSets, m: planMinutes(totalSets) });
     main = `<div class="card">${trainedToday ? `<h2>${esc(p.name)}</h2>` : ""}
       <div class="today-list">${p.items.slice(0, 4).map(i => `<div>${esc(i.ex)}</div>`).join("")}${p.items.length > 4 ? `<div class="muted">+${p.items.length - 4}</div>` : ""}</div>
-      <div class="home-start"><button class="btn primary xl" data-start="${p.id}">${trainedToday ? "Tekrar başla" : "Başla"}</button></div></div>`;
+      <div class="home-start"><button class="btn primary xl" data-start="${p.id}">${trainedToday ? t("home.restart") : t("home.start")}</button></div></div>`;
   } else if (best) {
     // planlı gün değil: kasları en hazır program önerilir
-    title = trainedToday ? "Bugün çalıştın" : "Serbest gün";
+    title = trainedToday ? t("home.trained_today") : t("home.free_day");
     main = `<div class="card">
       <div style="font-size:24px;font-weight:800;letter-spacing:-.02em">${esc(best.x.name)}</div>
-      <p class="muted" style="margin:4px 0 16px">${best.x.items.length} hareket · %${Math.round(best.s * 100)} hazır</p>
-      <div class="home-start"><button class="btn primary xl" data-start="${best.x.id}">Başla</button></div></div>`;
+      <p class="muted" style="margin:4px 0 16px">${t("home.best_summary", { n: best.x.items.length, p: Math.round(best.s * 100) })}</p>
+      <div class="home-start"><button class="btn primary xl" data-start="${best.x.id}">${t("home.start")}</button></div></div>`;
   } else {
-    title = trainedToday ? "Bugün çalıştın" : "Serbest gün";
-    main = `<div class="home-start"><button class="btn xl" id="qAdd">${ic("plus")}Program ekle</button></div>`;
+    title = trainedToday ? t("home.trained_today") : t("home.free_day");
+    main = `<div class="home-start"><button class="btn xl" id="qAdd">${ic("plus")}${t("home.add_program")}</button></div>`;
   }
   $("#homeTitle").textContent = title; $("#homeSub").textContent = sub;
   $("#homeSub").classList.toggle("hidden", !sub);
@@ -73,7 +74,7 @@ export function renderHome(){
   $("#homeStreakNote").classList.toggle("hidden", !note);
   $("#homeStreakNote").classList.toggle("risk", st.atRisk);
   const links = state.live ? "" : `<div class="row" style="justify-content:center;gap:4px;margin:-4px 0 12px">
-    <button class="ghost" id="qEmpty">${ic("play")}Boş antrenman</button></div>`;
+    <button class="ghost" id="qEmpty">${ic("play")}${t("home.empty_workout")}</button></div>`;
   $("#homeMain").innerHTML = main + links;
   $("#homeMain").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
   const r = $("#homeResume"); if (r) r.onclick = openFocus;
@@ -81,9 +82,9 @@ export function renderHome(){
   if ($("#qAdd")) $("#qAdd").onclick = () => { segState.train = "prog"; showTab("train"); openAddProgram(); };
   // bu hafta: sayılar ve hedef çubuğu
   const w = weekProgress();
-  $("#homeWeek").innerHTML = `<div class="stat" role="group" aria-label="Bu hafta antrenman günü: ${w.days} / hedef ${state.goal}"><b>${w.days}<span>/${state.goal}</span></b><span>antrenman</span></div>
-    ${on ? `<div class="stat"><b>${st.count}</b><span>${st.unit} seri</span></div>` : ""}<div class="stat"><b>${w.sets}</b><span>set</span></div>`;
-  $("#homeGoal").innerHTML = `<div class="f-prog" style="margin:0" aria-label="Haftalık hedef: ${w.days}/${state.goal} gün">${Array.from({ length: state.goal }, (_, i) => `<i class="${i < w.days ? "on" : ""}"></i>`).join("")}</div>`;
+  $("#homeWeek").innerHTML = `<div class="stat" role="group" aria-label="${t("home.week_aria", { d: w.days, g: state.goal })}"><b>${w.days}<span>/${state.goal}</span></b><span>${t("home.workouts_label")}</span></div>
+    ${on ? `<div class="stat"><b>${st.count}</b><span>${t("home.streak_label", { unit: st.unit })}</span></div>` : ""}<div class="stat"><b>${w.sets}</b><span>${t("home.set_label")}</span></div>`;
+  $("#homeGoal").innerHTML = `<div class="f-prog" style="margin:0" aria-label="${t("home.goal_aria", { d: w.days, g: state.goal })}">${Array.from({ length: state.goal }, (_, i) => `<i class="${i < w.days ? "on" : ""}"></i>`).join("")}</div>`;
   // toparlanma: harita ve dinlenmesi gereken kaslar
   const tired = Object.entries(R).filter(([, v]) => v.pct < .5).map(([m]) => m);
   // spor ve yogayı birlikte kullananlara: kaslar yorgunken hafif yoga önerisi (aktif toparlanma)
@@ -91,13 +92,13 @@ export function renderHome(){
   const activeRest = focus() === "both" && tired.length && !state.live;
   const fs = fatigueSummary(R);
   // karta ya da haritaya dokununca hareketler değil, toparlanma analizi açılır
-  const rest = tired.length ? `${tired.length} kas dinleniyor` : "Kaslar hazır";
-  $("#homeRecovery").innerHTML = Object.keys(R).length && liftOn() ? `<div class="section-title">Toparlanma<span class="grow"></span></div><div class="card" id="recCard" role="button" tabindex="0" aria-label="Toparlanma analizi: ${fs.label}, ${rest}">
+  const rest = tired.length ? t("home.resting", { n: tired.length }) : t("home.all_ready");
+  $("#homeRecovery").innerHTML = Object.keys(R).length && liftOn() ? `<div class="section-title">${t("home.recovery")}<span class="grow"></span></div><div class="card" id="recCard" role="button" tabindex="0" aria-label="${t("home.recovery_aria", { label: fs.label, rest })}">
     <div class="row" style="align-items:flex-start"><div class="grow"><div style="font-size:22px;font-weight:800;letter-spacing:-.02em">${fs.label}</div>${levelBar(fs.lvl)}</div>
       ${ic("chevron-right")}</div>
     ${bodyMap(fatigueTiers(R), { small: true })}
     ${tired.length ? `<div class="hint">${ic("battery-low")} <span>${rest}</span></div>` : `<div class="hint good">${ic("battery-full")} ${rest}</div>`}</div>
-    ${activeRest ? `<button class="btn sm" id="homeYoga" style="margin-top:10px"${yogaProg ? ` title="${esc(yogaProg.name)}"` : ""}>${ic("leaf")}Hafif esneme</button>` : ""}` : "";
+    ${activeRest ? `<button class="btn sm" id="homeYoga" style="margin-top:10px"${yogaProg ? ` title="${esc(yogaProg.name)}"` : ""}>${ic("leaf")}${t("home.light_stretch")}</button>` : ""}` : "";
   bindBodyMap($("#homeRecovery"), ms => openRecoveryAnalysis(ms[0]));
   if ($("#recCard")) {
     $("#recCard").onclick = () => openRecoveryAnalysis();

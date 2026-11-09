@@ -1,3 +1,4 @@
+import "./app/i18nboot.js";
 import { ymd } from "./core/dates.ts";
 import { preload as preloadGoogle } from "./sync/google.ts";
 import { $, load, save, state } from "./app/store.js";

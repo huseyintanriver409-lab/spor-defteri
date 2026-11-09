@@ -1,0 +1,16 @@
+export default {
+  undo_done: "Geri alındı",
+  info_aria: "Açıklama",
+  recent_lbl: "Son kullanılanlar",
+  favs_lbl: "Favoriler",
+  all_lbl: "Tümü",
+  new_ex: "“{raw}” ekle",
+  new_ex_sub: "Kendi hareketin olarak kaydedilir",
+  fav_remove: "Favorilerden çıkar",
+  fav_add: "Favorilere ekle",
+  no_favs: "Favori yok",
+  no_records: "Kayıt yok",
+  ex_added: "\"{raw}\" eklendi",
+  close: "Kapat",
+  ex_search: "Hareket ara",
+} as Record<string, string>;

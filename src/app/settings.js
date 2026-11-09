@@ -4,16 +4,15 @@ import { openRecommender } from "./presets.js";
 import { focus } from "./exercises.js";
 import { refreshDatalist } from "./log.js";
 import { mmss, setTDur } from "./tools.js";
+import { getLangPref, setLangPref, t, locale } from "../core/i18n.ts";
 
 /* ---------- Settings ---------- */
 export function renderSettings(){
-  $("#setGoal").innerHTML = [1,2,3,4,5,6,7].map(v => `<option value="${v}"${v===state.goal?" selected":""}>${v} gün</option>`).join("");
+  $("#setGoal").innerHTML = [1,2,3,4,5,6,7].map(v => `<option value="${v}"${v===state.goal?" selected":""}>${t("settings.goal_days", { n: v })}</option>`).join("");
   $("#setStreak").value = state.streakMode || "auto";
-  $("#streakHelp").textContent = { auto: "Haftalık planın varsa planlı günleri kaçırmadıkça seri gün gün artar; plan yoksa haftalık sayılır.",
-    week: "Haftalık hedefini tutturduğun her hafta seri 1 artar; hangi gün yaptığın önemli değil.",
-    off: "Seri ve rozetler hiçbir yerde görünmez." }[$("#setStreak").value];
+  $("#streakHelp").textContent = { auto: t("settings.streak_auto"), week: t("settings.streak_week"), off: t("settings.streak_off") }[$("#setStreak").value];
   renderTrainPrefs();
-  $("#goalSum").textContent = `Haftada ${state.goal} gün · ${$("#setStreak").selectedOptions[0].textContent.toLocaleLowerCase("tr")}`;
+  $("#goalSum").textContent = t("settings.goal_sum", { goal: state.goal, streak: $("#setStreak").selectedOptions[0].textContent.toLocaleLowerCase(locale()) });
 }
 
 // Ayarlar → "Antrenman ayarları"
@@ -25,20 +24,18 @@ export function renderTrainPrefs(){
   $("#bSex").value = sx; $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
   $("#bBodyWrap").classList.toggle("hidden", given);
   $("#prefFocus").value = focus();
-  $("#focusHelp").textContent = { both: "Ağırlık, kardiyo ve yoga birlikte görünür.",
-    lift: "Yoga pozları ve programları listelerde görünmez.",
-    yoga: "Ağırlık hareketleri, rekorlar, güç skoru ve hesap araçları gizlenir; yoga, kardiyo ve kendi hareketlerin kalır." }[focus()];
+  $("#focusHelp").textContent = { both: t("settings.focus_both"), lift: t("settings.focus_lift"), yoga: t("settings.focus_yoga") }[focus()];
 }
 
 /* ---------- Theme ----------
    Tema cihaza özeldir (senkronize edilmez); ana veriden ayrı bir anahtarda tutulur. Varsayılan: koyu. */
 export const THEME_KEY = "sporDefteri.theme";
-export const THEMES = { dark: ["moon", "Koyu"], light: ["sun", "Açık"], system: ["monitor", "Cihaz"] };
+export const THEMES = { dark: ["moon", t("settings.theme_dark")], light: ["sun", t("settings.theme_light")], system: ["monitor", t("settings.theme_system")] };
 export const darkMq = matchMedia("(prefers-color-scheme: dark)");
 export let theme = "dark";
 export function applyTheme(){
   if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
-  $("#themeBtn").innerHTML = ic(THEMES[theme][0]); $("#themeBtn").title = THEMES[theme][1]; $("#themeBtn").setAttribute("aria-label", "Tema: " + THEMES[theme][1].toLocaleLowerCase("tr"));
+  $("#themeBtn").innerHTML = ic(THEMES[theme][0]); $("#themeBtn").title = THEMES[theme][1]; $("#themeBtn").setAttribute("aria-label", t("settings.theme_aria", { name: THEMES[theme][1].toLocaleLowerCase(locale()) }));
   const dark = theme === "dark" || (theme === "system" && darkMq.matches);
   document.querySelector('meta[name="theme-color"]').content = dark ? "#0B0B0B" : "#F4F1EA";
 }
@@ -64,6 +61,8 @@ export function labelIcons(root){
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
+$("#setLang").value = getLangPref();
+$("#setLang").onchange = () => { setLangPref($("#setLang").value); location.reload(); };
 $("#setRest").onchange = () => { state.rest = setTDur(+$("#setRest").value); save(); };
 $("#setGoal").onchange = () => { state.goal = +$("#setGoal").value; save(); renderSettings(); };
 $("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; save(); refreshAll(); renderSettings(); };

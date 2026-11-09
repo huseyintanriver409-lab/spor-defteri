@@ -2,6 +2,7 @@ import { GOOGLE_CLIENT_ID } from "../config.ts";
 import { CAL_SCOPE, DRIVE_SCOPE, PopupError, TASKS_SCOPE, cachedToken, dropScope, gisReady, preload as preloadGoogle, requestToken, revoke, tokenExpiry, tokenScopes } from "../sync/google.ts";
 import { syncOnce } from "../core/sync.ts";
 import { AuthError, driveAccount, driveStore } from "../sync/drive.ts";
+import { TasksAuthError } from "../sync/tasks.ts";
 import { mergeStates } from "../core/schema.ts";
 import { currentSig, planSignature, runCalendar, taskPlan } from "../core/calendar.ts";
 import { calendarClient } from "../sync/calendar.ts";
@@ -12,6 +13,7 @@ import { helpTip, openSheet, refreshAll, sheetHead } from "./ui.js";
 import { refreshDatalist } from "./log.js";
 import { describeSession, openUrl, progDetails, renderPlan } from "./programs.js";
 import { renderBackupBanner } from "./backup.js";
+import { locale, t } from "../core/i18n.ts";
 
 /* ---------- Google Drive senkronizasyonu ----------
    Birleştirme akışı core/sync.ts, Drive dosyası sync/drive.ts, giriş sync/google.ts içinde.
@@ -22,7 +24,7 @@ export const syncCanRun = () => !!GOOGLE_CLIENT_ID && /^https?:$/.test(location.
 export let sync = { on: false, last: 0 };
 export let syncBusy = false, syncNeedsAuth = false, syncErr = "";
 export const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch(e){} };
-export const agoText = t => { const m = Math.round((Date.now()-t)/60000); return m < 1 ? "az önce" : m < 60 ? `${m} dk önce` : m < 1440 ? `${Math.floor(m/60)} sa önce` : `${Math.floor(m/1440)} gün önce`; };
+export const agoText = ts => { const m = Math.round((Date.now()-ts)/60000); return m < 1 ? t("cloud.ago_now") : m < 60 ? t("cloud.ago_min", { n: m }) : m < 1440 ? t("cloud.ago_hour", { n: Math.floor(m/60) }) : t("cloud.ago_day", { n: Math.floor(m/1440) }); };
 // Drive ve Takvim işleri sırayla çalışır: Drive birleştirmesi state'i değiştirirken takvim aynı anda yazmasın
 export let cloudQueue = Promise.resolve();
 export const enqueue = job => (cloudQueue = cloudQueue.then(job, job));
@@ -57,7 +59,7 @@ export function runSync(interactive, extra = []){
         takeSnapshot(); save();
         refreshDatalist(); refreshAll();
         const n = r.stats.added + r.stats.updated + r.stats.removed;
-        toast(n ? `${n} değişiklik alındı` : "Eşitlendi", "check");
+        toast(n ? t("cloud.changes_received", { n }) : t("cloud.synced"), "check");
       }
       sync.last = Date.now();
       // hangi Google hesabı: Profil'de gösterilir (günde bir yenilenir; alınamazsa eşitleme yine başarılı)
@@ -68,7 +70,7 @@ export function runSync(interactive, extra = []){
     } catch(e){
       if (e instanceof PopupError) { syncNeedsAuth = true; tapBlocked = true; disarmTap(); }  // sessiz: hata gösterilmez, izin düşürülmez
       else if (e instanceof AuthError) { dropScope(DRIVE_SCOPE); syncNeedsAuth = true; }
-      else syncErr = (e && e.message) || "Eşitlenemedi";
+      else syncErr = (e && e.message) || t("cloud.sync_failed");
     } finally {
       syncBusy = false; renderSyncStatus(); renderBackupBanner();
     }
@@ -78,7 +80,7 @@ export function runSync(interactive, extra = []){
 // Dokunuşla çağrılmalı (giriş penceresi). Google betiği yüklü değilse önce yükler ve tekrar dokunmayı ister.
 export function connectDrive(){
   if (!syncCanRun()) return;
-  if (!gisReady()) { preloadGoogle().then(() => toast("Google hazır, tekrar dene", "check"), e => toast(e.message)); return; }
+  if (!gisReady()) { preloadGoogle().then(() => toast(t("cloud.google_ready"), "check"), e => toast(e.message)); return; }
   const tokenP = requestToken(GOOGLE_CLIENT_ID, true, [DRIVE_SCOPE], hintEmail());
   syncBusy = true; syncErr = ""; renderSyncStatus();
   tokenP.then(() => { sync.on = true; saveSync(); syncBusy = false; return runSync(false); })
@@ -95,7 +97,7 @@ export function syncState(){
 }
 const SYNC_ICON = { off: "cloud-off", busy: "refresh-cw", wait: "cloud-dot", err: "cloud-alert", ok: "cloud-check" };
 function syncLabel(st){
-  return st === "off" ? "Yalnız bu cihazda" : st === "busy" ? "Eşitleniyor" : st === "wait" ? (sync.last ? "Eşitleme bekliyor" : "Henüz eşitlenmedi") : st === "err" ? "Eşitlenemedi" : `Eşitlendi, ${agoText(sync.last)}`;
+  return st === "off" ? t("cloud.st_off") : st === "busy" ? t("cloud.st_busy") : st === "wait" ? (sync.last ? t("cloud.st_wait_pending") : t("cloud.st_wait_never")) : st === "err" ? t("cloud.sync_failed") : t("cloud.st_ok", { ago: agoText(sync.last) });
 }
 
 export function renderSyncStatus(){
@@ -104,13 +106,13 @@ export function renderSyncStatus(){
   btn.dataset.s = st;
   btn.setAttribute("aria-label", syncLabel(st) + (st === "err" && syncErr ? `: ${syncErr}` : ""));
   btn.querySelector("use").setAttribute("href", "#i-" + SYNC_ICON[st]);
-  $("#syncWord").textContent = st === "err" ? "Eşitlenemedi" : "";
+  $("#syncWord").textContent = st === "err" ? t("cloud.sync_failed") : "";
   const can = syncCanRun();
   $("#syncCard").classList.toggle("hidden", !GOOGLE_CLIENT_ID);
   let status = "";
-  if (!can) status = GOOGLE_CLIENT_ID ? "Google girişi için uygulamayı web adresinden aç." : "";
-  else if (!sync.on) status = syncBusy ? "Google'a bağlanılıyor…" : syncErr ? `Bağlanılamadı: ${syncErr}` : "Bağlı değil.";
-  else status = syncBusy ? "Eşitleniyor…" : syncNeedsAuth ? "Oturum doldu. \"Şimdi eşitle\"ye dokun." : syncErr ? `Eşitlenemedi: ${syncErr}` : sync.last ? `Son eşitleme: ${agoText(sync.last)}` : "Henüz eşitlenmedi.";
+  if (!can) status = GOOGLE_CLIENT_ID ? t("cloud.open_web_google") : "";
+  else if (!sync.on) status = syncBusy ? t("cloud.connecting") : syncErr ? t("cloud.connect_failed", { err: syncErr }) : t("cloud.not_connected");
+  else status = syncBusy ? t("cloud.syncing") : syncNeedsAuth ? t("cloud.session_expired_tap") : syncErr ? t("cloud.sync_failed_err", { err: syncErr }) : sync.last ? t("cloud.last_sync", { ago: agoText(sync.last) }) : t("cloud.never_synced");
   $("#syncStatus").textContent = status;
   $("#syncStatus").classList.toggle("muted", !syncErr);
   $("#syncConnect").classList.toggle("hidden", !can || sync.on);
@@ -123,19 +125,19 @@ export function renderSyncStatus(){
 // Simgeye dokununca açılan küçük sayfa: son eşitleme, hata ayrıntısı, tek eylem
 function fillSyncSheet(){
   const st = syncState(), can = syncCanRun();
-  const line = st === "off" ? "Veriler yalnız bu cihazda" : st === "busy" ? "Eşitleniyor…" : st === "wait" ? (sync.last ? "Oturum doldu" : "Henüz eşitlenmedi") : st === "err" ? "Eşitlenemedi" : "Eşitlendi";
-  const act = !can ? "" : sync.on ? `<button class="btn primary" id="shSyncNow" ${syncBusy ? "disabled" : ""}>${ic("refresh-cw")}Şimdi eşitle</button>` : `<button class="btn primary" id="shSyncConnect" ${syncBusy ? "disabled" : ""}>${ic("cloud")}Google ile bağlan</button>`;
-  const help = st === "off" ? helpTip("Google ile bağlanınca telefon ve bilgisayar aynı verileri görür.") : "";
+  const line = st === "off" ? t("cloud.sheet_off") : st === "busy" ? t("cloud.syncing") : st === "wait" ? (sync.last ? t("cloud.sheet_expired") : t("cloud.st_wait_never")) : st === "err" ? t("cloud.sync_failed") : t("cloud.synced");
+  const act = !can ? "" : sync.on ? `<button class="btn primary" id="shSyncNow" ${syncBusy ? "disabled" : ""}>${ic("refresh-cw")}${t("cloud.sync_now")}</button>` : `<button class="btn primary" id="shSyncConnect" ${syncBusy ? "disabled" : ""}>${ic("cloud")}${t("cloud.connect_google")}</button>`;
+  const help = st === "off" ? helpTip(t("cloud.help_connect")) : "";
   $("#bsBody").innerHTML = `<div data-syncsheet><p style="margin:0 0 6px"><b>${line}</b>${help}</p>
-    ${sync.on && sync.last ? `<p class="muted small" style="margin:0 0 6px">Son eşitleme: ${agoText(sync.last)}</p>` : ""}
+    ${sync.on && sync.last ? `<p class="muted small" style="margin:0 0 6px">${t("cloud.last_sync", { ago: agoText(sync.last) })}</p>` : ""}
     ${syncErr && sync.on ? `<p class="small" style="margin:0 0 6px;color:var(--danger)">${esc(syncErr)}</p>` : ""}
-    ${!can ? `<p class="muted small" style="margin:0 0 6px">Google girişi için uygulamayı web adresinden aç.</p>` : ""}
+    ${!can ? `<p class="muted small" style="margin:0 0 6px">${t("cloud.open_web_google")}</p>` : ""}
     <div class="row" style="margin-top:12px">${act}</div></div>`;
   const n = $("#shSyncNow"); if (n) n.onclick = () => { runSync(true); };
   const c = $("#shSyncConnect"); if (c) c.onclick = () => { connectDrive(); };
 }
 export function openSyncSheet(){
-  openSheet(sheetHead("Eşitleme"), "");
+  openSheet(sheetHead(t("cloud.sheet_title")), "");
   fillSyncSheet();
 }
 
@@ -144,20 +146,20 @@ export function renderAccount(){
   const a = sync.on && sync.account, el = $("#acctCard");
   if (!el) return;
   let html;
-  const syncBtn = () => syncCanRun() ? `<button class="btn" id="acctSync" style="margin-top:12px" ${syncBusy ? "disabled" : ""}>${ic("refresh-cw")}Şimdi eşitle</button>` : "";
+  const syncBtn = () => syncCanRun() ? `<button class="btn" id="acctSync" style="margin-top:12px" ${syncBusy ? "disabled" : ""}>${ic("refresh-cw")}${t("cloud.sync_now")}</button>` : "";
   if (a && a.email) {
-    const initial = esc((a.name || a.email).trim().charAt(0).toLocaleUpperCase("tr"));
+    const initial = esc((a.name || a.email).trim().charAt(0).toLocaleUpperCase(locale()));
     html = `<div class="row" style="gap:14px;align-items:center">
       <span class="avatar">${a.photo ? `<img src="${esc(a.photo)}" alt="" referrerpolicy="no-referrer">` : ""}${initial}</span>
-      <div class="grow" style="min-width:0"><b style="font-size:18px">${esc(a.name || a.email)}</b><div class="muted small acct-mail">${esc(a.email)}</div></div>${helpTip("Bu hesapla girdiğin bütün cihazlarda aynı veriler görünür.")}</div>
+      <div class="grow" style="min-width:0"><b style="font-size:18px">${esc(a.name || a.email)}</b><div class="muted small acct-mail">${esc(a.email)}</div></div>${helpTip(t("cloud.acct_help"))}</div>
       ${syncBtn()}`;
   } else if (sync.on) {
     html = `<div class="row" style="gap:14px;align-items:center"><span class="avatar">${ic("user")}</span>
-      <div class="grow"><b>Google hesabına bağlı</b></div></div>${syncBtn()}`;
+      <div class="grow"><b>${t("cloud.acct_linked")}</b></div></div>${syncBtn()}`;
   } else {
     html = `<div class="row" style="gap:14px;align-items:center"><span class="avatar">${ic("user")}</span>
-      <div class="grow"><b>Hesap bağlı değil</b></div>${helpTip("Veriler yalnız bu cihazda. Google ile bağlanınca telefon ve bilgisayar aynı verileri görür.")}</div>
-      ${syncCanRun() ? `<button class="btn" id="acctConnect" style="margin-top:12px">${ic("cloud")}Google ile bağlan</button>` : ""}`;
+      <div class="grow"><b>${t("cloud.acct_none")}</b></div>${helpTip(t("cloud.acct_none_help"))}</div>
+      ${syncCanRun() ? `<button class="btn" id="acctConnect" style="margin-top:12px">${ic("cloud")}${t("cloud.connect_google")}</button>` : ""}`;
   }
   el.innerHTML = html;
   // fotoğraf yüklenemezse baş harf görünür
@@ -194,11 +196,11 @@ export function runCal(interactive){
       // sıra beklerken Drive birleştirmesi state'i değiştirmiş olabilir: güncel state kullanılır
       r = await runCalendar(state, calendarClient(token), { describeProgram: progDetails, describeSession, timeZone: timeZone() }, needTasks() ? tasksClient(token) : undefined);
       sync.calLast = Date.now(); saveSync();
-      if (interactive) toast(r.written || r.planUpdated || r.ticked ? "Takvim güncel" : "Güncel", "calendar-days");
+      if (interactive) toast(r.written || r.planUpdated || r.ticked ? t("cloud.cal_updated") : t("cloud.cal_current"), "calendar-days");
     } catch(e){
       if (e instanceof PopupError) { tapBlocked = true; disarmTap(); /* sessiz */ }
-      else if (e instanceof AuthError) dropScope(/^Görev/.test(e.message) ? TASKS_SCOPE : CAL_SCOPE);
-      else calErr = (e && e.message) || "Takvime yazılamadı";
+      else if (e instanceof AuthError) dropScope(e instanceof TasksAuthError ? TASKS_SCOPE : CAL_SCOPE);
+      else calErr = (e && e.message) || t("cloud.cal_write_failed");
     } finally {
       // yarıda kalsa da yazılanların işaretleri kaydedilir
       save(); calBusy = false; renderCalStatus(); renderPlan();
@@ -224,7 +226,7 @@ export function toggleCal(key, value){
   if (value && !calToken()) {
     if (!gisReady()) {
       state.gcal[key] = prev; renderCalStatus();
-      preloadGoogle().then(() => toast("Google hazır, tekrar dene", "check"), e => toast(e.message));
+      preloadGoogle().then(() => toast(t("cloud.google_ready"), "check"), e => toast(e.message));
       return;
     }
     const tokenP = requestToken(GOOGLE_CLIENT_ID, false, calScopes(), hintEmail());
@@ -245,14 +247,14 @@ export function renderCalStatus(){
   $("#calLog").disabled = $("#calPlan").disabled = !can || calBusy;
   $("#calModeRow").classList.toggle("hidden", !g.plan);
   document.querySelectorAll('[name="calMode"]').forEach(r => { r.checked = r.value === (g.mode === "task" ? "task" : "event"); r.disabled = !can || calBusy; });
-  $("#calModeNote").textContent = g.mode === "task" ? "Görevler saatsiz görünür. Antrenman bitince görev tiklenir." : "Planlı saatte, hatırlatmayla.";
+  $("#calModeNote").textContent = g.mode === "task" ? t("cloud.cal_task_note") : t("cloud.cal_event_note");
   let status = "";
-  if (!can) status = "Google Takvim için uygulamayı web adresinden aç.";
-  else if (calBusy) status = "Takvim güncelleniyor…";
-  else if (calErr) status = `Takvime yazılamadı: ${calErr}`;
-  else if (!on) status = "Kapalı.";
-  else if (!hasToken) status = "Bu cihazda takvim izni yok.";
-  else status = sync.calLast ? `"Spor Defteri" takvimi · son güncelleme ${agoText(sync.calLast)}` : `"Spor Defteri" takvimine yazılıyor.`;
+  if (!can) status = t("cloud.cal_open_web");
+  else if (calBusy) status = t("cloud.cal_updating");
+  else if (calErr) status = t("cloud.cal_write_err", { err: calErr });
+  else if (!on) status = t("cloud.cal_off");
+  else if (!hasToken) status = t("cloud.cal_no_perm");
+  else status = sync.calLast ? t("cloud.cal_status_last", { ago: agoText(sync.calLast) }) : t("cloud.cal_status_writing");
   $("#calStatus").textContent = status;
   $("#calStatus").classList.toggle("muted", !calErr);
   $("#calAuth").classList.toggle("hidden", !can || !on || hasToken || calBusy);
@@ -316,13 +318,13 @@ $("#syncNow").onclick = () => runSync(true);
 $("#syncBtn").onclick = syncTap;
 scheduleRefresh();
 $("#syncOff").onclick = async () => {
-  const ok = await choose("Bağlantı kesilsin mi?\n\nCihazdaki kayıtlar kalır.",
-    [{ label: "Vazgeç", value: false }, { label: "Bağlantıyı kes", value: true, primary: true }]);
+  const ok = await choose(t("cloud.disconnect_q"),
+    [{ label: t("cloud.cancel"), value: false }, { label: t("cloud.disconnect_btn"), value: true, primary: true }]);
   if (!ok) return;
   // Google'daki izni geri almak Takvim iznini de kaldırır; takvim açıksa yalnız Drive izni bırakılır
   if (calOn()) dropScope(DRIVE_SCOPE); else revoke();
   sync = { on: false, last: 0 }; syncNeedsAuth = false; syncErr = ""; saveSync();
-  renderSyncStatus(); renderAccount(); renderBackupBanner(); toast("Bağlantı kesildi", "check");
+  renderSyncStatus(); renderAccount(); renderBackupBanner(); toast(t("cloud.disconnected"), "check");
 };
 document.addEventListener("visibilitychange", () => {
   // geri dönünce (2 dk'dan uzun aradan sonra) güncelle; arka plana geçerken son değişiklikleri gönder
@@ -344,7 +346,7 @@ $("#calPlan").onchange = e => toggleCal("plan", e.target.checked);
 document.querySelectorAll('[name="calMode"]').forEach(r => r.onchange = () => {
   if (!r.checked) return;
   // görevde tik yeterli: biten antrenman ayrıca etkinlik olarak yazılmaz (istenirse yeniden açılabilir)
-  if (r.value === "task" && state.gcal.log) { state.gcal.log = false; toast("Antrenmanlar görev olarak işlenir", "check"); }
+  if (r.value === "task" && state.gcal.log) { state.gcal.log = false; toast(t("cloud.tasks_as_tasks"), "check"); }
   toggleCal("mode", r.value);
 });
 $("#calAuth").onclick = () => runCal(true);
