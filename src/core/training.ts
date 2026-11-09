@@ -3,7 +3,7 @@
 
 // Set: w = kilo (kardiyoda dakika), r = tekrar (kardiyoda km), t = tür ("w" ısınma, "d" drop, "f" tükeniş),
 // rir = yedekte kalan tekrar, sec = süreli hareketlerde süre. Değerler formdan metin olarak da gelebilir.
-export interface WorkSet { w?: number | string; r?: number | string; t?: string; rir?: number | string | null; sec?: number | string }
+export interface WorkSet { sides?: WorkSet[]; w?: number | string; r?: number | string; t?: string; rir?: number | string | null; sec?: number | string }
 
 export const work = <T extends WorkSet>(sets: T[]): T[] => sets.filter(s => s.t !== "w");
 export const volume = (sets: WorkSet[]): number => work(sets).reduce((a, s) => a + (+s.w! || 0) * (+s.r! || 0), 0);

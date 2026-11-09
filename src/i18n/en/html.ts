@@ -1,4 +1,5 @@
 export default {
+  general_settings_title: "General",
   backup_later: "Later",
   backup_now: "Back up now",
   week_title: "This week",

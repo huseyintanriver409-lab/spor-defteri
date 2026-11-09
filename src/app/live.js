@@ -1,3 +1,5 @@
+import { isUnilateral } from "../core/library.ts";
+import { completeSide, pendingSide } from "../core/unilateral.ts";
 import { pad, shortDate, ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
 import { e1rm, overloadDecision, repRange, warmupSets, work } from "../core/training.ts";
@@ -95,7 +97,7 @@ export function renderFocus(){
   $("#fComplete").classList.remove("hidden"); $(".f-nav").classList.remove("hidden");
   const it = items[idx], c = isCardio(it.ex), tm = isTimed(it.ex), sug = suggestFor(it), done = doneSetsOf(it.ex), wd = work(done).length;
   const target = it.sets || 3, bar = !c && !tm ? barOf(it.ex) : 0;
-  const d = fDraft[it.ex] ||= (() => { const last = work(done).slice(-1)[0]; return last ? { w: last.w, r: last.sec ?? last.r } : { w: sug.w, r: sug.r }; })();
+  const d = fDraft[it.ex] ||= (() => { const last = pendingSide(state.live, it.ex, done.length)?.first || work(done).slice(-1)[0]; return last ? { w: last.w, r: last.sec ?? last.r } : { w: sug.w, r: sug.r }; })();
   // ısınma rehberi: henüz çalışma seti yokken, çalışma kilosuna göre
   const warmDone = done.filter(x => x.t === "w").length, workW = d.work ? d.work.w : d.w;
   const warmPlan = !c && !tm && !wd && +workW > 0 ? warmupSets(+workW, bar) : [];
@@ -111,6 +113,7 @@ export function renderFocus(){
     <div class="f-hint">${[sug.msg, goal].filter(Boolean).join("<br>") || t("live.first_time")}</div>
     <div class="f-prog" aria-hidden="true">${Array.from({ length: Math.max(target, wd) }, (_, j) => `<i class="${j < wd ? "on" : j === wd ? "cur" : ""}"></i>`).join("")}</div>
     <div class="f-setlabel"><span>${wd >= target ? t("live.extra_set", { n: wd + 1 }) : `${wd + 1}/${target}`}</span><span>${esc(m.p.map(muscleLabel).join(", "))}</span></div>
+    ${isUnilateral(it.ex) ? `<div class="f-setlabel" role="status" aria-live="polite"><span>${t(pendingSide(state.live, it.ex, done.length) ? "live.side_right" : "live.side_left")}</span></div>` : ""}
     <div class="steppers${tm && isYoga(it.ex) ? " one" : ""}">${tm ? (isYoga(it.ex) ? `<div class="hidden">${stepperHTML("w", d.w, t("live.u_extra_kg"), t("live.l_extra_weight"))}</div>` : stepperHTML("w", d.w, t("live.u_extra_kg"), t("live.l_extra_weight"))) + stepperHTML("r", d.r, t("live.u_seconds"), t("live.l_time"))
       : stepperHTML("w", d.w, c ? t("live.u_min") : t("live.u_kg"), c ? t("live.l_time") : t("live.l_weight")) + stepperHTML("r", d.r, c ? t("live.u_km") : t("live.u_reps"), c ? t("live.l_distance") : t("live.l_reps"))}</div>
     ${bar ? `<div id="fPlates">${platesHTML(d.w, bar)}</div>` : ""}
@@ -247,13 +250,19 @@ export function completeSet(){
   const items = liveItems(), k = state.live.idx, it = items[k]; if (!it) return;
   const done = () => doneSetsOf(it.ex);
   const c = isCardio(it.ex), d = fDraft[it.ex] ||= {};
-  const w = parseNum($("#f_w").value), r = parseNum($("#f_r").value);
+  let w = parseNum($("#f_w").value), r = parseNum($("#f_r").value);
   const tm = isTimed(it.ex);
   if (tm && !r) return toast(t("live.enter_time"));
   if (!w && !r) return toast(c ? t("live.enter_time_or_dist") : t("live.enter_weight_reps"));
-  const set = tm ? { w, sec: r, r: 0 } : { w, r };
+  let set = tm ? { w, sec: r, r: 0 } : { w, r };
   if (!c && !tm && fRir != null) set.rir = fRir;
   if (!c && fType) set.t = fType;
+  d.w = w; d.r = r;
+  if (isUnilateral(it.ex)) {
+    set = completeSide(state.live, it.ex, done().length, set);
+    if (!set) { stopTimer(); save(); buzz(15); renderFocus(); return; }
+  }
+  w = +set.w || 0; r = +(set.sec ?? set.r) || 0;
   const before = bestOf(it.ex), beforeSec = bestSecOf(it.ex);
   if (!allEx().some(e => e.name === it.ex)) state.custom.push({ name: it.ex, group: "Diğer" });
   const e = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
@@ -301,6 +310,7 @@ export async function removeDoneSet(i){
   const e = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
   if (!e || !e.sets[i]) return;
   const [s] = e.sets.splice(i, 1); let pos = -1;
+  if (state.live.sides) delete state.live.sides[it.ex];
   if (!e.sets.length) { pos = state.entries.indexOf(e); state.entries.splice(pos, 1); }
   save(); renderFocus(); buzz(15);
   undoable(t("live.set_deleted"), () => { e.sets.splice(i, 0, s); if (pos >= 0) state.entries.splice(pos, 0, e); save(); renderFocus(); });
@@ -338,7 +348,7 @@ export function openExPrefs(it){
     closeSheet();
     if (!(await ask(t("live.confirm_remove", { ex: it.ex }), t("live.remove")))) return;
     const items = liveItems(), i = items.indexOf(it); if (i < 0) return;
-    items.splice(i, 1); save(); closeSheet(); renderFocus();
+    items.splice(i, 1); if (state.live.sides) delete state.live.sides[it.ex]; save(); closeSheet(); renderFocus();
     undoable(t("live.removed", { ex: it.ex }), () => { items.splice(i, 0, it); state.live.idx = i; save(); renderFocus(); });
   };
 }

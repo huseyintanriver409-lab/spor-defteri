@@ -37,3 +37,24 @@ const GROUP_KEYS: Record<string, string> = {
   "Diğer": t("groups.diger"),
 };
 export function groupLabel(g: string): string { return GROUP_KEYS[g] ?? g; }
+
+// Separate left/right efforts; alternating movements already include both sides.
+export const UNILATERAL = new Set([
+  "Single-Arm Lat Pulldown", "Single-Arm Dumbbell Row", "Single-Arm Cable Row", "Meadows Row",
+  "Landmine Press", "Landmine Shoulder Press", "Cable Lateral Raise", "Cable Front Raise",
+  "Cable External Rotation", "Cable Internal Rotation", "Side-Lying Dumbbell External Rotation",
+  "Concentration Curl", "Bayesian Cable Curl", "Single-Arm Cable Pushdown",
+  "Triceps Kickback", "Cable Kickback (Triceps)", "Single-Leg Leg Press",
+  "Bulgarian Split Squat", "Split Squat", "Walking Lunge", "Reverse Lunge", "Forward Lunge",
+  "Lateral Lunge", "Curtsy Lunge", "Step-up", "Pistol Squat", "Cossack Squat",
+  "Single-Leg RDL", "Standing Leg Curl", "Single-Leg Glute Bridge", "Cable Glute Kickback",
+  "Machine Glute Kickback", "Cable Hip Abduction", "Banded Clamshell", "Single-Leg Calf Raise",
+  "Side Plank", "Pallof Press", "Cable Woodchopper", "Side Bend (Dumbbell)",
+  "Copenhagen Plank", "Cable Side Bend", "Suitcase Carry", "Turkish Get-up",
+  "Kettlebell Snatch", "Dumbbell Snatch", "Warrior I", "Warrior II", "Reverse Warrior",
+  "Triangle Pose", "Extended Side Angle", "Half Moon", "Tree Pose", "Low Lunge",
+  "Pigeon Pose", "Supine Twist", "Hamstring Stretch", "Quad Stretch", "Hip Flexor Stretch",
+  "Shoulder Stretch", "Chest Stretch",
+]);
+export const isUnilateral = (name: string): boolean => UNILATERAL.has(name) ||
+  /single[- ](?:arm|leg)|split squat|woodchop|lunge/i.test(name);

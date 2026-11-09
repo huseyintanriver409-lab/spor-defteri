@@ -1,4 +1,6 @@
 export default {
+  side_left: "Sol",
+  side_right: "Sağ",
   already_running: "Zaten süren bir antrenman var",
   base_label: "Başlangıç",
   last_label: "Son",

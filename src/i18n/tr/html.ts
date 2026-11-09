@@ -1,4 +1,5 @@
 export default {
+  general_settings_title: "Genel",
   backup_later: "Sonra",
   backup_now: "Yedek al",
   week_title: "Bu hafta",

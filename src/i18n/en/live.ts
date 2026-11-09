@@ -1,4 +1,6 @@
 export default {
+  side_left: "Left",
+  side_right: "Right",
   already_running: "A workout is already in progress",
   base_label: "Base",
   last_label: "Last",
