@@ -1,3 +1,4 @@
+import { autoYogaHold, recordAllowed } from "../core/yoga.ts";
 import { isUnilateral } from "../core/library.ts";
 import { completeSide, pendingSide } from "../core/unilateral.ts";
 import { pad, shortDate, ymd } from "../core/dates.ts";
@@ -6,7 +7,7 @@ import { e1rm, overloadDecision, repRange, warmupSets, work } from "../core/trai
 import { baseSet } from "../core/baseline.ts";
 import { muscleLabel } from "../core/musclemap.ts";
 import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
-import { TYPE_LETTER, allEx, durText, fmtSec, groupOf, isCardio, isTimed, isYoga, musclesOf, setLabel, timedByDefault } from "./exercises.js";
+import { TYPE_LETTER, allEx, durText, fmtSec, groupOf, isCardio, isTimed, isYoga, isSport, musclesOf, setLabel, timedByDefault } from "./exercises.js";
 import { buzz, closeSheet, keepAwake, openPicker, openSheet, refreshAll, sheetHead, showTab, undoable } from "./ui.js";
 import { barFor, bestOf, bestSecOf } from "./log.js";
 import { at, defaultInc, defaultStep, exPref, overloadStep, restFor, ssLabels, stepFor } from "./programs.js";
@@ -59,7 +60,7 @@ export function suggestFor(it){
   const base = ws[0];
   if (isTimed(it.ex)) {
     // süreli: hedef süreyi bütün setlerde tutturduysa +5 sn öner
-    const secs = ws.map(x => +x.sec || 0), tgt = lo || 30, hit = prev && secs.length >= sets && secs.slice(0, sets).every(x => x >= tgt);
+    const secs = ws.map(x => +x.sec || 0), tgt = lo || 30, hit = !isYoga(it.ex) && prev && secs.length >= sets && secs.slice(0, sets).every(x => x >= tgt);
     let tmsg = prev ? `${last} ${shortDate(prev.date)}: <b>${ws.map(x => setLabel(x, c)).join(", ")}</b>` : "";
     if (hit) tmsg += `<br><span class="up">${ic("trending-up")} ${t("live.hit_plus_sec")}</span>`;
     return { w: base && +base.w ? +base.w : "", r: hit ? Math.max(...secs.slice(0, sets)) + 5 : (lo || (base && base.sec) || 30), msg: tmsg };
@@ -228,7 +229,7 @@ export function finishHold(secs, full){
   clearInterval(hold.iv); hold = null;
   if (full) beep();
   $("#f_r").value = String(secs);
-  if (secs > 0) completeSet(); else renderFocus();
+  if (secs > 0) completeSet(full === true); else renderFocus();
 }
 export function tickFocus(){ if (state.live) $("#fElapsed").textContent = elapsedText(); }
 export function gotoItem(k){
@@ -246,12 +247,17 @@ export function addFocusExercise(){
     items.push({ ex: n, sets: 3, reps: "" }); state.live.idx = items.length - 1; save(); renderFocus();
   });
 }
-export function completeSet(){
+export function completeSet(fullHold = false){
   const items = liveItems(), k = state.live.idx, it = items[k]; if (!it) return;
   const done = () => doneSetsOf(it.ex);
   const c = isCardio(it.ex), d = fDraft[it.ex] ||= {};
   let w = parseNum($("#f_w").value), r = parseNum($("#f_r").value);
   const tm = isTimed(it.ex);
+  const continueFlow = () => {
+    const next = items[state.live.idx];
+    if (next && autoYogaHold(fullHold, isYoga(it.ex), tm, restFor(it.ex),
+      isYoga(next.ex), isTimed(next.ex), workDone(next) < (next.sets || 3))) toggleHold();
+  };
   if (tm && !r) return toast(t("live.enter_time"));
   if (!w && !r) return toast(c ? t("live.enter_time_or_dist") : t("live.enter_weight_reps"));
   let set = tm ? { w, sec: r, r: 0 } : { w, r };
@@ -260,7 +266,7 @@ export function completeSet(){
   d.w = w; d.r = r;
   if (isUnilateral(it.ex)) {
     set = completeSide(state.live, it.ex, done().length, set);
-    if (!set) { stopTimer(); save(); buzz(15); renderFocus(); return; }
+    if (!set) { stopTimer(); save(); buzz(15); renderFocus(); continueFlow(); return; }
   }
   w = +set.w || 0; r = +(set.sec ?? set.r) || 0;
   const before = bestOf(it.ex), beforeSec = bestSecOf(it.ex);
@@ -269,8 +275,8 @@ export function completeSet(){
   if (e) e.sets.push(set); else state.entries.push({ id: uid(), ts: Date.now(), date: state.live.date, ex: it.ex, sets: [set] });
   d.w = w; d.r = r;
   let pr = false;
-  if (tm) { if (before.n && r > beforeSec && set.t !== "w") { pr = true; toast(t("live.time_record", { t: fmtSec(r) }), "trophy"); } }
-  else if (!c && set.t !== "w" && before.n) {
+  if (tm) { if (recordAllowed(isYoga(it.ex), c) && before.n && r > beforeSec && set.t !== "w") { pr = true; toast(t("live.time_record", { t: fmtSec(r) }), "trophy"); } }
+  else if (recordAllowed(isYoga(it.ex), c) && set.t !== "w" && before.n) {
     if (w > before.w) { pr = true; toast(t("live.record_kg", { w: fmt(w) }), "trophy"); }
     else if (r <= 12 && e1rm(w, r) > before.e + 0.05) { pr = true; toast(t("live.est_1rm", { w: fmt(e1rm(w, r)) }), "trophy"); }
   }
@@ -299,8 +305,10 @@ export function completeSet(){
     else { const open = g.find(j => workDone(items[j]) < target(items[j])); if (open != null) state.live.idx = open; else advance(); }
   } else if (!warm && workDone(it) >= target(it)) advance();
   save();
-  if (rest) startTimer(restFor(it.ex));
+  if (rest && restFor(it.ex) > 0) startTimer(restFor(it.ex));
+  else if (isYoga(it.ex) && restFor(it.ex) === 0) stopTimer();
   renderFocus();
+  if (!warm) continueFlow();
 }
 // Antrenman sırasında tamamlanan sete dokunmak onu siler; cepteyken yanlışlıkla olmasın diye önce sorar
 export async function removeDoneSet(i){
@@ -323,11 +331,11 @@ export function editExNote(ex){
 }
 export function openExPrefs(it){
   const p = state.exPrefs[it.ex] || {};
-  const opts = (vals, cur, def, f) => `<option value="">${def}</option>` + vals.map(v => `<option value="${v}"${+cur === v ? " selected" : ""}>${f(v)}</option>`).join("");
+  const opts = (vals, cur, def, f) => `<option value="">${def}</option>` + vals.map(v => `<option value="${v}"${cur != null && cur !== "" && +cur === v ? " selected" : ""}>${f(v)}</option>`).join("");
   openSheet(sheetHead(it.ex), `<div class="grid2">
       <div><label for="xpSets">${t("live.f_sets")}</label><select id="xpSets">${[1,2,3,4,5,6,7,8].map(v => `<option${v === (it.sets || 3) ? " selected" : ""}>${v}</option>`).join("")}</select></div>
       <div><label for="xpReps">${t("live.f_target_reps")}</label><input id="xpReps" value="${esc(it.reps || "")}" placeholder="8-12"></div>
-      <div><label for="xpRest">${t("live.f_rest")}</label><select id="xpRest">${opts([30,45,60,90,120,150,180,240,300], p.rest, t("live.default_val", { v: mmss(state.rest) }), mmss)}</select></div>
+      <div><label for="xpRest">${t("live.f_rest")}</label><select id="xpRest">${opts(isYoga(it.ex) ? [0,30,45,60,90,120,150,180,240,300] : [30,45,60,90,120,150,180,240,300], p.rest, t("live.default_val", { v: mmss(isYoga(it.ex) ? 0 : state.rest) }), mmss)}</select></div>
       <div><label for="xpStep">${t("live.f_step")}</label><select id="xpStep">${opts([1,1.25,2,2.5,5], p.step, t("live.auto_kg", { kg: fmt(defaultStep(it.ex)) }), v => fmt(v) + " " + t("live.u_kg"))}</select></div>
       <div><label for="xpBar">${t("live.f_bar")}</label><select id="xpBar"><option value="">${t("live.auto_kg", { kg: fmt(barFor(it.ex)) })}</option>${[20,15,10,0].map(v => `<option value="${v}"${p.bar === v ? " selected" : ""}>${v ? fmt(v) + " " + t("live.u_kg") : t("live.no_bar")}</option>`).join("")}</select></div>
       <div><label for="xpTimed">${t("live.f_kind")}</label><select id="xpTimed"><option value="">${t("live.auto_kind", { kind: timedByDefault(it.ex) ? t("live.kind_timed") : t("live.kind_reps") })}</option><option value="1"${p.timed === true ? " selected" : ""}>${t("live.kind_timed_opt")}</option><option value="0"${p.timed === false ? " selected" : ""}>${t("live.l_reps")}</option></select></div>
@@ -337,7 +345,7 @@ export function openExPrefs(it){
     <div class="row" style="margin-top:6px"><button class="btn quiet danger" id="xpRemove">${ic("trash-2")}${t("live.remove")}</button><span class="grow"></span><button class="btn primary" id="xpSave">${ic("check")}${t("live.save")}</button></div>`);
   $("#xpSave").onclick = () => {
     it.sets = +$("#xpSets").value; it.reps = $("#xpReps").value.trim();
-    const np = { rest: +$("#xpRest").value || undefined, step: +$("#xpStep").value || undefined, inc: +$("#xpInc").value || undefined,
+    const np = { rest: $("#xpRest").value === "" ? undefined : +$("#xpRest").value, step: +$("#xpStep").value || undefined, inc: +$("#xpInc").value || undefined,
       bar: $("#xpBar").value === "" ? undefined : +$("#xpBar").value, timed: $("#xpTimed").value === "" ? undefined : $("#xpTimed").value === "1" };
     delete fDraft[it.ex];
     Object.keys(np).forEach(k => np[k] === undefined && delete np[k]);
@@ -354,7 +362,7 @@ export function openExPrefs(it){
 }
 export async function finishWorkout(){
   const { start, date, prs } = state.live;
-  const lifts = () => state.entries.filter(e => e.date === date && !isCardio(e.ex));
+  const lifts = () => state.entries.filter(e => e.date === date && isSport(e.ex));
   const n = lifts().reduce((a, e) => a + work(e.sets).length, 0);
   if (!(await ask(t("live.confirm_finish", { dur: durText(Date.now() - start), n }), t("live.finish")))) return;
   const end = Date.now();

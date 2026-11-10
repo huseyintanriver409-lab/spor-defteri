@@ -2,7 +2,7 @@ import { programName } from "../core/programs.ts";
 import { DAYS, MONTHS_LONG, mondayOf, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, esc, ic, state } from "./store.js";
-import { focus, isCardio, isYoga, liftOn, musclesOf } from "./exercises.js";
+import { goalDates, visiblePrograms, focus, isCardio, isSport, isYoga, liftOn, musclesOf } from "./exercises.js";
 import { applyProgram } from "./presets.js";
 import { bindBodyMap, bodyMap, fatigueSummary, fatigueTiers, levelBar, openRecoveryAnalysis } from "./bodymap.js";
 import { programById } from "../core/programs.ts";
@@ -18,12 +18,12 @@ import { t } from "../core/i18n.ts";
 /* ---------- Ana sayfa ---------- */
 export { MONTHS_LONG };
 // sırayla planda da doğru program: core/plan.ts
-export const todayPlan = () => plannedOn(state.plan, state.programs, ymd(new Date()));
+export const todayPlan = () => plannedOn(state.plan, visiblePrograms(), ymd(new Date()));
 export function weekProgress(){
-  const load = dayLoad(), mon = mondayOf(new Date());
+  const load = Object.fromEntries(goalDates().map(d => [d, true])), mon = mondayOf(new Date());
   let days = 0; for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(d.getDate() + i); if (load[ymd(d)]) days++; }
   const a = ymd(mon), e = new Date(mon); e.setDate(e.getDate() + 6); const b = ymd(e);
-  const lifts = state.entries.filter(x => x.date >= a && x.date <= b && !isCardio(x.ex));
+  const lifts = state.entries.filter(x => x.date >= a && x.date <= b && isSport(x.ex));
   return { days, sets: lifts.reduce((s, x) => s + work(x.sets).length, 0), vol: lifts.reduce((s, x) => s + volume(x.sets), 0) };
 }
 // ISO 8601 hafta numarası (haftanın Perşembe'si hangi yıldaysa o yıl)
@@ -37,15 +37,15 @@ export const planMinutes = sets => Math.max(5, Math.round(sets * 3.5 / 5) * 5);
 // Ana sayfa özünde: bugünün (ya da en hazır) programı büyük Başla ile, haftanın özeti ve toparlanma haritası.
 // Kısayollar Antrenman sekmesinde, son antrenman Takvim'de.
 export function renderHome(){
-  const now = new Date(), today = ymd(now), p = todayPlan(), trainedToday = state.entries.some(e => e.date === today);
+  const now = new Date(), today = ymd(now), p = todayPlan(), trainedToday = goalDates().includes(today);
   $("#homeDate").textContent = t("home.week_label", { day: DAYS[now.getDay()], w: isoWeek(now) });
   const R = recoveryMap();
   const score = x => { const ms = [...new Set(x.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a, m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };
-  const best = state.programs.map(x => ({ x, s: score(x) })).filter(o => o.s > 0).sort((a, b) => b.s - a.s)[0];
+  const best = visiblePrograms().map(x => ({ x, s: score(x) })).filter(o => o.s > 0).sort((a, b) => b.s - a.s)[0];
   let title, sub = "", main = "";
   if (state.live) {
     const items = liveItems(), it = items[state.live.idx || 0];
-    const n = state.entries.filter(e => e.date === state.live.date).reduce((a, e) => a + work(e.sets).length, 0);
+    const n = state.entries.filter(e => e.date === state.live.date && isSport(e.ex)).reduce((a, e) => a + work(e.sets).length, 0);
     title = it ? it.ex : t("home.workout");
     main = `<div class="card"><div class="bignum" id="homeLiveT">${elapsedText()}</div>
       <p class="muted" style="margin:6px 0 16px">${t("home.set_count", { n })}</p><div class="home-start"><button class="btn primary xl" id="homeResume">${ic("play")}${t("home.resume")}</button></div></div>`;

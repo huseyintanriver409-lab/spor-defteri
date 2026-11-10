@@ -6,7 +6,7 @@ import { fmtNum, locale, t } from "../core/i18n.ts";
 import { work } from "../core/training.ts";
 import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, SESSION_TOO_MUCH, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MAIN_SHARE, MUSCLE_COMMON, muscleLabel } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
-import { equipLabel, equipOf, isCardio, musclesOf, pickableEx } from "./exercises.js";
+import { equipLabel, equipOf, isCardio, isSport, musclesOf, pickableEx } from "./exercises.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
 import { resetEditor } from "./log.js";
 import { liveItems, openFocus, startWorkout } from "./live.js";
@@ -132,7 +132,7 @@ export const sessionTiers = ms => Object.fromEntries(MUSCLES.map(m => [m, "g-" +
 // bu haftanın etkili setleri (Pazartesiden bugüne)
 export function weekSets(){
   const a = ymd(mondayOf(new Date()));
-  return setsByMuscle(state.entries.filter(e => e.date >= a && !isCardio(e.ex)).map(e => ({ ex: e.ex, sets: work(e.sets).length })), musclesOf);
+  return setsByMuscle(state.entries.filter(e => e.date >= a && isSport(e.ex)).map(e => ({ ex: e.ex, sets: work(e.sets).length })), musclesOf);
 }
 // Dokunulan yerdeki kaslar, yakından uzağa: önce tam üstüne basılan, sonra parmak ucu kadar çevredekiler.
 // Telefonda küçük kalan bölgeler (rotator manşet gibi) parmakla tam tutturulamaz; yakındakiler pencerede düğme olur.

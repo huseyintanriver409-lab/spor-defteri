@@ -3,7 +3,7 @@ import { mondayOf, niceDate, pad, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
 import { plannedOn } from "../core/calendar.ts";
 import { $, esc, ic, state } from "./store.js";
-import { durText, isCardio } from "./exercises.js";
+import { durText, goalDates, isSport, visiblePrograms } from "./exercises.js";
 import { segState, showTab } from "./ui.js";
 import { bindEntryActions, entryHTML, renderDay, resetEditor, saveDraft, updateHint } from "./log.js";
 import { autoLogged, calDay } from "./programs.js";
@@ -18,10 +18,10 @@ export let calMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 
 export let selDay = ymd(new Date());
 export function renderHistory(){
   const load = dayLoad(), y = calMonth.getFullYear(), m = calMonth.getMonth(), key = `${y}-${pad(m + 1)}`, today = ymd(new Date());
-  const days = Object.keys(load).filter(k => k.startsWith(key)).length;
-  const sets = state.entries.filter(e => e.date.startsWith(key) && !isCardio(e.ex)).reduce((a, e) => a + work(e.sets).length, 0);
+  const days = goalDates().filter(k => k.startsWith(key)).length;
+  const sets = state.entries.filter(e => e.date.startsWith(key) && isSport(e.ex)).reduce((a, e) => a + work(e.sets).length, 0);
   $("#calMonth").textContent = `${MONTHS_LONG[m]} ${y}`;
-  const plannedFor = k => k >= today && !load[k] ? plannedOn(state.plan, state.programs, k) : null;
+  const plannedFor = k => k >= today && !load[k] ? plannedOn(state.plan, visiblePrograms(), k) : null;
   let planned = 0;
   for (let d = 1; d <= new Date(y, m + 1, 0).getDate(); d++) if (plannedFor(`${key}-${pad(d)}`)) planned++;
   $("#calTitle").textContent = `${t("history.count_workouts", { n: days })}${planned ? ` · ${t("history.count_planned", { n: planned })}` : ""}`;

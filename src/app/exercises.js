@@ -4,6 +4,10 @@ import { MAIN_SHARE } from "../core/musclemap.ts";
 import { TIMED_RE, timedExercise } from "../core/training.ts";
 import { t } from "../core/i18n.ts";
 
+import { activityDates, programVisible, sportGroup } from "../core/yoga.ts";
+export const isSport = name => sportGroup(groupOf(name));
+export const visiblePrograms = () => state.programs.filter(p => programVisible(focus(), p.items, groupOf));
+export const goalDates = () => activityDates(state.entries, focus(), groupOf);
 /* ---------- Exercise metadata ---------- */
 export function allEx(){
   const list = [];

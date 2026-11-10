@@ -2,14 +2,14 @@ import { ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
 import { BADGES, FREEZES_PER_MONTH, WEEK_BADGES, WEEK_FREEZES_PER_MONTH, computeStreak, computeWeekStreak, earnedBadges, nextBadge } from "../core/streak.ts";
 import { $, ic, state } from "./store.js";
-import { dayLoad } from "./stats.js";
+import { goalDates } from "./exercises.js";
 import { buzz, closeSheet, infoBtn, openSheet } from "./ui.js";
 
 /* ---------- Seri (Duolingo tarzı) ----------
    Hesap core/streak.ts'te. Kullanıcı seçer (Profil → Ayarlar → Seri): plan varsa günlük, haftalık ya da kapalı.
    Ana sayfada alev ve sayı, Takvim'de seri, en uzun seri ve rozetler; antrenman bitince seri arttıysa kutlama.
    streakNow() iki türü tek biçimde verir: count/best/unit ("gün" | "hafta"), done (bugün ya da bu hafta tamam). */
-const workoutDates = (skip = "") => Object.keys(dayLoad()).filter(d => d !== skip);
+const workoutDates = (skip = "") => goalDates().filter(d => d !== skip);
 export const streakMode = () => ["week", "off"].includes(state.streakMode) ? state.streakMode : "auto";
 const weekly = () => streakMode() === "week" || !Object.keys(state.plan.days).length;
 

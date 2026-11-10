@@ -1,10 +1,11 @@
+import { restSeconds } from "../core/yoga.ts";
 import { programName } from "../core/programs.ts";
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
 import { groupLabel } from "../core/library.ts";
 import { volume, work } from "../core/training.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
-import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, liftOn, setLabel, yogaOn } from "./exercises.js";
+import { allEx, durText, equipOf, groupOf, isCardio, isTimed, musclesOf, liftOn, setLabel, yogaOn, isYoga, isSport, visiblePrograms } from "./exercises.js";
 import { buzz, closeSheet, openPicker, openSheet, sheetHead, undoable } from "./ui.js";
 import { bindBodyMap, sessionLoadHTML } from "./bodymap.js";
 import { refreshDatalist } from "./log.js";
@@ -83,8 +84,9 @@ export function renderEditorLoad(){
 export function renderProg(){
   $("#yogaCard").classList.toggle("hidden", !yogaOn());
   // tek kiraz "Başla": bugün planlı program varsa o, yoksa listedeki ilk program
-  primaryId = (plannedOn(state.plan, state.programs, ymd(new Date())) || state.programs[0] || {}).id ?? null;
-  $("#pList").innerHTML = state.programs.length ? state.programs.map(p => {
+  const programs = visiblePrograms();
+  primaryId = (plannedOn(state.plan, programs, ymd(new Date())) || programs[0] || {}).id ?? null;
+  $("#pList").innerHTML = programs.length ? programs.map(p => {
     const L = ssLabels(p.items), total = p.items.reduce((a,i) => a + i.sets, 0);
     return `<div class="card progcard">
       <div class="eyebrow">${t("programs.eyebrow", { n: p.items.length, sets: total })}</div>
@@ -135,7 +137,7 @@ export const defaultStep = ex => ["Dumbbell", "Kettlebell"].includes(equipOf(ex)
 export const exPref = (ex, k) => (state.exPrefs[ex] || {})[k];
 export const overloadStep = ex => exPref(ex, "inc") || defaultInc(ex);
 export const stepFor = ex => exPref(ex, "step") || defaultStep(ex);
-export const restFor = ex => exPref(ex, "rest") || state.rest;
+export const restFor = ex => restSeconds(isYoga(ex), state.rest, exPref(ex, "rest"));
 
 /* ---------- Google Calendar ---------- */
 export const WEEKDAYS = [["MO",t("programs.wd_mo"),1],["TU",t("programs.wd_tu"),2],["WE",t("programs.wd_we"),3],["TH",t("programs.wd_th"),4],["FR",t("programs.wd_fr"),5],["SA",t("programs.wd_sa"),6],["SU",t("programs.wd_su"),0]];
@@ -160,7 +162,7 @@ export function openCalModal(p){
 // Takvim etkinliği başlığı ve açıklaması: hareketler, setler ve toplam hacim
 export function dayText(list){
   const groups = [...new Set(list.map(e => groupOf(e.ex)))].map(groupLabel);
-  const lifts = list.filter(e => !isCardio(e.ex));
+  const lifts = list.filter(e => isSport(e.ex));
   const details = list.map(e => `• ${e.ex}: ${e.sets.map(s => setLabel(s, isCardio(e.ex))).join(", ")}`).join("\n") +
     (lifts.length ? `\n\n` + t("programs.day_total", { sets: lifts.reduce((n,e)=>n+work(e.sets).length,0), vol: fmt(lifts.reduce((n,e)=>n+volume(e.sets),0)) }) : "") + "\n\nSpor Defteri";
   return { title: t("programs.workout_title", { name: groups.join(", ") }), details };

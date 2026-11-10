@@ -1,3 +1,4 @@
+import { practiceSeconds, recordAllowed } from "../core/yoga.ts";
 import { e1rm, volume, warmupSets, work } from "../core/training.ts";
 import { niceDate, ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
@@ -143,8 +144,8 @@ export function saveEditor(){
   const ws = work(sets);
   if (isTimed(ex)) {
     const ns = Math.max(0, ...ws.map(s => +s.sec||0));
-    if (before.n && ns > beforeSec) { msg = t("log.time_record", { t: fmtSec(ns) }); icon = "trophy"; }
-  } else if (!isCardio(ex) && before.n && ws.length) {
+    if (recordAllowed(isYoga(ex), isCardio(ex)) && before.n && ns > beforeSec) { msg = t("log.time_record", { t: fmtSec(ns) }); icon = "trophy"; }
+  } else if (recordAllowed(isYoga(ex), isCardio(ex)) && before.n && ws.length) {
     const nw = Math.max(...ws.map(s => +s.w||0)), ne = Math.max(...ws.filter(s => s.r<=12).map(s => e1rm(+s.w||0, +s.r||0)), 0);
     if (nw > before.w) { msg = t("log.record_kg", { w: fmt(nw) }); icon = "trophy"; }
     else if (ne > before.e + 0.05) { msg = t("log.est_1rm", { w: fmt(ne) }); icon = "trophy"; }
@@ -157,11 +158,11 @@ export function saveEditor(){
 export function entryHTML(e, actions, prs){
   const c = isCardio(e.ex);
   const extra = c ? t("log.total_min", { n: fmt(e.sets.reduce((a,s)=>a+(+s.w||0),0)) })
-    : isTimed(e.ex) ? t("log.sets_total_time", { n: work(e.sets).length, t: fmtSec(work(e.sets).reduce((a,s)=>a+(+s.sec||0),0)) })
+    : isTimed(e.ex) ? t("log.sets_total_time", { n: work(e.sets).length, t: fmtSec(isYoga(e.ex) ? practiceSeconds(e.sets) : work(e.sets).reduce((a,s)=>a+(+s.sec||0),0)) })
     : t("log.sets_volume", { n: work(e.sets).length, v: fmt(volume(e.sets)) });
   let k = 0;
   const chips = e.sets.map((s,i) => {
-    const warm = s.t === "w", pr = prs && prs.has(i);
+    const warm = s.t === "w", pr = recordAllowed(isYoga(e.ex), c) && prs && prs.has(i);
     const lbl = warm ? TYPE_LETTER.w : (s.t ? TYPE_LETTER[s.t] : "") + (++k);
     return `<span class="chip${warm ? " warm" : ""}${pr ? " pr" : ""}" title="${s.t ? SET_TYPES[s.t] : t("log.normal_set")}">${pr ? ic("trophy") : ""}${lbl}) ${setLabel(s,c)}</span>`;
   }).join("");
