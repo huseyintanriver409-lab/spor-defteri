@@ -145,14 +145,14 @@ describe("runCalendar", () => {
     expect(c.log).toEqual([]);
   });
 
-  it("günler geçtikçe yalnız yeni tarihler eklenir, geçmişe dokunulmaz", async () => {
+  it("günler geçtikçe bitmemiş geçmiş planlar silinir ve yeni tarihler eklenir", async () => {
     const c = fakeCalendar(), st = calState({ plan: true });
     await runCalendar(st, c, helpers);
     c.log.length = 0;
     await runCalendar(st, c, { ...helpers, now: NOW + 7 * 24 * H });
-    expect(c.log).toEqual(["upsert " + dayEventId("2026-12-28"), "upsert " + dayEventId("2026-12-31")]);
+    expect(c.log).toEqual(["delete " + dayEventId("2026-11-02"), "delete " + dayEventId("2026-11-05"), "upsert " + dayEventId("2026-12-28"), "upsert " + dayEventId("2026-12-31")]);
     expect(st.gcal.dates![0]).toBe("2026-11-09");
-    expect(c.cals.cal1.has(dayEventId("2026-11-02"))).toBe(true);
+    expect(c.cals.cal1.has(dayEventId("2026-11-02"))).toBe(false);
   });
 
   it("plan değişince yeniden yazar, plandan çıkan gün silinir", async () => {
@@ -455,4 +455,35 @@ describe("plannedOn (uygulamadaki takvim)", () => {
     expect(plannedOn(p, progs, "2026-11-03")).toBeNull();
     expect(plannedOn(p, progs, "2026-12-07")).toBeNull();
   });
+});
+
+describe("stale cleanup", () => {
+ it("recovers forgotten dates while protecting remote and local completed days", async () => {
+  const c = fakeCalendar(), st = calState({plan:true});
+  await runCalendar(st,c,helpers);
+  c.listDayEvents = vi.fn().mockResolvedValue([{date:"2025-01-01",completed:false},{date:"2025-01-02",completed:true},{date:"2025-01-03",completed:false}]);
+  st.entries=[{date:"2025-01-03",sets:[{}]}]; c.log.length=0;
+  await runCalendar(st,c,helpers);
+  expect(c.log).toEqual(["delete " + dayEventId("2025-01-01")]);
+ });
+ it("retries failed deletion without losing its mapping", async () => {
+  const c = fakeCalendar(), st = calState({plan:true}); await runCalendar(st,c,helpers);
+  st.gcal.dates!.push("2025-01-01"); const del=c.deleteEvent;
+  c.deleteEvent=vi.fn().mockRejectedValueOnce(new Error("offline"));
+  await runCalendar(st,c,helpers); // silme hatası plan yazımını engellemez
+  expect(st.gcal.dates).toContain("2025-01-01"); c.deleteEvent=del;
+  await runCalendar(st,c,helpers); expect(st.gcal.dates).not.toContain("2025-01-01");
+ });
+ it("cleans tasks older than backfill and preserves finished and unrelated tasks", async () => {
+  const tc=fakeTasks(), st=taskState(); await runCalendar(st,fakeCalendar(),helpers,tc);
+  tc.lists[st.gcal.taskList!].push({id:"old",title:"Workout: Push",due:"2025-01-01",status:"needsAction"},{id:"done",title:"Workout: Push",due:"2025-01-02",status:"completed"},{id:"other",title:"Personal",due:"2025-01-01",status:"needsAction"});
+  await runCalendar(st,fakeCalendar(),helpers,tc);
+  const ids=tc.lists[st.gcal.taskList!].map(t=>t.id);
+  expect(ids).not.toContain("old"); expect(ids).toContain("done"); expect(ids).toContain("other");
+ });
+ it("reads all Google pages and ignores unrelated event ids", async () => {
+  const f=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({items:[{id:dayEventId("2025-01-01"),summary:"Workout: Push"},{id:sessionEventId("abc")}],nextPageToken:"next"}))).mockResolvedValueOnce(new Response(JSON.stringify({items:[{id:dayEventId("2025-01-02"),summary:String.fromCodePoint(0x2705)+" Workout: Push"}]})));
+  expect(await calendarClient("token",f).listDayEvents!("cal")).toEqual([{date:"2025-01-01",completed:false},{date:"2025-01-02",completed:true}]);
+  expect(f.mock.calls[1][0]).toContain("pageToken=next");
+ });
 });

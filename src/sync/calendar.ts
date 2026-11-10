@@ -1,6 +1,6 @@
 // Google Calendar REST istemcisi. Kapsam calendar.app.created: yalnız uygulamanın oluşturduğu takvim.
 import { AuthError } from "./drive.ts";
-import { CalendarMissing, type CalendarClient } from "../core/calendar.ts";
+import { CalendarMissing, dayEventId, DONE_MARK, type CalendarClient } from "../core/calendar.ts";
 import { t } from "../core/i18n.ts";
 
 const API = "https://www.googleapis.com/calendar/v3";
@@ -25,6 +25,25 @@ export function calendarClient(token: string, fetchFn: typeof fetch = fetch): Ca
   const fail = (key: string, res: Response) => new Error(t(key, { status: res.status }));
 
   return {
+    async listDayEvents(cal) {
+      const out: { date: string; completed: boolean }[] = [];
+      let page = "";
+      do {
+        const q = new URLSearchParams({ maxResults: "2500", ...(page ? { pageToken: page } : {}) });
+        const res = await call(`${events(cal)}?${q}`, "GET");
+        if (res.status === 404 || res.status === 410) throw new CalendarMissing(t("cloud.err_cal_missing"));
+        if (!res.ok) throw fail("cloud.err_cal_update_event", res);
+        const data = await res.json();
+        for (const e of data.items || []) {
+          if (e.status === "cancelled" || !/^sdgun[0-9a-f]{20}$/.test(e.id || "")) continue;
+          const date = (e.id.slice(5).match(/../g) as string[]).map(x => String.fromCharCode(parseInt(x, 16))).join("");
+          if (/^\d{4}-\d{2}-\d{2}$/.test(date) && dayEventId(date) === e.id)
+            out.push({ date, completed: String(e.summary || "").startsWith(DONE_MARK) });
+        }
+        page = data.nextPageToken || "";
+      } while (page);
+      return out;
+    },
     async createCalendar(summary, description, timeZone) {
       const res = await call(`${API}/calendars`, "POST", { summary, description, timeZone });
       if (!res.ok) throw fail("cloud.err_cal_create_cal", res);

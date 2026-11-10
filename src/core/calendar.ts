@@ -6,7 +6,7 @@
    - Haftalık plan, her tarih için ayrı ve hatırlatmalı bir etkinliktir: bugünden planın bitiş tarihine
      (plan.until) kadar, bitiş yoksa HORIZON_DAYS ilerisine kadar (her açılışta ilerler). Yazılan tarihler
      gcal.dates'te tutulur; plan değişince imzası (planSig) değişir, plandan çıkan tarihler silinir, kalanlar
-     yeniden yazılır. Geçmiş tarihlere dokunulmaz.
+     yeniden yazılır. Geçmişteki bitmemiş planlar silinir; tamamlanan antrenmanlar korunur.
    - O gün antrenman bitince ilk oturum aynı tarih kimliğiyle "✅" etkinliği olarak yazılır: takvimdeki plan
      etkinliği tamamlandıya döner, yanında ikinci bir etkinlik açılmaz.
    Etkinlik kimlikleri kayıttan türetilir: aynı oturum iki cihazdan yazılsa da tek etkinlik olur.
@@ -36,6 +36,7 @@ export const DONE_MARK = "✅ ";
 const WEEKDAYS: [string, number][] = [["MO", 1], ["TU", 2], ["WE", 3], ["TH", 4], ["FR", 5], ["SA", 6], ["SU", 0]];
 
 export interface CalendarClient {
+  listDayEvents?(calendarId: string): Promise<{ date: string; completed: boolean }[]>;
   createCalendar(summary: string, description: string, timeZone: string): Promise<string>;
   // aynı kimlikle varsa günceller (silinmişse geri getirir), yoksa oluşturur
   upsertEvent(calendarId: string, eventId: string, body: object): Promise<void>;
@@ -191,8 +192,22 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
 
   // geçmiş tarihler ve antrenmanı yapılmış günler artık planın değil (yapılan gün ✅ etkinliğiyle değişti)
   const today = ymd(new Date(now));
-  const done = new Set(g.log ? state.sessions.filter(s => s.end).map(s => s.date) : []);
-  g.dates = (g.dates || []).filter(d => d >= today && !done.has(d));
+  const done = new Set([...state.sessions.filter(s => s.end).map(s => s.date),
+    ...(state.entries || []).filter(e => e.sets?.length).map(e => e.date)]);
+  // Recover dates forgotten by older clients. Remove mappings only after successful deletion.
+  let remote: { date: string; completed: boolean }[] = [];
+  // Listing or deleting old events must not block writing the new plan; leftovers are retried on the next sync.
+  if (g.id && client.listDayEvents) { try { await withCal(async cal => { remote = await client.listDayEvents!(cal); }); } catch { /* sonraki eşitlemede */ } }
+  for (const e of remote) if (e.completed) done.add(e.date);
+  g.dates = [...new Set([...(g.dates || []), ...remote.filter(e => e.date < today).map(e => e.date)])];
+  const failed = new Set<string>();
+  for (const d of [...g.dates]) {
+    if (d < today && !done.has(d)) {
+      try { await withCal(cal => client.deleteEvent(cal, dayEventId(d))); } catch { failed.add(d); continue; }
+      g.dates = g.dates.filter(x => x !== d); out.planUpdated = true;
+    }
+  }
+  g.dates = g.dates.filter(d => (d >= today || failed.has(d)) && !done.has(d));
   const want = eventPlan(g) ? plannedDates(state.plan, state.programs, new Date(now)).filter(x => !done.has(x.date)) : [];
   const target = eventPlan(g) ? planSignature(state.plan, state.programs) : "";
   if (target !== g.planSig) {
@@ -228,13 +243,13 @@ const isWorkoutTask = (title: string) => ["Antrenman: ", "Workout: "].some(prefi
 const dueOf = (date: string) => `${date}T00:00:00.000Z`;
 
 // Görev modu: plandaki tarihler görev olur, antrenmanı yapılan günün görevi tiklenir; plandan çıkan
-// (tamamlanmamış, gelecekteki) görevler silinir. Yalnız uygulamanın listesindeki "Antrenman: " görevlerine dokunulur.
+// tamamlanmamış görevler (geçmiştekiler dahil) silinir. Yalnız uygulamanın antrenman görevlerine dokunulur.
 async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelpers, out: { planUpdated: boolean; ticked: number }) {
   const g = state.gcal, now = new Date(h.now ?? Date.now()), today = ymd(now);
   const since = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - BACKFILL_DAYS));
   let list: Task[] = [];
   if (g.taskList) {
-    try { list = await tc.listTasks(g.taskList, since); }
+    try { list = await tc.listTasks(g.taskList, "1970-01-01"); }
     catch (e) { if (!(e instanceof TaskListMissing)) throw e; g.taskList = ""; }
   }
   const want = taskPlan(g) ? plannedDates(state.plan, state.programs, now) : [];
@@ -262,7 +277,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   }
   const wantBy = new Map(want.map(x => [x.date, x]));
   for (const [d, t] of byDate) {
-    if (d >= today && t.status !== "completed" && !wantBy.has(d)) { await tc.deleteTask(g.taskList, t.id); byDate.delete(d); out.planUpdated = true; }
+    if (!done.has(d) && t.status !== "completed" && !wantBy.has(d)) { await tc.deleteTask(g.taskList, t.id); byDate.delete(d); out.planUpdated = true; }
   }
   let n = 0;
   for (const x of want) {

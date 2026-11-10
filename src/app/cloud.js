@@ -200,7 +200,7 @@ export function runCal(interactive){
     } catch(e){
       if (e instanceof PopupError) { tapBlocked = true; disarmTap(); /* sessiz */ }
       else if (e instanceof AuthError) dropScope(e instanceof TasksAuthError ? TASKS_SCOPE : CAL_SCOPE);
-      else calErr = (e && e.message) || t("cloud.cal_write_failed");
+      else if (interactive) calErr = (e && e.message) || t("cloud.cal_write_failed");
     } finally {
       // yarıda kalsa da yazılanların işaretleri kaydedilir
       save(); calBusy = false; renderCalStatus(); renderPlan();
