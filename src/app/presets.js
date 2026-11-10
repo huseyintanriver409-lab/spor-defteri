@@ -1,3 +1,4 @@
+import { ymd } from "../core/dates.ts";
 // Hazır programlar ve "Bana program öner". İçerik ve öneri kuralları core/programs.ts'te.
 import { PROGRAMS, presetSessionName, presetSessionIndex, programById, recommend, weeklyPlan } from "../core/programs.ts";
 import { $, esc, ic, save, state, toast, uid } from "./store.js";
@@ -30,7 +31,7 @@ export function applyProgram(p, days, placeInPlan){
     const name = presetSessionName(p, index);
     let prog = state.programs.find(x => x.lib === p.id && presetSessionIndex(x) === index);
     if (!prog) {
-      prog = { id: uid(), name, lib: p.id, items: s.items.map(([ex, sets, reps]) => ({ ex, sets, reps })) };
+      prog = { id: uid(), name, selectedDate: ymd(new Date()), lib: p.id, items: s.items.map(([ex, sets, reps]) => ({ ex, sets, reps })) };
       state.programs.push(prog);
     }
     return prog.id;
@@ -107,7 +108,7 @@ export function openLibrary(yoga){
 
 // Dört soru, cevap değiştikçe öneri güncellenir. onboarding: ilk açılışta, üstte "Atla" ile.
 export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" : "esneklik" } = {}){
-  const a = { level: "yeni", goal, equip: "salon", days: 3, sex: state.profile.sex, model: state.prefs.body === "f" ? "f" : "m" };
+  const a = { level: "yeni", goal, equip: "salon", days: 3, sex: state.profile.sex || "", model: state.prefs.body === "f" ? "f" : "m" };
   const markDone = onboarding ? () => { state.onboarded = true; save(); } : undefined;
   const q = (key, title, opts) => `<div class="pk-head">${title}</div><div class="optgrid" data-q="${key}">${opts.map(([v, l]) => `<button class="fchip${String(a[key]) === String(v) ? " on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;
   const head = onboarding
@@ -115,7 +116,7 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
          <h3 style="font-size:26px;margin:4px 0 6px;letter-spacing:-.035em">${t("presets.find_program")}</h3></div>
          <button class="btn quiet" id="obSkip" style="flex:none">${t("presets.skip")}</button></div>`
     : sheetHead(t("presets.suggest_title"));
-  openSheet(head,
+  openSheet(head + `<div class="rec-actions"><button class="btn primary" id="${onboarding ? "obGo" : "recGo"}">${ic("play")}${t("presets.start")}</button><button class="btn quiet" id="recMore">${t("presets.detail")}</button></div>`,
     (onboarding ? q("sex", t("presets.q_sex"), [["m", t("presets.sex_m")], ["f", t("presets.sex_f")], ["o", t("presets.sex_o")], ["", t("html.sex_none")]]) + `<div id="onboardModel" class="${["m", "f"].includes(a.sex) ? "hidden" : ""}">${q("model", t("html.body_draw_label"), [["m", t("html.gender_male")], ["f", t("html.gender_female")]])}</div>` : "")
     + q("level", t("presets.q_level"), [["yeni", t("presets.lv_new")], ["orta", t("presets.lv_mid")], ["ileri", t("presets.lv_adv")]])
     + q("goal", t("presets.q_goal"), [...(liftOn() ? [["genel", t("presets.g_general")], ["kas", t("presets.g_muscle")], ["guc", t("presets.g_strength")]] : []), ...(yogaOn() ? [["esneklik", t("presets.goal_flex")]] : [])])
@@ -132,13 +133,9 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
         <div style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin:2px 0 4px">${esc(p.name)}</div>
         <div class="muted small">${esc(p.short)} · ${t("presets.weekly_days", { n: r.days })}</div>
         ${list(r.reasons)}
-        <div class="row" style="margin-top:12px">
-          <button class="btn primary" id="${onboarding ? "obGo" : "recGo"}">${ic("play")}${t("presets.start")}</button>
-          <button class="btn quiet" id="recMore">${t("presets.detail")}</button>
-        </div>
         ${r.alternatives.length ? `<div class="pk-head">${t("presets.alternative")}</div>${r.alternatives.map(x => `<button class="libitem" data-alt="${x.program.id}" data-days="${x.days}" style="margin:6px 0 0"><b>${esc(x.program.name)}</b><span class="muted small" style="display:block">${esc(x.why)}</span></button>`).join("")}` : ""}
       </div>`;
-    $("#recOut").querySelector(onboarding ? "#obGo" : "#recGo").onclick = () => {
+    $(onboarding ? "#obGo" : "#recGo").onclick = () => {
       applyProgram(p, r.days, true); closeSheet();
       // ilk açılışta: programdaki hareketler için şu anki kilolar sorulur
       if (onboarding) openBaseline({ onboarding: true, exercises: [...new Set(p.sessions.flatMap(x => x.items.map(([ex]) => ex)))] });

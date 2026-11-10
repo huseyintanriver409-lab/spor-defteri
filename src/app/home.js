@@ -1,8 +1,9 @@
+import { volumePlan } from "./beginner-volume.js";
 import { homeActivityDates } from "../core/yoga.ts";
 import { programName } from "../core/programs.ts";
 import { DAYS, MONTHS_LONG, mondayOf, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
-import { $, esc, ic, state } from "./store.js";
+import { $, esc, ic, state, save } from "./store.js";
 import { groupOf, visiblePrograms, focus, isCardio, isSport, isYoga, liftOn, musclesOf } from "./exercises.js";
 import { applyProgram } from "./presets.js";
 import { bindBodyMap, bodyMap, fatigueSummary, fatigueTiers, levelBar, openRecoveryAnalysis } from "./bodymap.js";
@@ -77,7 +78,12 @@ export function renderHome(){
   $("#homeStreakNote").classList.toggle("risk", st.atRisk);
   const links = state.live ? "" : `<div class="row" style="justify-content:center;gap:4px;margin:-4px 0 12px">
     <button class="ghost" id="qEmpty">${ic("play")}${t("home.empty_workout")}</button></div>`;
-  $("#homeMain").innerHTML = main + links;
+  const volumeProgram = !state.live && (p || best?.x), volumeKey = volumeProgram && volumePlan(volumeProgram).card;
+  const volumeCard = volumeKey ? `<div class="card row volume-card"><span class="grow small">${t("programs.volume_question")}</span>${["accept", "reject"].map(k => `<button class="iconbtn" data-volume="${k}" data-i18n-aria="programs.volume_${k}" aria-label="${t(k === "accept" ? "programs.volume_accept" : "programs.volume_reject")}">${ic(k === "accept" ? "check" : "x")}</button>`).join("")}</div>` : "";
+  $("#homeMain").innerHTML = main + volumeCard + links;
+  $("#homeMain").querySelectorAll("[data-volume]").forEach(b => b.onclick = () => {
+    (state.prefs.beginnerVolume ||= {})[volumeKey] = b.dataset.volume; save(); renderHome();
+  });
   $("#homeMain").querySelectorAll("[data-start]").forEach(b => b.onclick = () => startWorkout(b.dataset.start));
   const r = $("#homeResume"); if (r) r.onclick = openFocus;
   if ($("#qEmpty")) $("#qEmpty").onclick = () => startWorkout(null);

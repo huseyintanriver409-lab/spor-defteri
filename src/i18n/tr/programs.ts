@@ -1,4 +1,14 @@
 export default {
+  phase_pre: "Önce (dinamik)",
+  phase_post: "Sonra (statik)",
+  filter_all: "Tümü",
+  filter_pre: "Önce",
+  filter_post: "Sonra",
+  volume_question: "İlk 2 hafta daha az set?",
+  volume_accept: "Kabul",
+  volume_reject: "Ret",
+  plan_short: "Plan düzeni",
+
   quick_flow: "Hızlı seans",
   flow_minutes: "{n} dakika",
   region_all: "Tüm vücut",

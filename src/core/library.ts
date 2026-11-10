@@ -59,7 +59,7 @@ export const isUnilateral = (name: string): boolean => UNILATERAL.has(name) ||
   /single[- ](?:arm|leg)|split squat|woodchop|lunge/i.test(name);
 
 export type YogaRegion = "all" | "hips" | "back" | "shoulders" | "legs";
-export interface YogaPose { ex: string; region: YogaRegion; level: number; seconds: number; unilateral: boolean }
+export interface YogaPose { ex: string; region: YogaRegion; level: number; seconds: number; unilateral: boolean; phase?: "pre" | "post" }
 // Compact pose metadata; exercise names remain stable persistence keys.
 export const YOGA_POSES: YogaPose[] = LIB[YOGA].map(ex => ({
   ex, region: /Shoulder|Chest Stretch/.test(ex) ? "shoulders" :
@@ -67,5 +67,10 @@ export const YOGA_POSES: YogaPose[] = LIB[YOGA].map(ex => ({
     /Fold|Hamstring|Quad|Legs Up|Chair|Warrior|Triangle|Half Moon|Tree|Side Angle/.test(ex) ? "legs" :
     /Dog|Cobra|Cat-Cow|Child|Bridge|Camel|Twist/.test(ex) ? "back" : "all",
   level: /Chaturanga|Half Moon|Camel|Boat/.test(ex) ? 2 : 1,
+  phase: ex === "Cat-Cow" || ex === "Sun Salutation" ? "pre" : ["Mountain Pose","Downward Dog","Cobra Pose","Child's Pose","Warrior I","Warrior II","Reverse Warrior","Triangle Pose","Extended Side Angle","Half Moon","Tree Pose","Chair Pose","Standing Forward Fold","Seated Forward Fold","Low Lunge","Pigeon Pose","Butterfly Pose","Bridge Pose","Camel Pose","Boat Pose","Happy Baby","Supine Twist","Legs Up the Wall","Corpse Pose","Hamstring Stretch","Quad Stretch","Hip Flexor Stretch","Shoulder Stretch","Chest Stretch"].includes(ex) ? "post" : undefined,
   seconds: ex === "Corpse Pose" ? 60 : 30, unilateral: isUnilateral(ex)
 }));
+
+export type PosePhaseFilter = "all" | "pre" | "post";
+export const filterPosePhase = <T extends { phase?: "pre" | "post" }>(poses: T[], phase: PosePhaseFilter): T[] =>
+  poses.filter(p => phase === "all" || p.phase === phase);

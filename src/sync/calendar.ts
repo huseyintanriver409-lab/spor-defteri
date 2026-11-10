@@ -1,6 +1,6 @@
 // Google Calendar REST istemcisi. Kapsam calendar.app.created: yalnız uygulamanın oluşturduğu takvim.
 import { AuthError } from "./drive.ts";
-import { CalendarMissing, dayEventId, DONE_MARK, type CalendarClient } from "../core/calendar.ts";
+import { CalendarMissing, syncSince, dayEventId, DONE_MARK, type CalendarClient } from "../core/calendar.ts";
 import { t } from "../core/i18n.ts";
 
 const API = "https://www.googleapis.com/calendar/v3";
@@ -25,11 +25,18 @@ export function calendarClient(token: string, fetchFn: typeof fetch = fetch): Ca
   const fail = (key: string, res: Response) => new Error(t(key, { status: res.status }));
 
   return {
-    async listDayEvents(cal) {
+    async getEvent(cal, id) {
+      const res = await call(`${events(cal)}/${encodeURIComponent(id)}`, "GET");
+      if (res.status === 404 || res.status === 410) return null;
+      if (!res.ok) throw fail("cloud.err_cal_update_event", res);
+      const e = await res.json();
+      return { completed: String(e.summary || "").startsWith(DONE_MARK) };
+    },
+    async listDayEvents(cal, since = syncSince()) {
       const out: { date: string; completed: boolean }[] = [];
       let page = "";
       do {
-        const q = new URLSearchParams({ maxResults: "2500", ...(page ? { pageToken: page } : {}) });
+        const q = new URLSearchParams({ timeMin: new Date(since + "T00:00:00").toISOString(), maxResults: "2500", ...(page ? { pageToken: page } : {}) });
         const res = await call(`${events(cal)}?${q}`, "GET");
         if (res.status === 404 || res.status === 410) throw new CalendarMissing(t("cloud.err_cal_missing"));
         if (!res.ok) throw fail("cloud.err_cal_update_event", res);

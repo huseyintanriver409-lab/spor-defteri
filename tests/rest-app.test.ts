@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { DEFAULTS } from "../src/core/schema.ts";
 vi.mock("../src/app/store.js", () => ({ state: DEFAULTS(), $: vi.fn(), ask: vi.fn(), esc: String, fmt: String, ic: vi.fn(), save: vi.fn(), toast: vi.fn(), uid: vi.fn() }));
 vi.mock("../src/app/exercises.js", () => ({
-  isYoga: (ex: string) => ex === "Mountain Pose", isTimed: (ex: string) => ex === "Mountain Pose",
+  isYoga: vi.fn((ex: string) => ex === "Mountain Pose"), isTimed: (ex: string) => ex === "Mountain Pose",
 }));
 vi.mock("../src/app/ui.js", () => ({}));
 vi.mock("../src/app/bodymap.js", () => ({}));
@@ -35,4 +35,19 @@ it("resolves per-exercise overrides, numeric settings and yoga", () => {
   expect(restFor("Mountain Pose", { reps: "5" })).toBe(0);
   state.exPrefs["Mountain Pose"] = { rest: 30 };
   expect(restFor("Mountain Pose")).toBe(30);
+});
+
+// @ts-expect-error JavaScript app module
+import { isYoga } from "../src/app/exercises.js";
+it.each([0, 30])("preserves rest preference %s across yoga and sport group changes", pref => {
+  state.exPrefs["Mountain Pose"] = { rest: pref };
+  for (const auto of [false, true]) {
+    state.restAuto = auto;
+    for (const yoga of [true, false, true]) {
+      isYoga.mockReturnValue(yoga);
+      expect(restFor("Mountain Pose")).toBe(pref);
+      expect(state.exPrefs["Mountain Pose"].rest).toBe(pref);
+    }
+  }
+  isYoga.mockImplementation((ex: string) => ex === "Mountain Pose");
 });

@@ -1,10 +1,23 @@
 ﻿import { describe, expect, it } from "vitest";
 import { LIB, YOGA, YOGA_POSES } from "../src/core/library.ts";
+import { vi } from "vitest";
 import { buildQuickFlow, homeActivityDates, activityDates, yogaWeekGoal, practiceSeconds } from "../src/core/yoga.ts";
 import { work } from "../src/core/training.ts";
 import { mondayOf, ymd } from "../src/core/dates.ts";
 const groupOf = (ex: string) => LIB[YOGA].includes(ex) ? YOGA : "Sport";
 describe("quick flow", () => {
+ it("uses a repeatable daily seed, changes across days, and leaves the library untouched", () => {
+  const before = structuredClone(YOGA_POSES);
+  const a = buildQuickFlow(20, "all", YOGA_POSES, "2026-11-10");
+  expect(buildQuickFlow(20, "all", YOGA_POSES, "2026-11-10")).toEqual(a);
+  expect(buildQuickFlow(20, "all", YOGA_POSES, "2026-11-11").map(p => p.ex)).not.toEqual(a.map(p => p.ex));
+  expect(YOGA_POSES).toEqual(before);
+  vi.useFakeTimers();
+  try {
+   vi.setSystemTime(new Date(2026, 10, 10, 23, 59));
+   expect(buildQuickFlow(20, "all", YOGA_POSES)).toEqual(a);
+  } finally { vi.useRealTimers(); }
+ });
  it.each([5, 10, 15, 20].flatMap(m => ["all", "hips", "back", "shoulders", "legs"].map(r => [m, r] as const)))("fills %s minutes in %s", (minutes, region) => {
   const flow = buildQuickFlow(minutes, region, YOGA_POSES);
   expect(flow.length).toBeGreaterThan(0);

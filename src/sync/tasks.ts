@@ -31,6 +31,12 @@ export function tasksClient(token: string, fetchFn: typeof fetch = fetch): Tasks
   const missing = (res: Response) => res.status === 404 || res.status === 400;
 
   return {
+    async getTask(list, id) {
+      const res = await call(`${tasks(list)}/${encodeURIComponent(id)}`, "GET");
+      if (res.status === 404 || res.status === 410) return null;
+      if (!res.ok) throw fail("cloud.err_task_read", res);
+      return await res.json() as Task;
+    },
     async createList(title) {
       const res = await call(`${API}/users/@me/lists`, "POST", { title });
       if (!res.ok) throw fail("cloud.err_task_create_list", res);

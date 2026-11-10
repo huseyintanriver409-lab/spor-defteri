@@ -57,7 +57,7 @@ function figure(side, tiers, caption){
     if (!ms) return ds.map(d => `<path class="bm-base" d="${d}"/>`).join("");
     const tier = ms.map(m => tiers[m] || "yok").reduce((x, y) => RANK[y] > RANK[x] ? y : x);
     const title = ms.map(m => esc(muscleLabel(m)) + (LABEL[tiers[m]] ? " · " + LABEL[tiers[m]] : "")).join(", ");
-    return ds.map(d => `<path d="${d}" data-m="${esc(ms.join("|"))}" data-t="${tier}"><title>${title}</title></path>`).join("");
+    return ds.map(d => `<path d="${d}" aria-label="${esc(ms.map(muscleLabel).join(", "))}" data-m="${esc(ms.join("|"))}" data-t="${tier}"><title>${title}</title></path>`).join("");
   }).join("");
   const R = Object.values(tiers).includes("toparlaniyor") ? recoveryMap() : {};
   const front = new Set(regionParts(bodySex(), "front").flatMap(([, , ms]) => ms || []));
@@ -275,7 +275,7 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
        return (head ? `<div class="pk-head">${kind === "kanit" ? `${t("bodymap.equal_options")}${i === 0 ? `<span class="muted small" style="float:right;font-weight:400">${t("bodymap.evidence")}</span>` : ""}${groupNote(m, group) ? `<span class="muted small" style="display:block;font-weight:400;text-transform:none;letter-spacing:0">${esc(groupNote(m, group))}</span>` : ""}` : kind === "ana" ? t("bodymap.main_others") : t("bodymap.assist_others")}</div>` : "")
        + `<div class="exitem"><div class="grow"><div>${esc(name)}${counts[name] ? ` <span class="muted small">· ${t("bodymap.n_records", { n: counts[name] })}</span>` : ""}</div>
        <div class="ms">${kindTag(x)}${shareText(x.w)}</div></div>
-       <a class="iconbtn" title="${t("bodymap.how_online")}" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}">${ic("circle-play")}</a>
+       <a class="iconbtn" title="${t("bodymap.how_online")}" aria-label="${t("bodymap.how_online")}" data-i18n-aria="bodymap.how_online" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(name)}" title="${t("bodymap.add")}" aria-label="${t("bodymap.add_named", { name: esc(name) })}">${ic("circle-plus")}</button></div>`; }).join("")}`);
   body.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleSheet(b.dataset.alt, alts, { plain }));
   body.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { closeSheet(); startWorkout(b.dataset.pstart); });
@@ -309,7 +309,7 @@ export function openMuscleReel(m, alts = [m]){
         <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x, true)}<span class="tag">${esc(equipLabel(equipOf(name)))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
         <h3 class="reel-name">${esc(name)}</h3>
         ${i === 0 ? summaryHTML(m, "reel-note") : ""}${note ? `<p class="reel-note">${ic("info")}${esc(note)}</p>` : ""}${x.w < .999 ? `<p class="reel-note muted">${kind === "yardimci" ? t("bodymap.assist_prefix") : ""}${t("bodymap.share_of", { n: share(x.w), muscle: esc(muscleLabel(m)) })}</p>` : ""}
-        <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: reelSets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}">${ic("plus")}</button></div>
+        <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}" aria-label="${t("bodymap.set_less")}" data-i18n-aria="bodymap.set_less">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: reelSets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}" aria-label="${t("bodymap.set_more")}" data-i18n-aria="bodymap.set_more">${ic("plus")}</button></div>
         <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
         ${SCALE}
         <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}${t("bodymap.how_to")}</a>
@@ -321,7 +321,7 @@ export function openMuscleReel(m, alts = [m]){
         ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}${t("bodymap.start")}</button>`}</div>`).join("")}</section>` : "");
   let el = $("#reel");
   if (!el) { document.body.insertAdjacentHTML("beforeend", `<div class="reel hidden" id="reel" role="dialog" aria-modal="true"></div>`); el = $("#reel"); }
-  el.innerHTML = `<header class="reel-head"><button class="iconbtn" data-rclose title="${t("bodymap.close")}">${ic("chevron-left")}</button><h2 class="grow">${esc(muscleLabel(m))}${MUSCLE_COMMON[m] ? ` <small class="muted">${esc(MUSCLE_COMMON[m])}</small>` : ""}</h2></header>
+  el.innerHTML = `<header class="reel-head"><button class="iconbtn" data-rclose title="${t("bodymap.close")}" aria-label="${t("bodymap.close")}" data-i18n-aria="bodymap.close">${ic("chevron-left")}</button><h2 class="grow">${esc(muscleLabel(m))}${MUSCLE_COMMON[m] ? ` <small class="muted">${esc(MUSCLE_COMMON[m])}</small>` : ""}</h2></header>
     ${alts.length > 1 ? `<div class="fchips reel-alts">${alts.map(x => `<button class="fchip${x === m ? " on" : ""}" data-alt="${esc(x)}">${esc(muscleLabel(x))}</button>`).join("")}</div>` : ""}
     <div class="reel-scroll">${cards}</div>`;
   el.classList.remove("hidden"); document.documentElement.classList.add("reel-open");

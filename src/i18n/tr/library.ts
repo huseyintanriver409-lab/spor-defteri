@@ -42,7 +42,4 @@ export default {
   "name_req": "Ad gir",
   "exists": "Bu hareket zaten var",
   "added": "Eklendi",
-  "date_req": "Tarih seç",
-  "value_req": "Ölçü gir",
-  "body_saved": "Ölçü kaydedildi",
 } as Record<string, string>;

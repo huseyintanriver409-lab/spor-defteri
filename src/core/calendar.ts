@@ -33,10 +33,22 @@ export const MAX_UNTIL_DAYS = 366;
 export const MAX_PLAN_PER_RUN = 60;
 export const DONE_MARK = "✅ ";
 
+export const SYNC_LOOKBACK_DAYS = 60;
+// No upper bound: explicit plans can extend MAX_UNTIL_DAYS into the future.
+export function syncSince(today = new Date()): string {
+  return ymd(new Date(today.getFullYear(), today.getMonth(), today.getDate() - SYNC_LOOKBACK_DAYS));
+}
+export let lastCalendarSyncError: { operation: string; message: string } | null = null;
+function recordSyncError(operation: string, error: unknown): void {
+  lastCalendarSyncError = { operation, message: error instanceof Error ? error.message : String(error) };
+  console.warn("[calendar sync]", operation, error);
+}
+
 const WEEKDAYS: [string, number][] = [["MO", 1], ["TU", 2], ["WE", 3], ["TH", 4], ["FR", 5], ["SA", 6], ["SU", 0]];
 
 export interface CalendarClient {
-  listDayEvents?(calendarId: string): Promise<{ date: string; completed: boolean }[]>;
+  getEvent(calendarId: string, eventId: string): Promise<{ completed: boolean } | null>;
+  listDayEvents?(calendarId: string, since?: string): Promise<{ date: string; completed: boolean }[]>;
   createCalendar(summary: string, description: string, timeZone: string): Promise<string>;
   // aynı kimlikle varsa günceller (silinmişse geri getirir), yoksa oluşturur
   upsertEvent(calendarId: string, eventId: string, body: object): Promise<void>;
@@ -48,6 +60,7 @@ export class CalendarMissing extends Error {}
 
 export interface Task { id: string; title?: string; notes?: string; due?: string; status?: string }
 export interface TasksClient {
+  getTask(listId: string, id: string): Promise<Task | null>;
   createList(title: string): Promise<string>;
   // due tarihi dueMin ("YYYY-MM-DD") ve sonrası olan görevler, tamamlananlar dahil
   listTasks(listId: string, dueMin: string): Promise<Task[]>;
@@ -76,8 +89,11 @@ export interface Program { id: string; name: string; lib?: string; customName?: 
 // Takvimdeki planın neye göre yazıldığı. Bugünün tarihini içermez: aynı plan her gün yeniden yazılmaz.
 // Önek, imzanın tarihli plana ait olduğunu gösterir; eski sürüm (tekrarlayan etkinlik) "[" ile başlayan imza yazar.
 export const SIG_PREFIX = "d1:";
-export function planSignature(plan: Plan, programs: Program[]): string {
-  return SIG_PREFIX + JSON.stringify([lang(), plan.dur, plan.remind, plan.until || "", WEEKDAYS.map(([code]) => {
+export function calendarTimeZone(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; }
+}
+export function planSignature(plan: Plan, programs: Program[], timeZone = calendarTimeZone()): string {
+  return SIG_PREFIX + JSON.stringify([lang(), timeZone, plan.dur, plan.remind, plan.until || "", WEEKDAYS.map(([code]) => {
     const d = plan.days[code], p = d && programs.find(x => x.id === d.prog);
     return p ? [code, d!.time || "19:00", programName(p), p.items] : [code];
   }),
@@ -158,6 +174,11 @@ export interface CalendarHelpers {
 // hata olursa o ana kadar yapılanlar state'te kalır, çağıran her durumda kaydetmelidir.
 // tasks: görev modunda (ya da görevlerde eski plan kaldıysa) görev istemcisi; yoksa görevlere dokunulmaz
 export async function runCalendar(state: CalendarState, client: CalendarClient, h: CalendarHelpers, tasks?: TasksClient) {
+  lastCalendarSyncError = null;
+  try { return await syncCalendar(state, client, h, tasks); }
+  catch (error) { recordSyncError("sync", error); throw error; }
+}
+async function syncCalendar(state: CalendarState, client: CalendarClient, h: CalendarHelpers, tasks?: TasksClient) {
   const g = state.gcal, now = h.now ?? Date.now(), out = { written: 0, planUpdated: false, created: false, ticked: 0 };
   if (tasks && (taskPlan(g) || g.taskSig)) await runTasks(state, tasks, h, out);
   // plan kapatıldıysa ama takvimde hâlâ plan varsa (planSig dolu) silinmesi gerekir
@@ -183,13 +204,23 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
     }
   }
 
+  const deleteEventIfUnfinished = async (id: string) => {
+    try {
+      const fresh = await client.getEvent(g.id, id);
+      if (!fresh) return true;
+      if (fresh.completed) return false;
+      await client.deleteEvent(g.id, id);
+      return true;
+    } catch (e) { recordSyncError("deleteEvent", e); return false; }
+  };
+
   // eski sürümün haftalık tekrarlayan etkinlikleri silinir: ilk sefer ve eski sürümde kalmış bir cihaz
   // onları yeniden yazdıysa (imzası eski biçimde)
   if (!g.dated || (g.planSig && !g.planSig.startsWith(SIG_PREFIX))) {
     let deleted = true;
     if (g.id) for (const [code] of WEEKDAYS) {
       try { await withCal(cal => client.deleteEvent(cal, planEventId(code))); }
-      catch { deleted = false; }
+      catch (e) { deleted = false; recordSyncError("deleteLegacyEvent", e); }
     }
     g.dated = deleted ? 1 : 0;
   }
@@ -201,25 +232,24 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
   // Recover dates forgotten by older clients. Remove mappings only after successful deletion.
   let remote: { date: string; completed: boolean }[] = [];
   // Listing or deleting old events must not block writing the new plan; leftovers are retried on the next sync.
-  if (g.id && client.listDayEvents) { try { await withCal(async cal => { remote = await client.listDayEvents!(cal); }); } catch { /* sonraki eşitlemede */ } }
+  if (g.id && client.listDayEvents) { try { await withCal(async cal => { remote = await client.listDayEvents!(cal, syncSince(new Date(now))); }); } catch (e) { recordSyncError("listDayEvents", e); } }
   for (const e of remote) if (e.completed) done.add(e.date);
   g.dates = [...new Set([...(g.dates || []), ...remote.filter(e => e.date < today).map(e => e.date)])];
   const failed = new Set<string>();
   for (const d of [...g.dates]) {
     if (d < today && !done.has(d)) {
-      try { await withCal(cal => client.deleteEvent(cal, dayEventId(d))); } catch { failed.add(d); continue; }
+      if (!await deleteEventIfUnfinished(dayEventId(d))) { failed.add(d); continue; }
       g.dates = g.dates.filter(x => x !== d); out.planUpdated = true;
     }
   }
   g.dates = g.dates.filter(d => (d >= today || failed.has(d)) && !done.has(d));
   const want = eventPlan(g) ? plannedDates(state.plan, state.programs, new Date(now)).filter(x => !done.has(x.date)) : [];
-  const target = eventPlan(g) ? planSignature(state.plan, state.programs) : "";
+  const target = eventPlan(g) ? planSignature(state.plan, state.programs, h.timeZone) : "";
   const changed = target !== g.planSig;
   const keep = new Set(want.map(x => x.date));
   for (const d of [...g.dates]) {
     if (!keep.has(d) && !failed.has(d)) {
-      try { await withCal(cal => client.deleteEvent(cal, dayEventId(d))); }
-      catch { failed.add(d); continue; }
+      if (!await deleteEventIfUnfinished(dayEventId(d))) { failed.add(d); continue; }
       g.dates = g.dates.filter(x => x !== d); out.planUpdated = true;
     }
   }
@@ -258,9 +288,18 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   const since = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - BACKFILL_DAYS));
   let list: Task[] = [];
   if (g.taskList) {
-    try { list = await tc.listTasks(g.taskList, "1970-01-01"); }
+    try { list = await tc.listTasks(g.taskList, syncSince(now)); }
     catch (e) { if (!(e instanceof TaskListMissing)) throw e; g.taskList = ""; }
   }
+  const deleteTaskIfUnfinished = async (id: string) => {
+    try {
+      const fresh = await tc.getTask(g.taskList!, id);
+      if (!fresh) return true;
+      if (fresh.status === "completed" || !isWorkoutTask(fresh)) return false;
+      await tc.deleteTask(g.taskList!, id);
+      return true;
+    } catch (e) { recordSyncError("deleteTask", e); return false; }
+  };
   const want = taskPlan(g) ? plannedDates(state.plan, state.programs, now) : [];
   if (!g.taskList) {
     if (!want.length) { g.taskSig = ""; return; }
@@ -284,7 +323,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
     // iki cihaz aynı tarihe görev açtıysa biri kalır (tamamlanmış olan tercih edilir)
     if (other) {
       const drop = other.status === "completed" || t.status !== "completed" ? t : other;
-      if (drop.status !== "completed") { try { await tc.deleteTask(g.taskList, drop.id); } catch { /* retry from remote list */ } }
+      if (drop.status !== "completed") await deleteTaskIfUnfinished(drop.id);
       if (drop === other) byDate.set(d, t);
     } else byDate.set(d, t);
   }
@@ -297,7 +336,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   }
   const wantBy = new Map(want.map(x => [x.date, x]));
   for (const [d, t] of byDate) {
-    if (!done.has(d) && t.status !== "completed" && !wantBy.has(d)) { try { await tc.deleteTask(g.taskList, t.id); byDate.delete(d); out.planUpdated = true; } catch { /* retry from remote list */ } }
+    if (!done.has(d) && t.status !== "completed" && !wantBy.has(d) && await deleteTaskIfUnfinished(t.id)) { byDate.delete(d); out.planUpdated = true; }
   }
   let n = 0;
   for (const x of want) {
@@ -310,7 +349,7 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
     else await tc.insertTask(g.taskList, { ...body, due: dueOf(x.date), status: done.has(x.date) ? "completed" : "needsAction" });
     out.planUpdated = true;
   }
-  g.taskSig = want.length ? planSignature(state.plan, state.programs) : "";
+  g.taskSig = want.length ? planSignature(state.plan, state.programs, h.timeZone) : "";
 }
 
 // O tarihte plana göre yapılacak program (planın bitiş tarihinden sonra yok). Uygulamadaki takvim için.

@@ -28,6 +28,7 @@ function fakeCalendar() {
   const log: string[] = [];
   const client: CalendarClient & { cals: typeof cals; log: string[] } = {
     cals, log,
+    async getEvent(cal, id) { return { completed: String(cals[cal]?.get(id)?.summary || "").startsWith(String.fromCodePoint(0x2705)) }; },
     async createCalendar(summary) { const id = `cal${++n}`; cals[id] = new Map(); log.push(`create ${summary}`); return id; },
     async upsertEvent(cal, id, body) { if (!cals[cal]) throw new CalendarMissing(); cals[cal].set(id, body); log.push(`upsert ${id}`); },
     async deleteEvent(cal, id) { if (!cals[cal]) throw new CalendarMissing(); cals[cal].delete(id); log.push(`delete ${id}`); },
@@ -131,7 +132,7 @@ describe("runCalendar", () => {
     const r = await runCalendar(st, c, helpers);
     expect(r).toMatchObject({ created: true, planUpdated: true, written: 2 });
     expect(st.gcal.id).toBe("cal1");
-    expect(st.gcal.planSig).toBe(planSignature(st.plan, st.programs));
+    expect(st.gcal.planSig).toBe(planSignature(st.plan, st.programs, helpers.timeZone));
     expect(st.gcal.dates).toEqual(MO_TH);
     expect(st.sessions.every(s => s.cal === 1)).toBe(true);
     expect([...c.cals.cal1.keys()].sort()).toEqual([...MO_TH.map(dayEventId), dayEventId("2026-10-31"), sessionEventId("a")].sort());
@@ -359,6 +360,7 @@ function fakeTasks() {
   const list = (id: string) => { if (!lists[id]) throw new TaskListMissing(); return lists[id]; };
   const client: TasksClient & { lists: typeof lists; log: string[] } = {
     lists, log,
+    async getTask(id, tid) { return { ...list(id).find(t => t.id === tid)! }; },
     async createList(title) { const id = `tl${++n}`; lists[id] = []; log.push(`list ${title}`); return id; },
     async listTasks(id, dueMin) { return list(id).filter(t => t.due!.slice(0, 10) >= dueMin).map(t => ({ ...t })); },
     async insertTask(id, body: any) { list(id).push({ id: `t${++n}`, ...body }); log.push(`insert ${body.due.slice(0, 10)}`); },
@@ -394,7 +396,7 @@ describe("görev modu", () => {
     expect(tasks.map(t => t.due!.slice(0, 10))).toEqual(MO_TH);
     expect(tasks[0]).toMatchObject({ title: "Antrenman: Push", notes: "• Bench Press (Barbell)\n[spor-defteri]", status: "needsAction", due: "2026-11-02T00:00:00.000Z" });
     expect(cal.log).toEqual([]);
-    expect(st.gcal.taskSig).toBe(planSignature(st.plan, progs));
+    expect(st.gcal.taskSig).toBe(planSignature(st.plan, progs, helpers.timeZone));
     tc.log.length = 0;
     await runCalendar(st, cal, helpers, tc);
     expect(tc.log).toEqual([]);
@@ -476,7 +478,7 @@ describe("stale cleanup", () => {
  });
  it("cleans tasks older than backfill and preserves finished and unrelated tasks", async () => {
   const tc=fakeTasks(), st=taskState(); await runCalendar(st,fakeCalendar(),helpers,tc);
-  tc.lists[st.gcal.taskList!].push({id:"old",title:"Workout: Push",notes:"[spor-defteri]",due:"2025-01-01",status:"needsAction"},{id:"done",title:"Workout: Push",due:"2025-01-02",status:"completed"},{id:"other",title:"Personal",due:"2025-01-01",status:"needsAction"});
+  tc.lists[st.gcal.taskList!].push({id:"old",title:"Workout: Push",notes:"[spor-defteri]",due:"2026-10-01",status:"needsAction"},{id:"done",title:"Workout: Push",due:"2025-01-02",status:"completed"},{id:"other",title:"Personal",due:"2025-01-01",status:"needsAction"});
   await runCalendar(st,fakeCalendar(),helpers,tc);
   const ids=tc.lists[st.gcal.taskList!].map(t=>t.id);
   expect(ids).not.toContain("old"); expect(ids).toContain("done"); expect(ids).toContain("other");

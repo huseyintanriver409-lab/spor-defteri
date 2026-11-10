@@ -6,9 +6,9 @@ import { programVisible } from "../src/core/yoga.ts";
 const p = { id: "p", name: "Push", items: [{ ex: "Press", sets: 3 }] };
 const h = { now: new Date(2026, 10, 1, 12).getTime(), timeZone: "Europe/Istanbul", describeProgram: () => "old template", describeSession: () => ({ title: "Done", details: "" }) };
 const state = (task = false): CalendarState => ({ gcal: { log: false, plan: true, id: "cal", planSig: "d1:old", dated: 1, dates: ["2026-11-03"], mode: task ? "task" : "event", taskList: "list" }, plan: { days: { MO: { prog: "p" } }, dur: 60, remind: 0, until: "2026-11-02" }, programs: [p], sessions: [] });
-const calendar = () => ({ createCalendar: vi.fn(async () => "cal"), upsertEvent: vi.fn(async () => {}), deleteEvent: vi.fn(async () => {}) });
+const calendar = () => ({ getEvent: vi.fn(async () => ({ completed: false })), createCalendar: vi.fn(async () => "cal"), upsertEvent: vi.fn(async () => {}), deleteEvent: vi.fn(async () => {}) });
 function tasks(list: Task[]) {
-  return { createList: vi.fn(async () => "list"), listTasks: vi.fn(async () => list.map(t => ({ ...t }))), insertTask: vi.fn(async (_: string, body: object) => { list.push({ id: "new", ...body }); }), patchTask: vi.fn(async (_: string, id: string, body: object) => { Object.assign(list.find(t => t.id === id)!, body); }), deleteTask: vi.fn(async (_: string, id: string) => { const i = list.findIndex(t => t.id === id); if (i >= 0) list.splice(i, 1); }) };
+  return { getTask: vi.fn(async (_: string, id: string) => ({ ...list.find(t => t.id === id)! })), createList: vi.fn(async () => "list"), listTasks: vi.fn(async () => list.map(t => ({ ...t }))), insertTask: vi.fn(async (_: string, body: object) => { list.push({ id: "new", ...body }); }), patchTask: vi.fn(async (_: string, id: string, body: object) => { Object.assign(list.find(t => t.id === id)!, body); }), deleteTask: vi.fn(async (_: string, id: string) => { const i = list.findIndex(t => t.id === id); if (i >= 0) list.splice(i, 1); }) };
 }
 it("B5: failed obsolete date deletion does not prevent writing and retries with unchanged signature", async () => {
   const s = state(), c = calendar(); c.deleteEvent.mockRejectedValueOnce(new Error("offline"));

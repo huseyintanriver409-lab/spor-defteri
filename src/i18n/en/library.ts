@@ -42,7 +42,4 @@ export default {
   "name_req": "Enter a name",
   "exists": "This exercise already exists",
   "added": "Added",
-  "date_req": "Select a date",
-  "value_req": "Enter a measurement",
-  "body_saved": "Measurement saved",
 } as Record<string, string>;

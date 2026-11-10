@@ -1,3 +1,4 @@
+import { shortHelp } from "./short-help.js";
 import { buildQuickFlow } from "../core/yoga.ts";
 import { YOGA_POSES } from "../core/library.ts";
 import { yogaRegions, poseInfo, regionLabel } from "./yoga.js";
@@ -25,11 +26,11 @@ export let progEditId = null;
 export function pRow(it = {ex:"", sets:3, reps:"10"}){
   const div = document.createElement("div");
   div.className = "prow";
-  div.innerHTML = `<button class="pss${it.ss ? " on" : ""}" type="button" title="${t("programs.ss_title")}" aria-pressed="${!!it.ss}">${ic("arrow-left-right")}</button>
+  div.innerHTML = `<button class="pss${it.ss ? " on" : ""}" type="button" title="${t("programs.ss_title")}" aria-label="${t("programs.ss_title")}" data-i18n-aria="programs.ss_title" aria-pressed="${!!it.ss}">${ic("arrow-left-right")}</button>
     <div class="pickfield"><input class="pe" readonly placeholder="${t("programs.ex_placeholder")}" value="${esc(it.ex)}" aria-label="${t("programs.ex_aria")}"></div>
     <input class="ps" type="number" inputmode="numeric" min="1" value="${esc(it.sets)}" aria-label="${t("programs.sets_aria")}">
     <input class="pr" placeholder="8-12" value="${esc(it.reps)}" aria-label="${t("programs.reps_aria")}">
-    <button class="iconbtn danger" title="${t("programs.remove_ex")}">${ic("x")}</button>`;
+    <button class="iconbtn danger" title="${t("programs.remove_ex")}" aria-label="${t("programs.remove_ex")}" data-i18n-aria="programs.remove_ex">${ic("x")}</button>`;
   const ss = div.querySelector(".pss");
   ss.onclick = () => { ss.classList.toggle("on"); ss.setAttribute("aria-pressed", ss.classList.contains("on")); };
   const pe = div.querySelector(".pe");
@@ -99,7 +100,7 @@ export function renderProg(){
       <div class="progtop"><h3>${esc(programName(p))}</h3><button class="iconbtn" data-pmap="${p.id}" aria-label="${t("programs.muscle_map")}" title="${t("programs.muscle_map")}">${ic("body")}</button></div>
       <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}${poseInfo(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " " + t("programs.sec") : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn" data-start="${p.id}">${ic("play")}${t("programs.start")}</button><span class="grow"></span>
-        ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="${t("programs.cal_add")}">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="${t("programs.edit")}">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="${t("programs.share")}">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="${t("programs.copy")}">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="${t("programs.delete")}">${ic("trash-2")}</button></div>
+        ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="${t("programs.cal_add")}" aria-label="${t("programs.cal_add")}" data-i18n-aria="programs.cal_add">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="${t("programs.edit")}" aria-label="${t("programs.edit")}" data-i18n-aria="programs.edit">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="${t("programs.share")}" aria-label="${t("programs.share")}" data-i18n-aria="programs.share">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="${t("programs.copy")}" aria-label="${t("programs.copy")}" data-i18n-aria="programs.copy">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="${t("programs.delete")}" aria-label="${t("programs.delete")}" data-i18n-aria="programs.delete">${ic("trash-2")}</button></div>
     </div>`; }).join("") + `<button class="btn quiet padd" data-padd>${ic("plus")}${t("programs.new_program")}</button>`
     : `<button class="btn primary addbox" data-padd aria-label="${t("programs.add_program")}">${ic("plus")}${t("programs.add_program")}</button>`;
   $("#pList").querySelectorAll("[data-padd]").forEach(b => b.onclick = openAddProgram);
@@ -117,7 +118,7 @@ export function renderProg(){
   $("#pList").querySelectorAll("[data-pshare]").forEach(b => b.onclick = () => shareProgram(find(b.dataset.pshare)));
   $("#pList").querySelectorAll("[data-pcopy]").forEach(b => b.onclick = () => {
     const p = find(b.dataset.pcopy);
-    state.programs.push({ id: uid(), name: t("programs.copy_name", { name: programName(p) }), items: p.items.map(i => ({...i})) }); save(); renderProg(); toast(t("programs.copied"), "copy");
+    state.programs.push({ id: uid(), selectedDate: ymd(new Date()), name: t("programs.copy_name", { name: programName(p) }), items: p.items.map(i => ({...i})) }); save(); renderProg(); toast(t("programs.copied"), "copy");
   });
   $("#pList").querySelectorAll("[data-pdel]").forEach(b => b.onclick = async () => {
     const target = state.programs.find(x => x.id===b.dataset.pdel); if (!target) return;
@@ -229,7 +230,7 @@ export function renderPlan(){
   const opts = (sel, empty) => (empty ? `<option value="">${empty}</option>` : "") + state.programs.map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(programName(p))}</option>`).join("");
   const time = (code, on) => `<input type="time" data-pt="${code}" value="${(P.days[code] && P.days[code].time) || "19:00"}" style="flex:0 0 96px"${on ? "" : ` class="hidden"`}>`;
   const mode = `<div class="fchips" id="planMode" style="margin-bottom:6px"><button class="fchip${rot ? "" : " on"}" data-mode="fixed">${t("programs.mode_fixed")}</button><button class="fchip${rot ? " on" : ""}" data-mode="rot">${t("programs.mode_rot")}</button></div>
-    <p class="muted small help" style="margin:0 0 4px">${rot ? t("programs.help_rot") : t("programs.help_fixed")}</p>`;
+    ${shortHelp("programs.plan_short", rot ? "programs.help_rot" : "programs.help_fixed")}`;
   if (rot) {
     const R = P.rot || [], n = Object.keys(P.days).length;
     $("#planRows").innerHTML = mode + WEEKDAYS.map(([code, name]) =>
@@ -237,7 +238,7 @@ export function renderPlan(){
       + `<div class="pk-head" style="margin-top:14px">${t("programs.order")}</div>`
       + R.map((id, i) => `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span class="small" style="flex:0 0 22px;font-weight:700">${i + 1}.</span>
           <select class="grow" data-pr="${i}">${opts(id)}</select>
-          <button class="iconbtn danger" data-prx="${i}" title="${t("programs.order_remove")}"${R.length < 2 ? " disabled" : ""}>${ic("x")}</button></div>`).join("")
+          <button class="iconbtn danger" data-prx="${i}" title="${t("programs.order_remove")}" aria-label="${t("programs.order_remove")}" data-i18n-aria="programs.order_remove"${R.length < 2 ? " disabled" : ""}>${ic("x")}</button></div>`).join("")
       + `<div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" id="planRotAdd">${ic("plus")}${t("programs.order_add")}</button>${R.length > 1 && n ? `<button class="btn sm quiet" id="planRotShift">${ic("arrow-left-right")}${t("programs.order_shift")}</button>` : ""}</div>`
       + (R.length && n ? rotPreview(P) : "");
   } else {
@@ -309,7 +310,7 @@ $("#pSave").onclick = () => {
   if (!items.length) return toast(t("programs.ex_req"));
   items.forEach(i => { if (!allEx().some(e => e.name===i.ex)) state.custom.push({name:i.ex, group:"Diğer"}); });
   if (progEditId) { const p = state.programs.find(p => p.id===progEditId); Object.assign(p, {name, items, customName: !!p.customName || name !== programName(p)}); }
-  else state.programs.push({ id: uid(), name, items });
+  else state.programs.push({ id: uid(), name, selectedDate: ymd(new Date()), items });
   save(); refreshDatalist(); resetProgEditor(); renderProg(); toast(t("programs.saved"), "check");
 };
 $("#calNo").onclick = () => $("#calModal").classList.add("hidden");

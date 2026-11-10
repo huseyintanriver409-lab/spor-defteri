@@ -1,4 +1,5 @@
 export default {
+  rest_duration: "Rest: {seconds} seconds",
   u_kg: "kg",
   percent: "Percent",
   weight: "Weight",

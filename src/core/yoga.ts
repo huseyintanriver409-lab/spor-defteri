@@ -1,8 +1,8 @@
 import { CARDIO, YOGA } from "./library.ts";
+import { ymd } from "./dates.ts";
 import { work, type WorkSet } from "./training.ts";
 export const sportGroup = (g: string): boolean => g !== YOGA && g !== CARDIO;
-export const restSeconds = (yoga: boolean, general: number, pref?: number): number => yoga ? (pref ?? 0) : (pref || general);
-export const autoYogaHold = (_full: boolean, yoga: boolean, timed: boolean, rest: number,
+export const autoYogaHold = (yoga: boolean, timed: boolean, rest: number,
  nextYoga: boolean, nextTimed: boolean, unfinished: boolean): boolean =>
  yoga && timed && rest === 0 && nextYoga && nextTimed && unfinished;
 export const recordAllowed = (yoga: boolean, cardio: boolean): boolean => !yoga && !cardio;
@@ -35,9 +35,22 @@ export const practiceSeconds = (sets: WorkSet[]): number => work(sets).reduce((s
  sum + (s.sides?.length ? s.sides.reduce((n, side) => n + (+side.sec! || 0), 0) : (+s.sec! || 0)), 0);
 
 export interface QuickPose { ex: string; region: string; seconds: number; unilateral: boolean }
-export function buildQuickFlow(minutes: number, region: string, library: QuickPose[]) {
+export function buildQuickFlow(minutes: number, region: string, library: QuickPose[], seed: string = ymd(new Date())) {
  const pool = library.filter(p => region === "all" || p.region === region);
  if (!pool.length || !Number.isFinite(minutes) || minutes <= 0) return [];
+ // FNV-1a seed + Mulberry32; shuffle whole poses to preserve unilateral pairs.
+ let state = 2166136261;
+ for (const char of seed) state = Math.imul(state ^ char.charCodeAt(0), 16777619);
+ const random = () => {
+  state = (state + 0x6D2B79F5) | 0;
+  let n = Math.imul(state ^ state >>> 15, 1 | state);
+  n ^= n + Math.imul(n ^ n >>> 7, 61 | n);
+  return ((n ^ n >>> 14) >>> 0) / 4294967296;
+ };
+ for (let i = pool.length - 1; i > 0; i--) {
+  const j = Math.floor(random() * (i + 1));
+  [pool[i], pool[j]] = [pool[j], pool[i]];
+ }
  const target = minutes * 60;
  const chosen: QuickPose[] = [];
  let total = 0;

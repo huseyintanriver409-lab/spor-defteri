@@ -22,7 +22,7 @@ export function setRow(s = {}){
     <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="${cardio?t("log.u_min"):t("log.u_kg")}" value="${s.w ?? ""}" class="w" aria-label="${cardio?t("log.l_time_min"):t("log.l_weight_kg")}">
     <input type="number" inputmode="${cardio?"decimal":"numeric"}" step="${cardio?"0.1":"1"}" min="0" placeholder="${cardio?t("log.u_km"):t("log.u_reps")}" value="${s.sec ?? s.r ?? ""}" class="r" aria-label="${cardio?t("log.l_distance_km"):t("log.l_reps")}">
     <select class="rir" aria-label="RIR"${cardio ? ' style="visibility:hidden"' : ""}><option value="">–</option>${[0,1,2,3,4,5].map(v => `<option value="${v}"${rir===String(v)?" selected":""}>${v===5?"5+":v}</option>`).join("")}</select>
-    <button class="x" type="button" title="${t("log.delete_set")}">${ic("x")}</button>`;
+    <button class="x" type="button" title="${t("log.delete_set")}" aria-label="${t("log.delete_set")}" data-i18n-aria="log.delete_set">${ic("x")}</button>`;
   div.querySelector(".n").onclick = e => {
     const order = ["", "w", "d", "f"], b = e.currentTarget;
     b.dataset.t = order[(order.indexOf(b.dataset.t) + 1) % order.length];
@@ -167,7 +167,7 @@ export function entryHTML(e, actions, prs){
     return `<span class="chip${warm ? " warm" : ""}${pr ? " pr" : ""}" title="${s.t ? SET_TYPES[s.t] : t("log.normal_set")}">${pr ? ic("trophy") : ""}${lbl}) ${setLabel(s,c)}</span>`;
   }).join("");
   return `<div class="entry"><div class="row"><div class="grow"><div class="t">${esc(e.ex)}</div><div class="g">${esc(groupOf(e.ex))} · ${extra}</div></div>
-    ${actions ? `<button class="iconbtn" data-edit="${e.id}" title="${t("log.edit")}">${ic("pencil")}</button><button class="iconbtn danger" data-del="${e.id}" title="${t("log.delete")}">${ic("trash-2")}</button>` : ""}</div>
+    ${actions ? `<button class="iconbtn" data-edit="${e.id}" title="${t("log.edit")}" aria-label="${t("log.edit")}" data-i18n-aria="log.edit">${ic("pencil")}</button><button class="iconbtn danger" data-del="${e.id}" title="${t("log.delete")}" aria-label="${t("log.delete")}" data-i18n-aria="log.delete">${ic("trash-2")}</button>` : ""}</div>
     <div class="chips">${chips}</div>${e.note ? `<div class="note">${ic("notebook-pen")}${esc(e.note)}</div>` : ""}</div>`;
 }
 export function bindEntryActions(root, rerender){

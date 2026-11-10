@@ -67,7 +67,7 @@ header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;
 .logo .ic{width:20px;height:20px;stroke-width:2.4}
 header h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
 /* eşitleme simgesi: durum biçimle anlatılır (bulut+tik, dönen ok, bulut+nokta, bulut+ünlem, çizgili bulut) */
-.syncbtn{display:inline-flex;align-items:center;gap:6px;min-width:32px;height:32px;padding:0 4px;border:0;border-radius:0;background:none;color:var(--muted);cursor:pointer;flex:none;font:inherit;font-size:12px;font-weight:600}
+.syncbtn{display:inline-flex;align-items:center;gap:6px;min-width:44px;height:44px;padding:0 4px;border:0;border-radius:0;background:none;color:var(--muted);cursor:pointer;flex:none;font:inherit;font-size:12px;font-weight:600}
 .syncbtn .ic{width:18px;height:18px}
 #syncWord:empty{display:none}
 .syncbtn[data-s="ok"]{color:var(--text)}
@@ -445,7 +445,7 @@ body.focus-open{overflow:hidden}
 .f-prog i{flex:1;height:6px;border-radius:3px;background:var(--card3)}
 .f-prog i.on{background:var(--accent)}
 .f-prog i.cur{background:color-mix(in srgb,var(--accent) 40%,var(--card3));animation:pulse 1.6s infinite}
-.f-setlabel{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--muted);margin-bottom:10px}
+.f-setlabel{min-width:0;display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--muted);margin-bottom:10px}
 .steppers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .steppers.one{grid-template-columns:1fr}
 .stats.four.two{grid-template-columns:repeat(2,1fr)}
@@ -464,6 +464,8 @@ body.focus-open{overflow:hidden}
 .f-chips button.on{--cut:4px;--fill:var(--soft);--bd:var(--accent-line);color:var(--accent)}
 .f-chips button.on[data-t="w"]{--fill:var(--warnsoft);--bd:transparent;color:var(--warn)}
 .f-chips button.on[data-t="f"]{--fill:var(--dangersoft);--bd:transparent;color:var(--danger)}
+.f-setlabel span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-setlabel span:first-child{flex-shrink:0}
 .f-done{margin-top:16px}
 .f-done .chips{margin-top:6px}
 .f-bottom{padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg);max-width:560px;width:100%;margin:0 auto}
@@ -564,7 +566,8 @@ body.focus-open{overflow:hidden}
 .snack{padding:6px 6px 6px 16px}
 .snack.show{pointer-events:auto}
 .snack button{border:0;background:none;color:var(--bg);text-decoration:underline;font:inherit;font-weight:700;padding:8px 12px;border-radius:0;cursor:pointer;min-height:44px}
-body.focus-open .toast,body.focus-open .snack{bottom:calc(160px + env(safe-area-inset-bottom))}
+body.focus-open .toast{top:65px;bottom:auto}
+body.focus-open .snack{bottom:calc(var(--focus-bottom-height, 160px) + 10px)}
 .modal{position:fixed;inset:0;z-index:40;background:var(--overlay);display:grid;place-items:center;padding:16px;animation:fade .2s}
 .modal .box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;max-width:390px;width:100%}
 .modal p{margin:0 0 18px;white-space:pre-line;line-height:1.55}
@@ -657,9 +660,6 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 .f-done .chip{min-width:44px;min-height:44px}
 #fEnd{--cut:7px;--cut2:7px;min-height:44px;width:100%;margin-top:8px;border-radius:0}
 .f-bottom{max-height:55dvh;overflow-y:auto}
-body.focus-open:has(.snack.show) .f-bottom,body.focus-open.snack-on .f-bottom{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
-body.focus-open .snack{bottom:calc(10px + env(safe-area-inset-bottom))}
-body.focus-open .toast{top:calc(65px + env(safe-area-inset-top));bottom:auto}
 .quick-row{display:flex;gap:8px;margin:12px 0}
 .quick-row .btn{flex:1;min-width:44px;min-height:44px;padding:8px;border-radius:0;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
 .quick-row [aria-pressed="true"]{background:#D7263D;color:#0B0B0B}
@@ -670,3 +670,15 @@ body.focus-open .toast{top:calc(65px + env(safe-area-inset-top));bottom:auto}
 .yoga-ring .track{stroke:#2A2A2A}
 .yoga-ring .fill{stroke:#D7263D;transform:rotate(-90deg);transform-origin:50% 50%}
 .yoga-ring text{fill:var(--text);text-anchor:middle;dominant-baseline:middle;font:700 26px var(--font)}
+
+#qEmpty{min-width:44px;min-height:44px}
+.seg[data-seg="stats"]{gap:2px}
+.seg[data-seg="stats"] button{flex:1 1 0;min-width:0;min-height:44px;padding:6px 1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;white-space:nowrap}
+.seg[data-seg="stats"] .ic{width:16px;height:16px;flex:none}
+.rec-actions{padding:8px 0;background:var(--bg);display:flex;gap:8px}
+.rec-actions .primary{flex:1}
+.calendar-actions{justify-content:flex-end;margin-top:12px}
+
+#bsHead{flex-shrink:0}
+
+.short-help{margin:6px 0}.short-help .iconbtn,.phase-filters .fchip,.volume-card .iconbtn{min-width:44px;min-height:44px}.short-help-full[hidden]{display:none}.short-help-full{margin:4px 0 10px}.pose-phase{display:inline-flex;vertical-align:middle;margin-inline:4px}

@@ -1,3 +1,4 @@
+import { setupShortHelp } from "./short-help.js";
 import { $, esc, ic, save, state, toast } from "./store.js";
 import { groupLabel } from "../core/library.ts";
 import { searchFold, t } from "../core/i18n.ts";
@@ -19,18 +20,22 @@ import { streakCardHTML, streakNow, streakOn } from "./streak.js";
 /* ---------- Helpers: haptics, wake lock, undo, bottom sheet ---------- */
 export function buzz(p){ if (state.prefs.haptics) try { navigator.vibrate && navigator.vibrate(p); } catch(e){} }
 export let wakeLock = null;
-// antrenman sürerken ekranın kararmaması için (destekleyen tarayıcılarda)
+let wakeWanted = false, wakePending = null;
 export async function keepAwake(on){
+  wakeWanted = !!on;
+  let requested = false;
   try {
-    if (on && state.prefs.wake && "wakeLock" in navigator && !wakeLock) {
-      wakeLock = await navigator.wakeLock.request("screen");
-      wakeLock.addEventListener("release", () => { wakeLock = null; });
-    }
-    if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
-  } catch(e){}
+    if (!on) { const lock = wakeLock; wakeLock = null; if (lock) await lock.release(); return; }
+    if (!state.prefs.wake || !("wakeLock" in navigator) || wakeLock || wakePending) return;
+    requested = true;
+    wakePending = navigator.wakeLock.request("screen");
+    const lock = await wakePending;
+    if (!wakeWanted || !state.prefs.wake) { await lock.release(); return; }
+    wakeLock = lock;
+    lock.addEventListener("release", () => { if (wakeLock === lock) wakeLock = null; });
+  } catch(e){} finally { if (requested) wakePending = null; }
 }
 
-// silme işleminden sonra birkaç saniye "Geri al" çubuğu sunulur
 export let undoTimer = null;
 export function undoable(msg, undo){
   const s = $("#snack");
@@ -51,12 +56,13 @@ export function closeSheet(){
   $("#bs").classList.add("hidden"); $("#bsBody").innerHTML = "";
   const f = sheetOnClose; sheetOnClose = null; if (f) f();
 }
-export const sheetHead = title => `<div class="row" style="margin-bottom:12px"><h3 class="grow">${esc(title)}</h3><button class="iconbtn" data-close title="${t("ui.close")}">${ic("x")}</button></div>`;
+export const sheetHead = title => `<div class="row" style="margin-bottom:12px"><h3 class="grow">${esc(title)}</h3><button class="iconbtn" data-close title="${t("ui.close")}" aria-label="${t("ui.close")}" data-i18n-aria="ui.close">${ic("x")}</button></div>`;
 // Açıklamalar ⓘ düğmesinin arkasında: kartın başlığındaki düğme o karttaki .help yazılarını açar/kapatır
 export const infoBtn = () => `<button class="infobtn" type="button" data-info aria-label="${t("ui.info_aria")}" aria-expanded="false">${ic("info")}</button>`;
 // Sayfa (sheet) içeriği için aynı fikir: ⓘ'ye dokununca açılan açıklama (initHelp yalnız açılışta, statik karta çalışır)
 export const helpTip = text => `<details class="shhelp"><summary aria-label="${t("ui.info_aria")}">${ic("info")}</summary><p class="muted">${text}</p></details>`;
 function initHelp(){
+  setupShortHelp();
   document.querySelectorAll(".help").forEach(p => {
     const card = p.closest(".card"), h = card && card.querySelector("h2");
     if (h && !h.querySelector("[data-info]")) h.insertAdjacentHTML("beforeend", infoBtn());
@@ -171,7 +177,7 @@ export function renderSeg(name){
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
 initHelp();
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.live) keepAwake(true); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && wakeWanted) keepAwake(true); });
 // kaydırma yeri yenilemeden hemen önce yazılır
 addEventListener("pagehide", saveNav);
 $("#bs").addEventListener("click", e => { if (e.target.id === "bs") closeSheet(); });

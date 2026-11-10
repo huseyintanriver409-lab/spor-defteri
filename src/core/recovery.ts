@@ -2,7 +2,7 @@
 // Dayanak: Sousa, Zourdos, Storey, Helms 2024 (J Hum Kinet 91:205) — alt vücut 48–72 sa, üst vücut ≤24 sa;
 // yüksek hacim toparlanmayı uzatır. Morán-Navarro ve ark. 2017 (Eur J Appl Physiol) — tükenişe kadar setler,
 // aynı hacimde bile toparlanmayı 24–48 sa uzatır.
-import { parse } from "./dates.ts";
+import { parse, ymd } from "./dates.ts";
 import { work, type WorkSet } from "./training.ts";
 import { MAIN_SHARE, weightsOf, type Muscles } from "./musclemap.ts";
 
@@ -52,6 +52,38 @@ export function experienceMultiplier(dates: string[], profile: ExperienceProfile
   }
   const auto = start === undefined || today - start < 21 ? 2 : returned !== undefined && today - returned < 21 ? 1.5 : 1;
   return Math.max(auto, mode === "new" ? 2 : mode === "back" ? 1.5 : 1);
+}
+
+export const BEGINNER_VOLUME_MIN_SETS = 5;
+export const BEGINNER_VOLUME_DAYS = 14;
+export interface BeginnerVolumeInput {
+  programId: string;
+  days: { items: { ex: string; sets: number }[] }[];
+  mode: NonNullable<ExperienceProfile["exp"]>;
+  startDate: string;
+  today: string;
+  // Meaningful training dates, as in experienceMultiplier; used only in auto mode.
+  trainingDates?: string[];
+}
+export interface BeginnerVolumeSuggestion {
+  key: string;
+  days: { items: { ex: string; sets: number }[] }[];
+}
+// A suggestion only: does not mutate the program or persist accept/reject decisions.
+export function beginnerVolumeSuggestion({ programId, days, mode, startDate, today, trainingDates = [] }: BeginnerVolumeInput): BeginnerVolumeSuggestion | null {
+  const validDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) &&
+    Number.isFinite(dayNumber(s)) && ymd(parse(s)) === s;
+  if (!validDate(startDate) || !validDate(today)) return null;
+  const elapsed = dayNumber(today) - dayNumber(startDate);
+  const beginner = mode === "new" || (mode === "auto" && experienceMultiplier(trainingDates, {}, parse(today).getTime()) === 2);
+  if (!beginner || elapsed < 0 || elapsed >= BEGINNER_VOLUME_DAYS ||
+      !days.some(d => d.items.some(i => Number.isFinite(i.sets) && i.sets >= BEGINNER_VOLUME_MIN_SETS))) return null;
+  return {
+    key: JSON.stringify([programId, startDate]),
+    days: days.map(d => ({ items: d.items.map(i => ({ ex: i.ex,
+      sets: Number.isFinite(i.sets) && i.sets > 0 ? Math.min(i.sets, Math.max(2, Math.ceil(i.sets * .6))) : i.sets,
+    })) })),
+  };
 }
 
 // Gereken dinlenme: alt vücut 48 sa, üst vücut 24 sa; o gün 8+ etkili set ya da tükenişe kadar set yapıldıysa her biri +24 sa.

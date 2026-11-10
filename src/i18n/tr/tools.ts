@@ -1,4 +1,5 @@
 export default {
+  rest_duration: "Dinlenme: {seconds} saniye",
   u_kg: "kg",
   percent: "Yüzde",
   weight: "Ağırlık",

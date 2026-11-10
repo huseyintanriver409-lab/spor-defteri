@@ -6,5 +6,5 @@ export const regionLabel = region => t({ all: "programs.region_all", hips: "prog
 export function poseInfo(ex) {
  const p = YOGA_POSES.find(p => p.ex === ex); if (!p) return "";
  const label = t("programs.pose_info", { region: regionLabel(p.region), level: p.level, sec: p.seconds }) + (p.unilateral ? ", " + t("programs.both_sides") : "");
- return '<span class="pose-info" role="img" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + ic(yogaRegions.find(r => r[0] === p.region)[1]) + '<span aria-hidden="true">' + "●".repeat(p.level) + ' · ' + p.seconds + (p.unilateral ? ' ↔' : '') + '</span></span>';
+ return (p.phase ? '<span class="pose-phase" role="img" data-i18n-aria="programs.phase_' + p.phase + '" aria-label="' + t(p.phase === 'pre' ? 'programs.phase_pre' : 'programs.phase_post') + '">' + ic(p.phase === 'pre' ? 'arrow-right' : 'pause') + '</span>' : '') + '<span class="pose-info" role="img" aria-label="' + esc(label) + '" title="' + esc(label) + '">' + ic(yogaRegions.find(r => r[0] === p.region)[1]) + '<span aria-hidden="true">' + "●".repeat(p.level) + ' · ' + p.seconds + (p.unilateral ? ' ↔' : '') + '</span></span>';
 }

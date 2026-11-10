@@ -18,7 +18,7 @@ function rowHTML(ex, b){
     <input class="bl-ex" list="exList" value="${esc(ex)}" placeholder="${t("baseline.move_ph")}" aria-label="${t("baseline.move_label")}">
     <label class="bl-num"><input class="bl-w" inputmode="decimal" value="${b ? fmtV(b.w) : ""}" placeholder="0" aria-label="${u1}"><span>${u1}</span></label>
     <label class="bl-num"><input class="bl-r" inputmode="decimal" value="${fmtV(v2)}" placeholder="0" aria-label="${u2}"><span>${u2}</span></label>
-    <button class="iconbtn bl-del" title="${t("baseline.del_row")}">${ic("x")}</button>
+    <button class="iconbtn bl-del" title="${t("baseline.del_row")}" aria-label="${t("baseline.del_row")}" data-i18n-aria="baseline.del_row">${ic("x")}</button>
   </div>`;
 }
 

@@ -1,3 +1,5 @@
+import { volumePlan } from "./beginner-volume.js";
+import { yogaTransitionHaptic } from "../core/haptics.ts";
 import { poseInfo } from "./yoga.js";
 import { autoYogaHold, recordAllowed } from "../core/yoga.ts";
 import { supersetRestSeconds } from "../core/rest.ts";
@@ -32,7 +34,7 @@ export function elapsedText(){
 export function startWorkout(progId){
   if (state.live) { openFocus(); return toast(t("live.already_running"), "timer"); }
   const p = progId && state.programs.find(x => x.id===progId);
-  state.live = { start: Date.now(), date: ymd(new Date()), prog: p ? p.id : null, items: p ? p.items.map(i => ({...i})) : [], idx: 0, prs: 0 };
+  state.live = { start: Date.now(), date: ymd(new Date()), prog: p ? p.id : null, items: p ? volumePlan(p).items.map(i => ({...i})) : [], idx: 0, prs: 0 };
   state.active = p ? p.id : null;
   // bugün zaten yapılmış hareketleri atla
   const firstOpen = liveItems().findIndex(it => workDone(it) < (it.sets || 3));
@@ -111,7 +113,7 @@ export function renderFocus(){
     return `<button class="chip${warm ? " warm" : ""}" data-i="${i}" aria-label="${t("live.delete_set")}" title="${t("live.delete_set")}">${lbl}) ${setLabel(s,c)}</button>`; }).join("");
   $("#fBody").innerHTML = `
     <div class="eyebrow">${esc(groupOf(it.ex))}${L[idx] ? ` · ${t("live.superset", { l: L[idx] })}` : ""}</div>
-    <div class="f-title"><h2>${esc(it.ex)}</h2>${poseInfo(it.ex)}<button class="iconbtn" id="fPrefs" title="${t("live.ex_prefs")}">${ic("sliders-horizontal")}</button></div>
+    <div class="f-title"><h2>${esc(it.ex)}</h2>${poseInfo(it.ex)}<button class="iconbtn" id="fPrefs" title="${t("live.ex_prefs")}" aria-label="${t("live.ex_prefs")}" data-i18n-aria="live.ex_prefs">${ic("sliders-horizontal")}</button></div>
     <button class="f-note ghost" id="fNote" style="padding:0">${ic("pin")}<span>${note ? esc(note) : t("live.add_note")}</span></button>
     <div class="f-hint">${[sug.msg, goal].filter(Boolean).join("<br>") || t("live.first_time")}</div>
     <div class="f-prog" aria-hidden="true">${Array.from({ length: Math.max(target, wd) }, (_, j) => `<i class="${j < wd ? "on" : j === wd ? "cur" : ""}"></i>`).join("")}</div>
@@ -120,10 +122,10 @@ export function renderFocus(){
     <div class="steppers${tm && isYoga(it.ex) ? " one" : ""}">${tm ? (isYoga(it.ex) ? `<div class="hidden">${stepperHTML("w", d.w, t("live.u_extra_kg"), t("live.l_extra_weight"))}</div>` : stepperHTML("w", d.w, t("live.u_extra_kg"), t("live.l_extra_weight"))) + stepperHTML("r", d.r, t("live.u_seconds"), t("live.l_time"))
       : stepperHTML("w", d.w, c ? t("live.u_min") : t("live.u_kg"), c ? t("live.l_time") : t("live.l_weight")) + stepperHTML("r", d.r, c ? t("live.u_km") : t("live.u_reps"), c ? t("live.l_distance") : t("live.l_reps"))}</div>
     ${bar ? `<div id="fPlates">${platesHTML(d.w, bar)}</div>` : ""}
-    ${warmPlan.length ? `<div class="f-warm"><div class="f-setlabel" style="margin:0"><span>${t("live.warmup")}</span></div><div class="chips">${warmPlan.map((x, j) => `<button class="chip${j < warmDone ? " done" : ""}" data-wi="${j}">${fmt(x.w)} × ${x.r}</button>`).join("")}</div></div>` : ""}
+    ${warmPlan.length ? `<div class="f-warm"><div class="f-setlabel" style="margin:0"><span>${t("live.warmup")}</span></div><div class="chips">${warmPlan.map((x, j) => `<button class="chip${j < warmDone ? " done" : ""}" data-wi="${j}" aria-pressed="${j < warmDone}">${fmt(x.w)} × ${x.r}</button>`).join("")}</div></div>` : ""}
     ${tm ? `<div class="f-manual"><button class="ghost" id="fManual">${ic("check")}${t("live.save_no_timer")}</button></div>` : ""}
-    ${c || tm ? "" : `<div class="f-chips" id="fRirChips"><span>${t("live.rir")}</span>${["",0,1,2,3,4].map(v => `<button type="button" data-v="${v}" class="${String(fRir ?? "") === String(v) ? "on" : ""}">${v === "" ? "–" : v === 4 ? "4+" : v}</button>`).join("")}</div>
-    <div class="f-chips" id="fTypeChips"><span>${t("live.type")}</span>${[["", t("live.type_normal")], ["w", t("live.warmup")], ["d", t("live.type_drop")], ["f", t("live.type_failure")]].map(([ty, l]) => `<button type="button" data-t="${ty}" class="${fType === ty ? "on" : ""}">${l}</button>`).join("")}</div>`}
+    ${c || tm ? "" : `<div class="f-chips" id="fRirChips"><span>${t("live.rir")}</span>${["",0,1,2,3,4].map(v => `<button type="button" data-v="${v}" aria-pressed="${String(fRir ?? "") === String(v)}" class="${String(fRir ?? "") === String(v) ? "on" : ""}">${v === "" ? "–" : v === 4 ? "4+" : v}</button>`).join("")}</div>
+    <div class="f-chips" id="fTypeChips"><span>${t("live.type")}</span>${[["", t("live.type_normal")], ["w", t("live.warmup")], ["d", t("live.type_drop")], ["f", t("live.type_failure")]].map(([ty, l]) => `<button type="button" data-t="${ty}" aria-pressed="${fType === ty}" class="${fType === ty ? "on" : ""}">${l}</button>`).join("")}</div>`}
     ${done.length ? `<div class="f-done" title="${t("live.tap_delete")}"><div class="f-setlabel" style="margin:0"><span>${t("live.completed")}</span></div><div class="chips">${doneChips}</div></div>` : ""}`;
   $("#fPrefs").onclick = () => openExPrefs(it);
   $("#fNote").onclick = () => editExNote(it.ex);
@@ -147,8 +149,8 @@ export function renderFocus(){
       btn.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); step(); } });
     });
   });
-  $("#fBody").querySelectorAll("#fRirChips button").forEach(b => b.onclick = () => { fRir = b.dataset.v === "" ? null : +b.dataset.v; $("#fRirChips").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); buzz(5); });
-  $("#fBody").querySelectorAll("#fTypeChips button").forEach(b => b.onclick = () => { fType = b.dataset.t; $("#fTypeChips").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); buzz(5); });
+  $("#fBody").querySelectorAll("#fRirChips button").forEach(b => b.onclick = () => { fRir = b.dataset.v === "" ? null : +b.dataset.v; $("#fRirChips").querySelectorAll("button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); }); buzz(5); });
+  $("#fBody").querySelectorAll("#fTypeChips button").forEach(b => b.onclick = () => { fType = b.dataset.t; $("#fTypeChips").querySelectorAll("button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); }); buzz(5); });
   $("#fBody").querySelectorAll(".f-done [data-i]").forEach(b => b.onclick = () => removeDoneSet(+b.dataset.i));
   bindWarm();
   // ısınma çipleri çalışma kilosu değiştikçe yeniden hesaplanır (bir ısınma seti yüklendiyse sabit kalır)
@@ -230,11 +232,11 @@ export function renderHold(){
 }
 export function holdValid(){ return !!hold && !!state.live && hold.workout === state.live && liveItems()[state.live.idx] === hold.item; }
 export function resetHold(){ if (hold) clearInterval(hold.iv); hold = null; }
-export function cancelHold(){ resetHold(); renderFocus(); }
+export function cancelHold(){ resetHold(); keepAwake(false); renderFocus(); }
 export function finishHold(secs, full){
   if (!holdValid()) { resetHold(); return; }
   resetHold();
-  if (full) beep();
+  if (full && !isYoga(liveItems()[state.live.idx].ex)) beep();
   $("#f_r").value = String(secs);
   if (secs > 0) completeSet(full === true); else renderFocus();
 }
@@ -242,7 +244,8 @@ export function tickFocus(){ if (state.live) $("#fElapsed").textContent = elapse
 export function gotoItem(k){
   const items = liveItems(); if (k < 0 || k >= items.length || k === state.live.idx) return;
   if (hold) return toast(t("live.finish_hold_first"), "timer");
-  state.live.idx = k; fType = ""; fRir = null; save(); renderFocus(); buzz(8);
+  state.live.idx = k; fType = ""; fRir = null; save(); renderFocus();
+  buzz(yogaTransitionHaptic(isYoga(items[k].ex), false, true) || 8); keepAwake(true);
   $("#fBody").scrollTop = 0;
 }
 // yana kaydırarak hareketler arasında geçiş
@@ -267,7 +270,7 @@ export function completeSet(fullHold = false){
   const tm = isTimed(it.ex);
   const continueFlow = () => {
     const next = items[state.live.idx];
-    if (next && autoYogaHold(fullHold, isYoga(it.ex), tm, restFor(it.ex),
+    if (next && autoYogaHold(isYoga(it.ex), tm, restFor(it.ex),
       isYoga(next.ex), isTimed(next.ex), workDone(next) < (next.sets || 3))) toggleHold();
   };
   if (tm && !r) return toast(t("live.enter_time"));
@@ -278,7 +281,7 @@ export function completeSet(fullHold = false){
   d.w = w; d.r = r;
   if (isUnilateral(it.ex)) {
     set = completeSide(state.live, it.ex, done().length, set);
-    if (!set) { stopTimer(); save(); buzz(15); renderFocus(); continueFlow(); return; }
+    if (!set) { stopTimer(); save(); renderFocus(); continueFlow(); buzz(yogaTransitionHaptic(isYoga(it.ex), true, false) || 15); return; }
   }
   w = +set.w || 0; r = +(set.sec ?? set.r) || 0;
   const before = bestOf(it.ex), beforeSec = bestSecOf(it.ex);
@@ -293,7 +296,7 @@ export function completeSet(fullHold = false){
     else if (r <= 12 && e1rm(w, r) > before.e + 0.05) { pr = true; toast(t("live.est_1rm", { w: fmt(e1rm(w, r)) }), "trophy"); }
   }
   if (pr) state.live.prs = (state.live.prs || 0) + 1;
-  buzz(pr ? [30, 60, 30, 60, 90] : 25);
+  if (!isYoga(it.ex)) buzz(pr ? [30, 60, 30, 60, 90] : 25);
   const warm = set.t === "w";
   fType = ""; fRir = null;
   if (warm && d.work) {
@@ -318,11 +321,14 @@ export function completeSet(fullHold = false){
     if (nextInGroup != null) { state.live.idx = nextInGroup; rest = false; stopTimer(); }
     else { const open = g.find(j => workDone(items[j]) < target(items[j])); if (open != null) state.live.idx = open; else advance(); }
   } else if (!warm && workDone(it) >= target(it)) advance();
+  const transition = yogaTransitionHaptic(isYoga(it.ex), false, state.live.idx !== k);
+  if (isYoga(it.ex) && items.every(x => workDone(x) >= target(x))) keepAwake(false);
   save();
   if (rest && restDuration > 0) startTimer(restDuration);
   else if (isYoga(it.ex) && restFor(it.ex) === 0) stopTimer();
   renderFocus();
   if (!warm) continueFlow();
+  if (transition) buzz(transition);
 }
 // Antrenman sırasında tamamlanan sete dokunmak onu siler; cepteyken yanlışlıkla olmasın diye önce sorar
 export async function removeDoneSet(i){
@@ -405,6 +411,9 @@ export function renderLiveBar(){
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(([entry]) => {
+  document.body.style.setProperty("--focus-bottom-height", `${entry.target.getBoundingClientRect().height}px`);
+}).observe($("#fBottom"));
 $("#startEmpty").onclick = () => startWorkout(null);
 $("#fMin").onclick = closeFocus;
 $("#liveBar").onclick = openFocus;

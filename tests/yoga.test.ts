@@ -1,28 +1,28 @@
+import { exerciseRestSeconds } from "../src/core/rest.ts";
 import { describe, it, expect } from "vitest";
 import { LIB, YOGA, CARDIO, isUnilateral } from "../src/core/library.ts";
 import { timedExercise, work, volume } from "../src/core/training.ts";
 import { completeSide, pendingSide, type SideWorkout } from "../src/core/unilateral.ts";
 import { DEFAULTS, withDefaults } from "../src/core/schema.ts";
-import { autoYogaHold, restSeconds, recordAllowed, programVisible, sportGroup, activityDates, calendarLoad, practiceSeconds } from "../src/core/yoga.ts";
+import { autoYogaHold, recordAllowed, programVisible, sportGroup, activityDates, calendarLoad, practiceSeconds } from "../src/core/yoga.ts";
 import { computeWeekStreak } from "../src/core/streak.ts";
 const groupOf = (ex: string) => Object.keys(LIB).find(g => LIB[g].includes(ex)) || "Diğer";
 describe("timed yoga flow", () => {
   it("defaults to zero, preserves preferences and sport rest", () => {
-    expect(restSeconds(true, 90)).toBe(0);
-    expect(restSeconds(true, 90, 45)).toBe(45);
-    expect(restSeconds(true, 90, 0)).toBe(0);
-    expect(restSeconds(false, 90)).toBe(90);
-    expect(restSeconds(false, 90, 0)).toBe(90);
-    expect(restSeconds(false, 90, 120)).toBe(120);
+    expect(exerciseRestSeconds({ ex: "Pose", yoga: true }, 90, false)).toBe(0);
+    expect(exerciseRestSeconds({ ex: "Pose", yoga: true }, 90, false, 45)).toBe(45);
+    expect(exerciseRestSeconds({ ex: "Pose", yoga: true }, 90, false, 0)).toBe(0);
+    expect(exerciseRestSeconds({ ex: "Press", yoga: false }, 90, false)).toBe(90);
+    expect(exerciseRestSeconds({ ex: "Press", yoga: false }, 90, false, 0)).toBe(0);
+    expect(exerciseRestSeconds({ ex: "Press", yoga: false }, 90, false, 120)).toBe(120);
   });
   it("continues natural and manual zero-rest holds to unfinished timed yoga", () => {
-    expect(autoYogaHold(true, true, true, 0, true, true, true)).toBe(true);
-    expect(autoYogaHold(false, true, true, 0, true, true, true)).toBe(true);
-    expect(autoYogaHold(true, true, true, 30, true, true, true)).toBe(false);
-    expect(autoYogaHold(true, false, true, 0, true, true, true)).toBe(false);
-    expect(autoYogaHold(true, true, true, 0, false, true, true)).toBe(false);
-    expect(autoYogaHold(true, true, true, 0, true, false, true)).toBe(false);
-    expect(autoYogaHold(true, true, true, 0, true, true, false)).toBe(false);
+    expect(autoYogaHold(true, true, 0, true, true, true)).toBe(true);
+    expect(autoYogaHold(true, true, 30, true, true, true)).toBe(false);
+    expect(autoYogaHold(false, true, 0, true, true, true)).toBe(false);
+    expect(autoYogaHold(true, true, 0, false, true, true)).toBe(false);
+    expect(autoYogaHold(true, true, 0, true, false, true)).toBe(false);
+    expect(autoYogaHold(true, true, 0, true, true, false)).toBe(false);
   });
   it("pairs timed left/right into one set and sums both holds after reload", () => {
     let live: SideWorkout = {};

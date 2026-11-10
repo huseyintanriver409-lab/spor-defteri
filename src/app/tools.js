@@ -55,7 +55,7 @@ export const PRESETS = [60, 90, 120, 180, 300];
 export let tEnd = 0, tTick = null, tDur = 90, tTotal = 90, audio = null;
 export const mmss = s => Math.floor(s/60) + ":" + pad(Math.max(0, Math.floor(s%60)));
 export function renderPresets(){
-  $("#presets").innerHTML = PRESETS.map(s => `<button class="btn sm${s===tDur?" on":""}" data-s="${s}">${s<120 ? s+t("tools.u_sec") : (s/60)+t("tools.u_min")}</button>`).join("");
+  $("#presets").innerHTML = PRESETS.map(s => `<button class="btn sm${s===tDur?" on":""}" data-s="${s}" aria-pressed="${s===tDur}" aria-label="${t("tools.rest_duration", { seconds: s })}">${s<120 ? s+t("tools.u_sec") : (s/60)+t("tools.u_min")}</button>`).join("");
   $("#presets").querySelectorAll("button").forEach(b => b.onclick = () => { tDur = +b.dataset.s; if (tEnd) startTimer(); else { renderPresets(); $("#clock").textContent = mmss(tDur); } });
 }
 export function adjust(d){

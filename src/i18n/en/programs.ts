@@ -1,4 +1,14 @@
 export default {
+  phase_pre: "Before (dynamic)",
+  phase_post: "After (static)",
+  filter_all: "All",
+  filter_pre: "Before",
+  filter_post: "After",
+  volume_question: "Fewer sets for 2 weeks?",
+  volume_accept: "Accept",
+  volume_reject: "Reject",
+  plan_short: "Plan order",
+
   quick_flow: "Quick flow",
   flow_minutes: "{n} minutes",
   region_all: "Full body",

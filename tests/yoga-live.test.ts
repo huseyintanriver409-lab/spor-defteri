@@ -27,12 +27,12 @@ vi.mock("../src/app/log.js", () => ({ barFor: () => 0, bestOf: () => ({ n: 1, w:
 vi.mock("../src/app/programs.js", async () => {
   // @ts-expect-error App modules are JavaScript; exercised through Vitest.
   const { state } = await import("../src/app/store.js");
-  const { restSeconds } = await import("../src/core/yoga.ts");
+  const { exerciseRestSeconds } = await import("../src/core/rest.ts");
   // @ts-expect-error App modules are JavaScript; exercised through Vitest.
   const { isYoga } = await import("../src/app/exercises.js");
   return { at: vi.fn(), defaultInc: () => 2, defaultStep: () => 2, exPref: (ex: string, k: string) => state.exPrefs[ex]?.[k],
     overloadStep: () => 2, stepFor: () => 2, ssLabels: (items: unknown[]) => items.map(() => ""),
-    restFor: (ex: string) => restSeconds(isYoga(ex), state.rest, state.exPrefs[ex]?.rest) };
+    restFor: (ex: string) => exerciseRestSeconds({ ex, yoga: isYoga(ex) }, state.rest, state.restAuto, state.exPrefs[ex]?.rest) };
 });
 vi.mock("../src/app/tools.js", () => ({
   PLATES: [], audio: null, beep: vi.fn(), mmss: String, pfmt: String, plateText: String,
@@ -49,7 +49,7 @@ import { startTimer } from "../src/app/tools.js";
 beforeEach(() => {
   resetHold();
   vi.useFakeTimers(); vi.clearAllMocks(); env.nodes.clear();
-  Object.assign(state, DEFAULTS());
+  Object.assign(state, DEFAULTS(), { restAuto: false });
   for (const k in fDraft) delete fDraft[k];
 });
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); });
@@ -177,4 +177,24 @@ it("quick flow uses its generated target and preserves earlier daily practice", 
   expect(workDone(state.live.items[0])).toBe(1);
   expect(state.entries[0].sets.map((s: any) => s.sec)).toEqual([99, 40]);
  } finally { vi.unstubAllGlobals(); }
+});
+
+// @ts-expect-error JavaScript app surface.
+import { buzz, keepAwake } from "../src/app/ui.js";
+// @ts-expect-error JavaScript app surface.
+import { cancelHold } from "../src/app/live.js";
+it("Y1/Y2: side and pose transitions differ, wake stays on through flow and releases at end", () => {
+  start("Warrior II");
+  vi.advanceTimersByTime(33000);
+  expect(buzz).toHaveBeenCalledWith([20, 40, 20, 40, 20]);
+  expect(keepAwake).not.toHaveBeenCalledWith(false);
+  vi.advanceTimersByTime(33000);
+  expect(buzz).toHaveBeenCalledWith([40, 60, 40]);
+  expect(keepAwake).not.toHaveBeenCalledWith(false);
+  vi.advanceTimersByTime(33000);
+  expect(keepAwake).toHaveBeenLastCalledWith(false);
+});
+it("Y2: cancelling preparation releases wake lock", () => {
+  start("Mountain Pose"); cancelHold();
+  expect(hold).toBeNull(); expect(keepAwake).toHaveBeenLastCalledWith(false);
 });

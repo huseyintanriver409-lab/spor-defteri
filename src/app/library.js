@@ -1,6 +1,7 @@
 import { poseInfo } from "./yoga.js";
 import { shortDate, ymd } from "../core/dates.ts";
 import { searchFold, t } from "../core/i18n.ts";
+import { YOGA_POSES, filterPosePhase } from "../core/library.ts";
 import { groupLabel } from "../core/library.ts";
 import { $, LIB, YOGA, ask, esc, fmt, ic, save, state, toast } from "./store.js";
 import { EQUIPS, HOME, allEx, equipLabel, equipOf, groupShown, liftOn, musclesOf, yogaOn } from "./exercises.js";
@@ -15,6 +16,7 @@ import { MUSCLES, muscleLabel, muscleSearchText } from "../core/musclemap.ts";
 
 /* ---------- Library ---------- */
 export function groups(){ return [...Object.keys(LIB), "Diğer"].filter(groupShown); }
+let phase = "all";
 export function renderLib(){
   $("#libMapCard").classList.toggle("hidden", !liftOn());
   if (liftOn() && !$("#libMap").innerHTML) { $("#libMap").innerHTML = bodyMap(Object.fromEntries(MUSCLES.map(m => [m, "sec"])), { large: true, plain: true, toggle: true }); bindBodyMap($("#libMap")); }
@@ -32,21 +34,24 @@ export function renderLib(){
   const open = !!q;
   // yoga pozları ağırlık hareketlerinden ayrı, kendi başlığıyla en altta
   const section = g => {
-    const items = ex.filter(e => e.group===g); if (!items.length) return "";
+    const phaseNames = new Set(filterPosePhase(YOGA_POSES, phase).map(p => p.ex));
+    const items = ex.filter(e => e.group===g && (g !== YOGA || phase === "all" || phaseNames.has(e.name))); if (!items.length) return "";
     return `<details ${open ? "open" : ""}${g === YOGA ? ' id="libYoga"' : ""}><summary>${esc(groupLabel(g))} <span>(${items.length})</span></summary>` + items.map(e =>
       `<div class="exitem">${miniMap(e.name)}<div class="grow" data-more><div>${esc(e.name)}${poseInfo(e.name)}${counts[e.name] ? ` <span class="muted small">· ${t("library.records", { n: counts[e.name] })}</span>` : ""}</div>
         <div class="ms"><span class="tag">${esc(equipLabel(e.eq))}</span><span class="more">${t("library.in_sets", { n: EX_SETS })} ${exerciseLevels(e.m).map(([k, l, ms]) => `<span class="lv"><i class="bm-dot" data-t="g-${k}"></i><b>${l}</b> ${esc(ms.map(muscleLabel).join(", "))}</span>`).join("")}</span></div>
         ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">${t("library.merge_with", { name: esc(twin(e.name)) })}</button>` : ""}</div>
-       ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="${t("library.merge_other")}">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="${t("library.remove")}">${ic("trash-2")}</button>` : ""}
-       <a class="iconbtn" title="${t("library.how_to")}" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>
+       ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="${t("library.merge_other")}" aria-label="${t("library.merge_other")}" data-i18n-aria="library.merge_other">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="${t("library.remove")}" aria-label="${t("library.remove")}" data-i18n-aria="library.remove">${ic("trash-2")}</button>` : ""}
+       <a class="iconbtn" title="${t("library.how_to")}" aria-label="${t("library.how_to")}" data-i18n-aria="library.how_to" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(e.name)}" title="${t("library.add")}" aria-label="${t("library.add_named", { name: esc(e.name) })}">${ic("circle-plus")}</button></div>`).join("") + `</details>`;
   };
   const main = groups().filter(g => g !== YOGA).map(section).join(""), yoga = yogaOn() ? section(YOGA) : "";
-  $("#libList").innerHTML = (main && yoga ? `<div class="pk-head" style="margin:0 0 6px">${liftOn() ? t("library.part_lift") : t("library.part_cardio")}</div>` : "") + main
-    + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">${t("library.part_yoga")}</div>${yoga}` : "") || emptyHTML("search", t("library.no_results"), "") + `<button class="btn sm quiet" data-clear style="margin-top:8px">${t("library.clear_filters")}</button>`;
+  const phaseChips = yogaOn() ? `<div class="fchips phase-filters">${["all", "pre", "post"].map(k => `<button class="fchip${phase === k ? " on" : ""}" data-phase="${k}" aria-pressed="${phase === k}">${t({ all: "programs.filter_all", pre: "programs.filter_pre", post: "programs.filter_post" }[k])}</button>`).join("")}</div>` : "";
+  $("#libList").innerHTML = phaseChips + ((main && yoga ? `<div class="pk-head" style="margin:0 0 6px">${liftOn() ? t("library.part_lift") : t("library.part_cardio")}</div>` : "") + main
+    + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">${t("library.part_yoga")}</div>${yoga}` : "") || emptyHTML("search", t("library.no_results"), "") + `<button class="btn sm quiet" data-clear style="margin-top:8px">${t("library.clear_filters")}</button>`);
+  $("#libList").querySelectorAll("[data-phase]").forEach(b => b.onclick = () => { phase = b.dataset.phase; renderLib(); });
   // filtreleri temizle: arama, ekipman ve "Evde" filtresini sıfırlar (yogaMoves ile aynı sıfırlama)
   const clearBtn = $("#libList").querySelector("[data-clear]");
-  if (clearBtn) clearBtn.onclick = () => { $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false; renderLib(); };
+  if (clearBtn) clearBtn.onclick = () => { phase = "all"; $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false; renderLib(); };
   // kas adları resmin yerine geçmez: harekete dokununca açılır
   $("#libList").querySelectorAll("[data-more]").forEach(g => g.onclick = e => { if (!e.target.closest("button")) g.parentElement.classList.toggle("open"); });
   $("#libList").querySelectorAll("[data-use]").forEach(b => b.onclick = () => {
@@ -88,6 +93,7 @@ const bodyKeys = () => BODY.filter(([k]) => yogaOn() || !FLEX.includes(k));
 const has = v => v != null && v !== "";
 export function renderBody(){
   if (!$("#bDate").value) $("#bDate").value = ymd(new Date());
+  BODY.forEach(([k]) => { $("#b_"+k).value = state.body.find(b => b.date === $("#bDate").value)?.[k] ?? ""; });
   $("#flexFields").classList.toggle("hidden", !yogaOn());
   const cur = $("#bMetric").value;
   $("#bMetric").innerHTML = bodyKeys().map(([k,l,u]) => `<option value="${k}">${l} (${u})</option>`).join("");
@@ -100,7 +106,7 @@ export function renderBody(){
   // yalnız en az bir kaydı olan ölçüler sütun olur
   const cols = bodyKeys().filter(([k]) => list.some(b => has(b[k])));
   $("#bTable").innerHTML = list.length ? `<tr><th>${t("library.date")}</th>${cols.map(([,l]) => `<th>${l}</th>`).join("")}<th></th></tr>` +
-    list.slice().reverse().map(b => `<tr><td>${shortDate(b.date)}</td>${cols.map(([k]) => `<td>${has(b[k]) ? fmt(b[k]) : "–"}</td>`).join("")}<td><button class="iconbtn danger" data-bdel="${b.date}" title="${t("library.delete")}">${ic("trash-2")}</button></td></tr>`).join("")
+    list.slice().reverse().map(b => `<tr><td>${shortDate(b.date)}</td>${cols.map(([k]) => `<td>${has(b[k]) ? fmt(b[k]) : "–"}</td>`).join("")}<td><button class="iconbtn danger" data-bdel="${b.date}" title="${t("library.delete")}" aria-label="${t("library.delete")}" data-i18n-aria="library.delete">${ic("trash-2")}</button></td></tr>`).join("")
     : `<tr><td>${emptyHTML("ruler", t("library.no_records"), "")}</td></tr>`;
   $("#bTable").querySelectorAll("[data-bdel]").forEach(btn => btn.onclick = async () => {
     if (!(await ask(t("library.body_del_confirm", { date: shortDate(btn.dataset.bdel) })))) return;
@@ -120,7 +126,7 @@ $("#libEquip").onchange = renderLib;
 $("#libHome").onchange = renderLib;
 // Programlar'daki yoga kartından: Hareketler'de yoga bölümü açık gelir
 $("#yogaMoves").onclick = () => {
-  $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false;
+  phase = "all"; $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false;
   segState.train = "lib"; renderSeg("train");
   const y = $("#libYoga"); y.open = true; y.scrollIntoView({ behavior: "smooth", block: "start" });
 };
@@ -131,13 +137,12 @@ $("#cAdd").onclick = () => {
   $("#cName").value = ""; toast(t("library.added"), "check"); renderLib();
 };
 $("#bMetric").onchange = renderBody;
-$("#bSave").onclick = () => {
-  const date = $("#bDate").value; if (!date) return toast(t("library.date_req"));
-  const rec = { date }; let any = false;
-  BODY.forEach(([k]) => { const v = parseFloat($("#b_"+k).value); if (k === "reach" ? Number.isFinite(v) : v > 0) { rec[k] = v; any = true; } });
-  if (!any) return toast(t("library.value_req"));
-  const ex = state.body.find(b => b.date===date);
-  if (ex) Object.assign(ex, rec); else state.body.push(rec);
-  save(); BODY.forEach(([k]) => $("#b_"+k).value = ""); toast(t("library.body_saved"), "check"); renderBody();
-};
+$("#bDate").onchange = renderBody;
+BODY.forEach(([k]) => { $("#b_"+k).onchange = () => {
+  const input = $("#b_"+k), date = $("#bDate").value, v = parseFloat(input.value);
+  if (!date || !input.reportValidity() || !(k === "reach" ? Number.isFinite(v) : v > 0)) return;
+  const rec = state.body.find(b => b.date === date);
+  if (rec) rec[k] = v; else state.body.push({ date, [k]: v });
+  save(); renderBody();
+}; });
 }

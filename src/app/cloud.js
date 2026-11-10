@@ -4,7 +4,7 @@ import { syncOnce } from "../core/sync.ts";
 import { AuthError, driveAccount, driveStore } from "../sync/drive.ts";
 import { TasksAuthError } from "../sync/tasks.ts";
 import { mergeStates } from "../core/schema.ts";
-import { currentSig, planSignature, runCalendar, taskPlan } from "../core/calendar.ts";
+import { calendarTimeZone, currentSig, planSignature, runCalendar, taskPlan } from "../core/calendar.ts";
 import { calendarClient } from "../sync/calendar.ts";
 import { tasksClient } from "../sync/tasks.ts";
 import { $, choose, esc, ic, save, setState, stampChanges, state, takeSnapshot, toast } from "./store.js";
@@ -178,7 +178,7 @@ const calScopes = () => needTasks() ? [CAL_SCOPE, TASKS_SCOPE] : [CAL_SCOPE];
 // gereken bütün izinleri taşıyan anahtar (tek anahtar bütün izinleri taşır)
 const calToken = () => { const t = cachedToken(CAL_SCOPE); return t && calScopes().every(x => cachedToken(x) === t) ? t : null; };
 export let calBusy = false, calErr = "", calTimer = null;
-export const timeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch(e){ return "UTC"; } };
+export const timeZone = calendarTimeZone;
 
 export function runCal(interactive){
   const g = state.gcal;
