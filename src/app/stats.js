@@ -8,7 +8,7 @@ import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, groupOf, groupShown, isCardio, isTimed, isYoga, liftOn, musclesOf, yogaOn } from "./exercises.js";
 import { renderSeg, segState } from "./ui.js";
 import { entryHTML } from "./log.js";
-import { bindBodyMap, bodyMap, bodySex, fatigueTiers, legend, loadTiers, weekSets } from "./bodymap.js";
+import { bindBodyMap, bodyMap, fatigueTiers, legend, loadTiers, weekSets } from "./bodymap.js";
 
 /* ---------- Week ---------- */
 export let weekStart = mondayOf(new Date());
@@ -205,7 +205,7 @@ export function renderRecovery(){
   $("#bmView").querySelectorAll("button").forEach(x => x.classList.toggle("on", (x.dataset.v === "week") === week));
   $("#bmNote").textContent = week ? t("stats.bm_week_note")
     : t("stats.bm_fatigue_note");
-  $("#restMap").innerHTML = bodyMap(week ? loadTiers(ws) : fatigueTiers(R)) + legend(week ? "load" : "fatigue");
+  $("#restMap").innerHTML = bodyMap(week ? loadTiers(ws) : fatigueTiers(R), { toggle: true }) + legend(week ? "load" : "fatigue");
   bindBodyMap($("#restMap"));
   // en hazır programı öner: ana kasların ortalama toparlanması
   const score = p => { const ms = [...new Set(p.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a,m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };
@@ -239,7 +239,7 @@ export function renderPower(keepInput){
   if (!keepInput) $("#pfBw").value = lw || state.profile.bw || "";
   $("#pfBw").disabled = !!lw;
   $("#pfBwNote").textContent = lw ? t("stats.bw_auto", { n: fmt(lw) }) : t("stats.bw_tip");
-  const bw = bodyweight(), std = STD[bodySex()];
+  const bw = bodyweight(), std = STD[state.profile.sex === "f" ? "f" : "m"]  /* m/f dışında sabit nötr "m"; harita modeli güç standardını değiştirmez */;
   if (!bw) { $("#pwScore").textContent = "–"; $("#pwLevel").textContent = t("stats.power_score"); $("#pwSub").textContent = t("stats.enter_bw") + sexNote; $("#pwLifts").innerHTML = ""; return; }
   const res = LIFTS.map(L => {
     let best = 0, date = "";

@@ -6,6 +6,8 @@ import { renderProg, WEEKDAYS } from "./programs.js";
 import { syncCanRun, connectDrive } from "./cloud.js";
 import { openBaseline } from "./baseline.js";
 import { liftOn, yogaOn } from "./exercises.js";
+import { setGender } from "../core/body-model.ts";
+import { redrawBodyMaps } from "./bodymap.js";
 import { sessionLoadHTML } from "./bodymap.js";
 import { startRotation } from "../core/plan.ts";
 import { t } from "../core/i18n.ts";
@@ -105,7 +107,7 @@ export function openLibrary(yoga){
 
 // Dört soru, cevap değiştikçe öneri güncellenir. onboarding: ilk açılışta, üstte "Atla" ile.
 export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" : "esneklik" } = {}){
-  const a = { level: "yeni", goal, equip: "salon", days: 3, sex: state.profile.sex };
+  const a = { level: "yeni", goal, equip: "salon", days: 3, sex: state.profile.sex, model: state.prefs.body === "f" ? "f" : "m" };
   const markDone = onboarding ? () => { state.onboarded = true; save(); } : undefined;
   const q = (key, title, opts) => `<div class="pk-head">${title}</div><div class="optgrid" data-q="${key}">${opts.map(([v, l]) => `<button class="fchip${String(a[key]) === String(v) ? " on" : ""}" data-v="${v}">${l}</button>`).join("")}</div>`;
   const head = onboarding
@@ -114,7 +116,7 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
          <button class="btn quiet" id="obSkip" style="flex:none">${t("presets.skip")}</button></div>`
     : sheetHead(t("presets.suggest_title"));
   openSheet(head,
-    (onboarding ? q("sex", t("presets.q_sex"), [["m", t("presets.sex_m")], ["f", t("presets.sex_f")], ["o", t("presets.sex_o")]]) : "")
+    (onboarding ? q("sex", t("presets.q_sex"), [["m", t("presets.sex_m")], ["f", t("presets.sex_f")], ["o", t("presets.sex_o")], ["", t("html.sex_none")]]) + `<div id="onboardModel" class="${["m", "f"].includes(a.sex) ? "hidden" : ""}">${q("model", t("html.body_draw_label"), [["m", t("html.gender_male")], ["f", t("html.gender_female")]])}</div>` : "")
     + q("level", t("presets.q_level"), [["yeni", t("presets.lv_new")], ["orta", t("presets.lv_mid")], ["ileri", t("presets.lv_adv")]])
     + q("goal", t("presets.q_goal"), [...(liftOn() ? [["genel", t("presets.g_general")], ["kas", t("presets.g_muscle")], ["guc", t("presets.g_strength")]] : []), ...(yogaOn() ? [["esneklik", t("presets.goal_flex")]] : [])])
     + (liftOn() ? q("equip", t("presets.q_equip"), [["salon", t("presets.equip_gym")], ["ev", t("presets.e_home")], ["yok", t("presets.equip_none")]]) : "")
@@ -146,7 +148,13 @@ export function openRecommender({ onboarding = false, goal = liftOn() ? "genel" 
   };
   $("#bsBody").querySelectorAll("[data-q]").forEach(g => g.querySelectorAll("button").forEach(b => b.onclick = () => {
     const k = g.dataset.q; a[k] = k === "days" ? +b.dataset.v : b.dataset.v;
-    if (k === "sex") { state.profile.sex = a.sex; save(); }
+    if (k === "sex") {
+      setGender(state, a.sex); a.model = state.prefs.body;
+      $("#onboardModel").classList.toggle("hidden", ["m", "f"].includes(a.sex));
+      $("#onboardModel").querySelectorAll("button").forEach(x => x.classList.toggle("on", x.dataset.v === a.model));
+      save(); redrawBodyMaps();
+    }
+    if (k === "model") { state.prefs.body = a.model; save(); redrawBodyMaps(); }
     g.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); buzz(5); render();
   }));
   if (onboarding) {

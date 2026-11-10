@@ -1,3 +1,4 @@
+import { bodyModel } from "./body-model.ts";
 /* ---------- Veri modeli (şema v2) ----------
    Senkronizasyona hazır veri modeli:
    - Her kayıt koleksiyonunda kalıcı bir anahtar var (COLLECTIONS) ve her kayıt son değiştiği anı "u" alanında taşır.
@@ -49,6 +50,8 @@ export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest
 export function withDefaults(s: any, migrateNames = true): State {
   const d = DEFAULTS();
   const out: State = { ...d, ...s, profile: { ...d.profile, ...(s.profile || {}) }, plan: { ...d.plan, ...(s.plan || {}) }, prefs: { ...d.prefs, ...(s.prefs || {}) }, gcal: { ...d.gcal, ...(s.gcal || {}) } };
+  // eski kayıtlarda prefs.body yoktu: harita cinsiyetten türetiliyordu; açık seçim varsa dokunulmaz
+  if (!s.prefs || s.prefs.body === undefined) out.prefs.body = bodyModel({}, out.profile.sex);
   for (const c of collNames) if (!Array.isArray(out[c])) out[c] = [];
   if (!Array.isArray(out.deleted)) out.deleted = [];
   if (!(s.v >= 2)) {

@@ -225,11 +225,16 @@ button.chip{border:0;color:var(--text);font:inherit;font-size:13px;font-weight:6
 .tag.good{background:var(--goodsoft);color:var(--good)}
 .tag.muted{background:none;border:1px solid var(--line2)}
 /* vücut haritası (bodymap.js) */
-.bodymap{display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:340px;margin:4px auto 0}
+.bodymap{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:340px;margin:4px auto 0}
+.card:has(.bm-toggle){position:relative}
+.card .bodymap{position:static}
+.bodymap .bm-toggle{position:absolute;top:10px;right:10px;z-index:1;width:36px;height:36px;opacity:.7}
+.bm-toggle:hover,.bm-toggle:focus-visible{opacity:1}
+.bm-swap{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .bodymap.small{max-width:220px}
 .bodymap.large{max-width:520px;gap:10px}
 .bodymap figure{margin:0;text-align:center}
-.bodymap svg{width:100%;height:auto;display:block}
+.bodymap figure svg{width:100%;height:auto;display:block}
 .bodymap figcaption{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--muted);margin-top:2px}
 .bm-base{fill:var(--card3)}
 .bm-m path{stroke:var(--card);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;transition:fill .2s}
@@ -503,6 +508,28 @@ body.focus-open{overflow:hidden}
 .grab{width:40px;height:4px;border-radius:2px;background:var(--line2);margin:2px auto 10px}
 .bsheet h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
 .bs-body{overflow-y:auto;margin:0 -16px;padding:0 16px}
+/* First-run welcome; other sheets retain their layout. */
+.bsheet:has(.welcome-content){max-width:420px;background:#0B0B0B;color:#fff;border-color:#2A2827;border-radius:0;font-family:var(--font)}
+.bsheet:has(.welcome-content) .grab{background:#3A3735;border-radius:0}
+.welcome-close{display:flex;justify-content:flex-end}
+.welcome-close .iconbtn{color:#B8B3AE}
+.welcome-close .iconbtn:hover{background:#1E1D1C;color:#fff}
+.welcome-content{text-align:center;padding:0 12px 16px}
+.welcome-brand{display:grid;place-items:center;width:64px;height:64px;margin:0 auto 24px;background:#D7263D;color:#fff;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
+.welcome-brand .ic{width:32px;height:32px;stroke-width:2.4}
+.welcome-content h3{max-width:300px;margin:0 auto;font-size:28px;line-height:1.15;letter-spacing:-.03em;text-wrap:balance}
+.welcome-subtitle{margin:14px 0 32px;color:#B8B3AE;font-size:15px;line-height:1.5}
+.welcome-actions{display:grid;gap:12px}
+.welcome-actions .btn{width:100%;min-height:52px;--cut:10px;color:#fff}
+.welcome-actions .btn.primary{--fill:#D7263D;--bd:#D7263D}
+.welcome-actions .btn.primary:active{--fill:#B91F33;--bd:#B91F33}
+.welcome-actions .btn.quiet{--bd:#6E685F}
+.welcome-actions .btn.quiet:hover{--bd:#fff}
+.welcome-actions .btn:focus-visible{--bd:#fff;box-shadow:inset 0 -2px 0 #fff}
+@media (min-width:600px){
+  .sheetwrap:has(.welcome-content){align-items:center;padding:24px}
+  .bsheet:has(.welcome-content){border-bottom:1px solid #2A2827;padding-bottom:24px}
+}
 @keyframes up{from{transform:translateY(40px);opacity:.4}}
 @keyframes fade{from{opacity:0}}
 .search{position:relative}

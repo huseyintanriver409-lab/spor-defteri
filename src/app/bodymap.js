@@ -1,3 +1,4 @@
+import { bodyModel } from "../core/body-model.ts";
 import { programName } from "../core/programs.ts";
 // Vücut haritası: önden ve arkadan kaslar; renk kademesi core/musclemap.ts'ten. Kasa dokununca o kasın hareketleri açılır.
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
@@ -32,8 +33,8 @@ const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
 const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
-// erkek ya da kadın çizimi: profilde cinsiyet belirtildiyse o, değilse Ayarlar'daki seçim
-export const bodySex = () => ["m", "f"].includes(state.profile.sex) ? state.profile.sex : state.prefs.body === "f" ? "f" : "m";
+// All drawings use the independent model preference.
+export const bodySex = () => bodyModel(state.prefs, state.profile.sex);
 
 // Çizimin bölgeleri çizim sırasıyla: [anahtar, yollar, kaslar]; bölünen bölgenin ayrılan parçası "slug-x" anahtarıyla
 function regionParts(sex, side){
@@ -46,20 +47,26 @@ function regionParts(sex, side){
   const top = ([k]) => ON_TOP.includes(k);
   return [...parts.filter(p => !top(p)), ...parts.filter(top)];
 }
+// Kadın ve erkek çizimlerinin viewBox oranı farklı: aynı boyda görünsünler diye genişlik orana göre daralır (model değişince ölçek kaymaz).
+const vbRatio = vb => { const [, , w, h] = vb.split(/\s+/).map(Number); return w / h; };
+const MAX_RATIO = Math.max(...Object.values(ART).flatMap(a => Object.values(a).map(([vb]) => vbRatio(vb))));
 function figure(side, tiers, caption){
-  const [vb] = ART[bodySex()][side], order = regionParts(bodySex(), side);
+  const [vb] = ART[bodySex()][side], order = regionParts(bodySex(), side), wPct = (vbRatio(vb) / MAX_RATIO * 100).toFixed(2);
   const paths = order.map(([, ds, ms]) => {
     if (!ms) return ds.map(d => `<path class="bm-base" d="${d}"/>`).join("");
     const tier = ms.map(m => tiers[m] || "yok").reduce((x, y) => RANK[y] > RANK[x] ? y : x);
     const title = ms.map(m => esc(muscleLabel(m)) + (LABEL[tiers[m]] ? " · " + LABEL[tiers[m]] : "")).join(", ");
     return ds.map(d => `<path d="${d}" data-m="${esc(ms.join("|"))}" data-t="${tier}"><title>${title}</title></path>`).join("");
   }).join("");
-  return `<figure><svg viewBox="${vb}" role="img" aria-label="${t("bodymap.view_aria", { side: caption })}"><g class="bm-m">${paths}</g></svg><figcaption>${caption}</figcaption></figure>`;
+  return `<figure><svg viewBox="${vb}" style="width:${wPct}%;margin:0 auto" role="img" aria-label="${t("bodymap.view_aria", { side: caption })}"><g class="bm-m">${paths}</g></svg><figcaption>${caption}</figcaption></figure>`;
 }
 // tiers: kas → kademe (yorgunluk, "y-" haftalık ya da "g-" tek antrenman yükü)
 // large: ekran genişliğinde (Hareketler); plain: dokununca açılan pencerede yorgunluk bilgisi yok, yalnız hareketler
-export const bodyMap = (tiers, { tap = true, small = false, large = false, plain = false } = {}) =>
-  `<div class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}${large ? " large" : ""}"${plain ? " data-plain" : ""}>${figure("front", tiers, t("bodymap.front"))}${figure("back", tiers, t("bodymap.back"))}</div>`;
+// toggle: model düğmesi (sayfa/kart başına en çok bir; küçük/önizleme/plain haritalarda verilmez)
+export const modelToggle = () => { const f = bodySex() === "f", cur = t(f ? "html.gender_female" : "html.gender_male"), label = `${t("html.body_model_toggle")} (${t("html.body_model_now", { model: cur })})`;
+  return `<button type="button" class="iconbtn bm-toggle" data-body-toggle aria-pressed="${f}" title="${esc(label)}" aria-label="${esc(label)}"><svg viewBox="0 0 24 24" class="bm-swap" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></svg></button>`; };
+export const bodyMap = (tiers, { tap = true, small = false, large = false, plain = false, toggle = false } = {}) =>
+  `<div data-tiers="${esc(JSON.stringify(tiers))}" class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}${large ? " large" : ""}"${plain ? " data-plain" : ""}>${toggle ? modelToggle() : ""}${figure("front", tiers, t("bodymap.front"))}${figure("back", tiers, t("bodymap.back"))}</div>`;
 // Hareket listesindeki küçük kas resmi: çizim bir kez <defs> içinde <g> olarak eklenir, her resim yalnız renkleri CSS
 // değişkeniyle verir; resmin viewBox'ı çizimin ilgili yarısını keser (--r-<bölge>). Ana kas koyu, yardımcı açık; ana kasların çoğu hangi yüzdeyse o yüz çizilir.
 const miniDone = new Set();
@@ -102,7 +109,7 @@ export function miniMap(name){
   const LEGS = ["Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır"], legs = m.p.filter(x => LEGS.includes(x)).length;
   const [x, y, w, h] = ART[sex][side][0].split(" ").map(Number);
   const vb = !legs ? [x, y, w, h * .5] : legs === m.p.length ? [x, y + h * .42, w, h * .58] : [x, y, w, h];
-  return `<svg class="minimap" viewBox="${vb.join(" ")}" style="${paint(sex, side, m)}" aria-hidden="true"><use href="#${miniSymbol(sex, side)}"/></svg>`;
+  return `<svg class="minimap" data-exercise="${esc(name)}" viewBox="${vb.join(" ")}" style="${paint(sex, side, m)}" aria-hidden="true"><use href="#${miniSymbol(sex, side)}"/></svg>`;
 }
 // (i) düğmesi arkasında açılan açıklama (sayfa içeriği .card olmadığı için <details>)
 const infoTip = inner => `<details class="ev-help i-help"><summary class="muted small" aria-label="${t("bodymap.help_aria")}">${ic("info")}</summary>${inner}</details>`;
@@ -149,8 +156,23 @@ function hitMuscles(svg, e){
   return out.slice(0, 5);
 }
 // onTap verilirse dokunulan kaslar ona gider (ana sayfa: toparlanma analizi)
+export function redrawBodyMaps(){
+  document.querySelectorAll(".minimap[data-exercise]").forEach(svg => { svg.outerHTML = miniMap(svg.dataset.exercise); });
+  document.querySelectorAll(".bm-toggle").forEach(b => { b.outerHTML = modelToggle(); });
+  document.querySelectorAll(".bodymap[data-tiers]").forEach(map => {
+    const box = document.createElement("div"), tiers = JSON.parse(map.dataset.tiers);
+    box.innerHTML = figure("front", tiers, t("bodymap.front")) + figure("back", tiers, t("bodymap.back"));
+    // Preserve SVG elements and their existing hit handlers.
+    map.querySelectorAll("figure svg").forEach((svg, i) => {
+      const next = box.querySelectorAll("svg")[i];
+      svg.setAttribute("viewBox", next.getAttribute("viewBox"));
+      svg.setAttribute("style", next.getAttribute("style"));
+      svg.innerHTML = next.innerHTML;
+    });
+  });
+}
 export function bindBodyMap(root, onTap){
-  root.querySelectorAll(".bodymap.tap svg").forEach(svg => svg.onclick = e => {
+  root.querySelectorAll(".bodymap.tap figure svg").forEach(svg => svg.onclick = e => {
     const ms = hitMuscles(svg, e); if (!ms.length) return;
     e.stopPropagation();
     if (onTap) onTap(ms); else if (svg.closest("[data-plain]")) openMuscleReel(ms[0], ms); else openMuscleSheet(ms[0], ms);
@@ -177,7 +199,7 @@ export function openRecoveryAnalysis(focus){
     `<div class="row" style="align-items:flex-end;margin-bottom:6px"><div class="grow">
        <div style="font-size:26px;font-weight:800;letter-spacing:-.02em">${label}</div>${levelBar(lvl)}</div></div>
      ${infoTip(`<p class="muted small" style="margin:4px 0">${t("bodymap.analysis_avg")}</p>`)}
-     ${bodyMap(fatigueTiers(R), { tap: false })}${legend("fatigue")}
+     ${bodyMap(fatigueTiers(R), { tap: false, toggle: true })}${legend("fatigue")}
      ${rows.length ? `<div style="margin-top:14px">` + rows.map(({ m, r, t }) => `<div class="exitem rec-row${m === focus ? " hl" : ""}" data-rm="${esc(m)}">
        <i class="bm-dot" data-t="${t}" role="img" aria-label="${LABEL[t]}" title="${LABEL[t]}" style="margin-right:6px"></i><div class="grow"><div>${esc(muscleLabel(m))}</div>
        <div class="ms">${t("bodymap.sets_n", { n: fmt(r.sets) })} · ${shortDate(r.date)}${r.fail ? " · " + t("bodymap.failure") : ""}</div></div><b>${left(r)}</b></div>`).join("") + `</div>`

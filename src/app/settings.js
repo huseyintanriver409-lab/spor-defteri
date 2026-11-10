@@ -1,3 +1,5 @@
+import { setGender } from "../core/body-model.ts";
+import { redrawBodyMaps } from "./bodymap.js";
 import { $, esc, ic, save, state } from "./store.js";
 import { buzz, closeSheet, keepAwake, openSheet, refreshAll, segState, sheetHead, showTab } from "./ui.js";
 import { openRecommender } from "./presets.js";
@@ -27,10 +29,12 @@ export function renderSettings(){
 export function renderTrainPrefs(){
   $("#setRest").innerHTML = [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
-  // cinsiyet erkek/kadınsa vücut çizimi ona göre; değilse çizim burada seçilir
+  // Gender controls only the secondary question, never the general selector.
   const sx = state.profile.sex || "", given = sx === "m" || sx === "f";
   $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
-  $("#bBodyWrap").classList.toggle("hidden", given);
+  $("#bBodyWrap").classList.remove("hidden");
+  $("#profileModelWrap").classList.toggle("hidden", given);
+  $("#profileModel").value = $("#bBody").value;
   $("#prefFocus").value = focus();
   $("#focusHelp").textContent = { both: t("settings.focus_both"), lift: t("settings.focus_lift"), yoga: t("settings.focus_yoga") }[focus()];
 }
@@ -57,16 +61,15 @@ export function setTheme(t){
 export function maybeOnboard(){
   if (state.onboarded) return;
   if (state.entries.length || state.programs.length) { state.onboarded = true; save(); return; }
-  openSheet(sheetHead(t("settings.welcome_title")), `
-    <p class="muted">${esc(t("settings.welcome_intro"))}</p>
-    <ul>
-      <li>${esc(t("settings.welcome_log"))}</li>
-      <li>${esc(t("settings.welcome_plan"))}</li>
-      <li>${esc(t("settings.welcome_progress"))}</li>
-    </ul>
-    <div class="row" style="margin-top:16px">
-      <button class="btn primary" id="welcomeProgram">${ic("play")}${esc(t("settings.welcome_program"))}</button>
-      <button class="btn quiet" id="welcomeSkip">${esc(t("settings.welcome_skip"))}</button>
+  openSheet(`<div class="welcome-close"><button class="iconbtn" data-close type="button" aria-label="${esc(t("ui.close"))}">${ic("x")}</button></div>`, `
+    <div class="welcome-content">
+      <div class="welcome-brand" aria-hidden="true">${ic("dumbbell")}</div>
+      <h3>${esc(t("settings.welcome_title"))}</h3>
+      <p class="welcome-subtitle">${esc(t("settings.welcome_intro"))}</p>
+      <div class="welcome-actions">
+        <button class="btn primary" id="welcomeProgram" type="button">${esc(t("settings.welcome_program"))}</button>
+        <button class="btn quiet" id="welcomeSkip" type="button">${esc(t("settings.welcome_skip"))}</button>
+      </div>
     </div>`, () => { state.onboarded = true; save(); });
   $("#welcomeProgram").onclick = () => openRecommender({ onboarding: true });
   $("#welcomeSkip").onclick = closeSheet;
@@ -102,8 +105,17 @@ $("#profileMeasurements").onclick = () => {
   segState.stats = "body";
   showTab("progress");
 };
-$("#bSex").onchange = () => { state.profile.sex = $("#bSex").value; save(); refreshAll(); renderSettings(); };
-$("#bBody").onchange = () => { state.prefs.body = $("#bBody").value; save(); refreshAll(); };
+$("#bSex").onchange = () => { setGender(state, $("#bSex").value); save(); redrawBodyMaps(); refreshAll(); renderSettings(); };
+// redrawBodyMaps: yeniden çizilmeyen haritalar (kütüphane #libMap, açık pencereler, mini haritalar) için; refreshAll: aktif sekmeyi yeniler
+const changeModel = value => {
+  state.prefs.body = value;
+  save(); redrawBodyMaps(); refreshAll(); renderSettings();
+};
+$("#bBody").onchange = () => changeModel($("#bBody").value);
+$("#profileModel").onchange = () => changeModel($("#profileModel").value);
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-body-toggle]")) changeModel(state.prefs.body === "f" ? "m" : "f");
+});
 try { const t = localStorage.getItem(THEME_KEY); if (THEMES[t]) theme = t; } catch(e){}
 $("#themeBtn").onclick = () => setTheme({ dark: "light", light: "system", system: "dark" }[theme]);
 darkMq.addEventListener("change", applyTheme);
