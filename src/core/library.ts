@@ -57,3 +57,15 @@ export const UNILATERAL = new Set([
 ]);
 export const isUnilateral = (name: string): boolean => UNILATERAL.has(name) ||
   /single[- ](?:arm|leg)|split squat|woodchop|lunge/i.test(name);
+
+export type YogaRegion = "all" | "hips" | "back" | "shoulders" | "legs";
+export interface YogaPose { ex: string; region: YogaRegion; level: number; seconds: number; unilateral: boolean }
+// Compact pose metadata; exercise names remain stable persistence keys.
+export const YOGA_POSES: YogaPose[] = LIB[YOGA].map(ex => ({
+  ex, region: /Shoulder|Chest Stretch/.test(ex) ? "shoulders" :
+    /Lunge|Pigeon|Butterfly|Happy Baby|Hip Flexor/.test(ex) ? "hips" :
+    /Fold|Hamstring|Quad|Legs Up|Chair|Warrior|Triangle|Half Moon|Tree|Side Angle/.test(ex) ? "legs" :
+    /Dog|Cobra|Cat-Cow|Child|Bridge|Camel|Twist/.test(ex) ? "back" : "all",
+  level: /Chaturanga|Half Moon|Camel|Boat/.test(ex) ? 2 : 1,
+  seconds: ex === "Corpse Pose" ? 60 : 30, unilateral: isUnilateral(ex)
+}));

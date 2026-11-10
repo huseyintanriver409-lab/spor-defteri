@@ -1,3 +1,4 @@
+import { poseInfo } from "./yoga.js";
 import { shortDate, ymd } from "../core/dates.ts";
 import { searchFold, t } from "../core/i18n.ts";
 import { groupLabel } from "../core/library.ts";
@@ -33,7 +34,7 @@ export function renderLib(){
   const section = g => {
     const items = ex.filter(e => e.group===g); if (!items.length) return "";
     return `<details ${open ? "open" : ""}${g === YOGA ? ' id="libYoga"' : ""}><summary>${esc(groupLabel(g))} <span>(${items.length})</span></summary>` + items.map(e =>
-      `<div class="exitem">${miniMap(e.name)}<div class="grow" data-more><div>${esc(e.name)}${counts[e.name] ? ` <span class="muted small">· ${t("library.records", { n: counts[e.name] })}</span>` : ""}</div>
+      `<div class="exitem">${miniMap(e.name)}<div class="grow" data-more><div>${esc(e.name)}${poseInfo(e.name)}${counts[e.name] ? ` <span class="muted small">· ${t("library.records", { n: counts[e.name] })}</span>` : ""}</div>
         <div class="ms"><span class="tag">${esc(equipLabel(e.eq))}</span><span class="more">${t("library.in_sets", { n: EX_SETS })} ${exerciseLevels(e.m).map(([k, l, ms]) => `<span class="lv"><i class="bm-dot" data-t="g-${k}"></i><b>${l}</b> ${esc(ms.map(muscleLabel).join(", "))}</span>`).join("")}</span></div>
         ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">${t("library.merge_with", { name: esc(twin(e.name)) })}</button>` : ""}</div>
        ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="${t("library.merge_other")}">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="${t("library.remove")}">${ic("trash-2")}</button>` : ""}

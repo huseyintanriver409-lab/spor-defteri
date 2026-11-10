@@ -1,4 +1,5 @@
 export default {
+  yoga_goal: "{n} yoga günü; haftalık hedef 3, günde en az 5 dakika",
   add_workout: "Antrenman ekle",
   no_records: "Kayıt yok",
   th_exercise: "Hareket",

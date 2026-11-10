@@ -1,4 +1,5 @@
 export default {
+  yoga_goal: "{n} yoga days; weekly goal 3, at least 5 minutes per day",
   add_workout: "Add a workout",
   no_records: "No records",
   th_exercise: "Exercise",

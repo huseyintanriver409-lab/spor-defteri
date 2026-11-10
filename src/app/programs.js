@@ -1,4 +1,9 @@
-import { restSeconds } from "../core/yoga.ts";
+import { buildQuickFlow } from "../core/yoga.ts";
+import { YOGA_POSES } from "../core/library.ts";
+import { yogaRegions, poseInfo, regionLabel } from "./yoga.js";
+import { startQuickWorkout } from "./live.js";
+import { exerciseRestSeconds } from "../core/rest.ts";
+import { bestOf } from "./log.js";
 import { programName } from "../core/programs.ts";
 import { MONTHS, pad, parse, ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
@@ -82,6 +87,7 @@ export function renderEditorLoad(){
   $("#pLoad").innerHTML = html ? `<div class="pk-head">${t("programs.editor_load")}</div>${html}` : "";
 }
 export function renderProg(){
+  $("#yogaQuick").onclick = openQuickFlow;
   $("#yogaCard").classList.toggle("hidden", !yogaOn());
   // tek kiraz "Başla": bugün planlı program varsa o, yoksa listedeki ilk program
   const programs = visiblePrograms();
@@ -91,7 +97,7 @@ export function renderProg(){
     return `<div class="card progcard">
       <div class="eyebrow">${t("programs.eyebrow", { n: p.items.length, sets: total })}</div>
       <div class="progtop"><h3>${esc(programName(p))}</h3><button class="iconbtn" data-pmap="${p.id}" aria-label="${t("programs.muscle_map")}" title="${t("programs.muscle_map")}">${ic("body")}</button></div>
-      <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " " + t("programs.sec") : ""}</span></li>`).join("")}</ol>
+      <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}${poseInfo(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " " + t("programs.sec") : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn" data-start="${p.id}">${ic("play")}${t("programs.start")}</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="${t("programs.cal_add")}">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="${t("programs.edit")}">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="${t("programs.share")}">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="${t("programs.copy")}">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="${t("programs.delete")}">${ic("trash-2")}</button></div>
     </div>`; }).join("") + `<button class="btn quiet padd" data-padd>${ic("plus")}${t("programs.new_program")}</button>`
@@ -137,7 +143,18 @@ export const defaultStep = ex => ["Dumbbell", "Kettlebell"].includes(equipOf(ex)
 export const exPref = (ex, k) => (state.exPrefs[ex] || {})[k];
 export const overloadStep = ex => exPref(ex, "inc") || defaultInc(ex);
 export const stepFor = ex => exPref(ex, "step") || defaultStep(ex);
-export const restFor = ex => restSeconds(isYoga(ex), state.rest, exPref(ex, "rest"));
+export function restFor(ex, item = state.live?.items?.find(i => i.ex === ex)) {
+  if (state.live?.quick && item?.rest === 0) return 0;
+  let latest, lastSet;
+  for (const e of state.entries) {
+    if (e.ex !== ex || !work(e.sets).length) continue;
+    if (!latest || e.date > latest.date || (e.date === latest.date && (e.ts || 0) >= (latest.ts || 0))) {
+      latest = e; lastSet = work(e.sets).at(-1);
+    }
+  }
+  return exerciseRestSeconds({ ex, yoga: isYoga(ex), targetReps: isTimed(ex) ? undefined : item?.reps,
+    lastSet, estimated1RM: bestOf(ex).e }, state.rest, state.restAuto, exPref(ex, "rest"));
+}
 
 /* ---------- Google Calendar ---------- */
 export const WEEKDAYS = [["MO",t("programs.wd_mo"),1],["TU",t("programs.wd_tu"),2],["WE",t("programs.wd_we"),3],["TH",t("programs.wd_th"),4],["FR",t("programs.wd_fr"),5],["SA",t("programs.wd_sa"),6],["SU",t("programs.wd_su"),0]];
@@ -335,4 +352,19 @@ $("#planIcs").onclick = () => {
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   toast(isRot(P) ? t("programs.ics_done_rot", { n }) : t("programs.ics_done_weekly", { n }), "calendar-days");
 };
+}
+
+export function openQuickFlow() {
+ let minutes = 10;
+ const body = openSheet(sheetHead(t("programs.quick_flow")),
+  '<div class="quick-row">' + [5,10,15,20].map(n => '<button class="btn" data-min="' + n + '" aria-label="' + t("programs.flow_minutes", { n }) + '" aria-pressed="' + (n === minutes) + '">' + n + '</button>').join('') + '</div><div class="quick-row">' +
+  yogaRegions.map(([region, icon]) => '<button class="btn" data-region="' + region + '" title="' + regionLabel(region) + '" aria-label="' + regionLabel(region) + '">' + ic(icon) + '</button>').join('') + '</div>');
+ body.querySelectorAll('[data-min]').forEach(b => b.onclick = () => {
+  minutes = +b.dataset.min;
+  body.querySelectorAll('[data-min]').forEach(x => x.setAttribute('aria-pressed', x === b));
+ });
+ body.querySelectorAll('[data-region]').forEach(b => b.onclick = () => {
+  const items = buildQuickFlow(minutes, b.dataset.region, YOGA_POSES);
+  closeSheet(); startQuickWorkout(items);
+ });
 }

@@ -31,7 +31,7 @@ export function renderSettings(){
 
 // Ayarlar → "Antrenman ayarları"
 export function renderTrainPrefs(){
-  $("#setRest").innerHTML = [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
+  $("#setRest").innerHTML = `<option value="auto"${state.restAuto ? " selected" : ""}>${t("settings.rest_auto")}</option>` + [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${!state.restAuto && v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
   $("#profileModelWrap").classList.remove("hidden");
   $("#profileModel").value = state.prefs.body === "f" ? "f" : "m";
@@ -86,7 +86,7 @@ export function labelIcons(root){
 export function setup(){
 $("#setLang").value = getLangPref();
 $("#setLang").onchange = () => { setLangPref($("#setLang").value); location.reload(); };
-$("#setRest").onchange = () => { state.rest = setTDur(+$("#setRest").value); save(); };
+$("#setRest").onchange = () => { state.restAuto = $("#setRest").value === "auto"; state.rest = state.restAuto ? 90 : setTDur(+$("#setRest").value); save(); };
 $("#setGoal").onchange = () => { state.goal = +$("#setGoal").value; save(); renderSettings(); };
 $("#setStreak").onchange = () => { state.streakMode = $("#setStreak").value; save(); refreshAll(); renderSettings(); };
 $("#autoRest").onchange = () => { state.autoRest = $("#autoRest").checked; save(); };

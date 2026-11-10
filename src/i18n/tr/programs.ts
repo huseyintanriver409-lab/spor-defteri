@@ -1,4 +1,13 @@
 export default {
+  quick_flow: "Hızlı seans",
+  flow_minutes: "{n} dakika",
+  region_all: "Tüm vücut",
+  region_hips: "Kalça",
+  region_back: "Sırt",
+  region_shoulders: "Omuz / boyun",
+  region_legs: "Bacak",
+  pose_info: "{region}, seviye {level}, {sec} saniye",
+  both_sides: "Sol ve sağ",
   "ss_title": "Bir önceki hareketle süperset",
   "ex_placeholder": "Hareket seç",
   "ex_aria": "Hareket",

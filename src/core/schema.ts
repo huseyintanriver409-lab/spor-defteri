@@ -32,7 +32,7 @@ export const DEFAULT_PLAN = () => ({ days: {}, dur: 60, remind: 30, until: "" })
 export const DEFAULT_GCAL = () => ({ log: false, plan: false, id: "", planSig: "", dates: [] as string[], dated: 0, mode: "event", taskList: "", taskSig: "" });
 // profile.sex: "m" | "f" | "o" (diğer) | "" (belirtilmedi); prefs.body: cinsiyet m/f değilse vücut haritasında hangi çizim
 export const DEFAULTS = (): State => ({ v: SCHEMA, deviceId: "", entries: [], custom: [], programs: [], active: null, body: [], profile: { sex: "", bw: "", height: "", age: "" }, rest: 90, plan: DEFAULT_PLAN(),
-  exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
+  exNotes: {}, sessions: [], live: null, goal: 3, autoRest: true, restAuto: true, restAutoMig: true, draft: null, lastBackup: 0, backupSnooze: 0, deleted: [], settingsU: 0,
   exPrefs: {}, plates: [25, 20, 15, 10, 5, 2.5, 1.25], prefs: { wake: true, haptics: true, focus: "both", body: "m" }, favs: [], onboarded: false, gcal: DEFAULT_GCAL(),
   // başlangıç noktası: hareket → şu anki kilo/tekrar (core/baseline.ts)
   baseline: {},
@@ -44,12 +44,16 @@ export const COLLECTIONS: Record<"entries" | "programs" | "sessions" | "body" | 
 };
 type Coll = keyof typeof COLLECTIONS;
 const collNames = Object.keys(COLLECTIONS) as Coll[];
-export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal", "baseline", "streakMode"];
+export const SETTINGS = ["profile", "plan", "goal", "exNotes", "rest", "restAuto", "restAutoMig", "autoRest", "exPrefs", "plates", "prefs", "favs", "gcal", "baseline", "streakMode"];
 
 // eksik alanları varsayılanlarla tamamlar ve eski şemaları yükseltir (eski kayıtlar ve yedekler için)
-export function withDefaults(s: any, migrateNames = true): State {
+export function withDefaults(s: any, migrateNames = true, migrateRest = true): State {
   const d = DEFAULTS();
   const out: State = { ...d, ...s, profile: { ...d.profile, ...(s.profile || {}) }, plan: { ...d.plan, ...(s.plan || {}) }, prefs: { ...d.prefs, ...(s.prefs || {}) }, gcal: { ...d.gcal, ...(s.gcal || {}) } };
+  if (migrateRest && s.restAutoMig === undefined) {
+    out.restAuto = out.rest === 90;
+  }
+  if (migrateRest) out.restAutoMig = true;
   // eski kayıtlarda prefs.body yoktu: harita cinsiyetten türetiliyordu; açık seçim varsa dokunulmaz
   if (!s.prefs || s.prefs.body === undefined) out.prefs.body = bodyModel({}, out.profile.sex);
   for (const c of collNames) if (!Array.isArray(out[c])) out[c] = [];
@@ -103,7 +107,8 @@ export interface MergeStats { added: number; updated: number; removed: number }
 // İki veri setini birleştirir: her kayıt için en son değiştirilen sürüm kazanır, mezar taşları silmeleri taşır.
 // Google Drive senkronizasyonu da ileride bu fonksiyonu kullanacak.
 export function mergeStates(local: State, remoteRaw: any): { state: State; stats: MergeStats } {
-  const remote = withDefaults(remoteRaw, false);
+  local = migrateExNames(local);
+  const remote = migrateExNames(withDefaults(remoteRaw, false, false));
   const out: State = { ...local }, stats: MergeStats = { added: 0, updated: 0, removed: 0 };
   const tomb = new Map<string, Tombstone>();
   [...local.deleted, ...remote.deleted].forEach(t => { const k = t.c + "\u0000" + t.k; if (!tomb.has(k) || tomb.get(k)!.at < t.at) tomb.set(k, t); });
@@ -124,6 +129,10 @@ export function mergeStates(local: State, remoteRaw: any): { state: State; stats
   }
   if ((remote.settingsU || 0) > (local.settingsU || 0)) {
     SETTINGS.forEach(k => out[k] = remote[k]); out.settingsU = remote.settingsU;
+    if (remoteRaw.restAutoMig === undefined) {
+      out.restAuto = local.restAuto && remote.rest === 90;
+      out.restAutoMig = local.restAutoMig;
+    }
     // eski sürümdeki bir cihaz başlangıç verisini bilmez; dosyada hiç yoksa yereldeki silinmesin
     if (remoteRaw && !("baseline" in remoteRaw)) out.baseline = local.baseline;
     // Older clients may save a profile without the optional experience fields.

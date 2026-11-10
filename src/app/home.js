@@ -1,8 +1,9 @@
+import { homeActivityDates } from "../core/yoga.ts";
 import { programName } from "../core/programs.ts";
 import { DAYS, MONTHS_LONG, mondayOf, ymd } from "../core/dates.ts";
 import { volume, work } from "../core/training.ts";
 import { $, esc, ic, state } from "./store.js";
-import { goalDates, visiblePrograms, focus, isCardio, isSport, isYoga, liftOn, musclesOf } from "./exercises.js";
+import { groupOf, visiblePrograms, focus, isCardio, isSport, isYoga, liftOn, musclesOf } from "./exercises.js";
 import { applyProgram } from "./presets.js";
 import { bindBodyMap, bodyMap, fatigueSummary, fatigueTiers, levelBar, openRecoveryAnalysis } from "./bodymap.js";
 import { programById } from "../core/programs.ts";
@@ -20,7 +21,7 @@ export { MONTHS_LONG };
 // sırayla planda da doğru program: core/plan.ts
 export const todayPlan = () => plannedOn(state.plan, visiblePrograms(), ymd(new Date()));
 export function weekProgress(){
-  const load = Object.fromEntries(goalDates().map(d => [d, true])), mon = mondayOf(new Date());
+  const load = Object.fromEntries(homeActivityDates(state.entries, groupOf).map(d => [d, true])), mon = mondayOf(new Date());
   let days = 0; for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(d.getDate() + i); if (load[ymd(d)]) days++; }
   const a = ymd(mon), e = new Date(mon); e.setDate(e.getDate() + 6); const b = ymd(e);
   const lifts = state.entries.filter(x => x.date >= a && x.date <= b && isSport(x.ex));
@@ -37,7 +38,7 @@ export const planMinutes = sets => Math.max(5, Math.round(sets * 3.5 / 5) * 5);
 // Ana sayfa özünde: bugünün (ya da en hazır) programı büyük Başla ile, haftanın özeti ve toparlanma haritası.
 // Kısayollar Antrenman sekmesinde, son antrenman Takvim'de.
 export function renderHome(){
-  const now = new Date(), today = ymd(now), p = todayPlan(), trainedToday = goalDates().includes(today);
+  const now = new Date(), today = ymd(now), p = todayPlan(), trainedToday = homeActivityDates(state.entries, groupOf).includes(today);
   $("#homeDate").textContent = t("home.week_label", { day: DAYS[now.getDay()], w: isoWeek(now) });
   const R = recoveryMap();
   const score = x => { const ms = [...new Set(x.items.flatMap(i => musclesOf(i.ex).p))]; return ms.length ? ms.reduce((a, m) => a + (R[m] ? R[m].pct : 1), 0) / ms.length : 0; };

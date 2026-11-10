@@ -1,4 +1,5 @@
 export default {
+  rest_auto: "Oto",
   experience: "Deneyim",
   exp_auto: "Oto",
   exp_new: "Yeni",

@@ -1,4 +1,6 @@
+import { poseInfo } from "./yoga.js";
 import { autoYogaHold, recordAllowed } from "../core/yoga.ts";
+import { supersetRestSeconds } from "../core/rest.ts";
 import { isUnilateral } from "../core/library.ts";
 import { completeSide, pendingSide } from "../core/unilateral.ts";
 import { pad, shortDate, ymd } from "../core/dates.ts";
@@ -38,7 +40,7 @@ export function startWorkout(progId){
   save(); buzz(20); openFocus();
 }
 export const doneSetsOf = ex => { const e = state.live && state.entries.find(x => x.date===state.live.date && x.ex===ex); return e ? e.sets : []; };
-export const workDone = it => work(doneSetsOf(it.ex)).length;
+export const workDone = it => Math.max(0, work(doneSetsOf(it.ex)).length - (state.live?.quickBase?.[it.ex] || 0));
 export function openFocus(){
   if (!state.live) return;
   document.body.classList.add("focus-open"); $("#focus").classList.remove("hidden");
@@ -96,9 +98,9 @@ export function renderFocus(){
     renderFocusRest(); return;
   }
   $("#fComplete").classList.remove("hidden"); $(".f-nav").classList.remove("hidden");
-  const it = items[idx], c = isCardio(it.ex), tm = isTimed(it.ex), sug = suggestFor(it), done = doneSetsOf(it.ex), wd = work(done).length;
+  const it = items[idx], c = isCardio(it.ex), tm = isTimed(it.ex), sug = suggestFor(it), done = doneSetsOf(it.ex), wd = workDone(it);
   const target = it.sets || 3, bar = !c && !tm ? barOf(it.ex) : 0;
-  const d = fDraft[it.ex] ||= (() => { const last = pendingSide(state.live, it.ex, done.length)?.first || work(done).slice(-1)[0]; return last ? { w: last.w, r: last.sec ?? last.r } : { w: sug.w, r: sug.r }; })();
+  const d = fDraft[it.ex] ||= (() => { if (state.live.quick) return { w: 0, r: +it.reps }; const last = pendingSide(state.live, it.ex, done.length)?.first || work(done).slice(-1)[0]; return last ? { w: last.w, r: last.sec ?? last.r } : { w: sug.w, r: state.live.quick ? +it.reps : sug.r }; })();
   // ısınma rehberi: henüz çalışma seti yokken, çalışma kilosuna göre
   const warmDone = done.filter(x => x.t === "w").length, workW = d.work ? d.work.w : d.w;
   const warmPlan = !c && !tm && !wd && +workW > 0 ? warmupSets(+workW, bar) : [];
@@ -106,10 +108,10 @@ export function renderFocus(){
   const goal = it.reps ? `<b>${target} × ${esc(it.reps)}${tm ? " " + t("live.u_sec") : ""}</b>` : "";
   let k = 0;
   const doneChips = done.map((s,i) => { const warm = s.t === "w", lbl = warm ? "I" : (s.t ? TYPE_LETTER[s.t] : "") + (++k);
-    return `<button class="chip${warm ? " warm" : ""}" data-i="${i}" title="${t("live.delete_set")}">${lbl}) ${setLabel(s,c)}</button>`; }).join("");
+    return `<button class="chip${warm ? " warm" : ""}" data-i="${i}" aria-label="${t("live.delete_set")}" title="${t("live.delete_set")}">${lbl}) ${setLabel(s,c)}</button>`; }).join("");
   $("#fBody").innerHTML = `
     <div class="eyebrow">${esc(groupOf(it.ex))}${L[idx] ? ` · ${t("live.superset", { l: L[idx] })}` : ""}</div>
-    <div class="f-title"><h2>${esc(it.ex)}</h2><button class="iconbtn" id="fPrefs" title="${t("live.ex_prefs")}">${ic("sliders-horizontal")}</button></div>
+    <div class="f-title"><h2>${esc(it.ex)}</h2>${poseInfo(it.ex)}<button class="iconbtn" id="fPrefs" title="${t("live.ex_prefs")}">${ic("sliders-horizontal")}</button></div>
     <button class="f-note ghost" id="fNote" style="padding:0">${ic("pin")}<span>${note ? esc(note) : t("live.add_note")}</span></button>
     <div class="f-hint">${[sug.msg, goal].filter(Boolean).join("<br>") || t("live.first_time")}</div>
     <div class="f-prog" aria-hidden="true">${Array.from({ length: Math.max(target, wd) }, (_, j) => `<i class="${j < wd ? "on" : j === wd ? "cur" : ""}"></i>`).join("")}</div>
@@ -300,6 +302,7 @@ export function completeSet(fullHold = false){
     if (nextW) { d.w = nextW.w; d.r = nextW.r; fType = "w"; } else { d.w = d.work.w; d.r = d.work.r; delete d.work; }
   }
   let rest = state.autoRest && !warm;
+  let restDuration = restFor(it.ex, it);
   const L = ssLabels(items), target = x => x.sets || 3;
   const advance = () => {
     const nxt = items.findIndex((x, j) => j > k && workDone(x) < target(x));
@@ -311,11 +314,12 @@ export function completeSet(fullHold = false){
     // süperset: grubun bir sonraki hareketine dinlenmeden geç; tur bitince dinlen
     const g = items.map((x, j) => j).filter(j => L[j] && L[j][0] === L[k][0]);
     const nextInGroup = g.slice(g.indexOf(k) + 1).find(j => workDone(items[j]) < target(items[j]));
-    if (nextInGroup != null) { state.live.idx = nextInGroup; rest = false; }
+    restDuration = supersetRestSeconds(g.map(j => restFor(items[j].ex, items[j])), nextInGroup != null);
+    if (nextInGroup != null) { state.live.idx = nextInGroup; rest = false; stopTimer(); }
     else { const open = g.find(j => workDone(items[j]) < target(items[j])); if (open != null) state.live.idx = open; else advance(); }
   } else if (!warm && workDone(it) >= target(it)) advance();
   save();
-  if (rest && restFor(it.ex) > 0) startTimer(restFor(it.ex));
+  if (rest && restDuration > 0) startTimer(restDuration);
   else if (isYoga(it.ex) && restFor(it.ex) === 0) stopTimer();
   renderFocus();
   if (!warm) continueFlow();
@@ -324,7 +328,6 @@ export function completeSet(fullHold = false){
 export async function removeDoneSet(i){
   const it = liveItems()[state.live.idx], e0 = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
   if (!e0 || !e0.sets[i]) return;
-  if (!(await ask(t("live.confirm_del_set", { n: i + 1, set: setLabel(e0.sets[i], isCardio(it.ex)) })))) return;
   const e = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
   if (!e || !e.sets[i]) return;
   const [s] = e.sets.splice(i, 1); let pos = -1;
@@ -345,7 +348,7 @@ export function openExPrefs(it){
   openSheet(sheetHead(it.ex), `<div class="grid2">
       <div><label for="xpSets">${t("live.f_sets")}</label><select id="xpSets">${[1,2,3,4,5,6,7,8].map(v => `<option${v === (it.sets || 3) ? " selected" : ""}>${v}</option>`).join("")}</select></div>
       <div><label for="xpReps">${t("live.f_target_reps")}</label><input id="xpReps" value="${esc(it.reps || "")}" placeholder="8-12"></div>
-      <div><label for="xpRest">${t("live.f_rest")}</label><select id="xpRest">${opts(isYoga(it.ex) ? [0,30,45,60,90,120,150,180,240,300] : [30,45,60,90,120,150,180,240,300], p.rest, t("live.default_val", { v: mmss(isYoga(it.ex) ? 0 : state.rest) }), mmss)}</select></div>
+      <div><label for="xpRest">${t("live.f_rest")}</label><select id="xpRest">${opts(isYoga(it.ex) ? [0,30,45,60,90,120,150,180,240,300] : [30,45,60,90,120,150,180,240,300], p.rest, t("live.default_val", { v: (isYoga(it.ex) ? mmss(0) : state.restAuto ? t("settings.rest_auto") : mmss(state.rest)) }), mmss)}</select></div>
       <div><label for="xpStep">${t("live.f_step")}</label><select id="xpStep">${opts([1,1.25,2,2.5,5], p.step, t("live.auto_kg", { kg: fmt(defaultStep(it.ex)) }), v => fmt(v) + " " + t("live.u_kg"))}</select></div>
       <div><label for="xpBar">${t("live.f_bar")}</label><select id="xpBar"><option value="">${t("live.auto_kg", { kg: fmt(barFor(it.ex)) })}</option>${[20,15,10,0].map(v => `<option value="${v}"${p.bar === v ? " selected" : ""}>${v ? fmt(v) + " " + t("live.u_kg") : t("live.no_bar")}</option>`).join("")}</select></div>
       <div><label for="xpTimed">${t("live.f_kind")}</label><select id="xpTimed"><option value="">${t("live.auto_kind", { kind: timedByDefault(it.ex) ? t("live.kind_timed") : t("live.kind_reps") })}</option><option value="1"${p.timed === true ? " selected" : ""}>${t("live.kind_timed_opt")}</option><option value="0"${p.timed === false ? " selected" : ""}>${t("live.l_reps")}</option></select></div>
@@ -424,4 +427,16 @@ setInterval(() => {
   $("#fElapsed").textContent = el; $("#liveBarTime").textContent = el;
   const h = $("#homeLiveT"); if (h) h.textContent = el;
 }, 1000);
+}
+
+export function startQuickWorkout(items) {
+ if (state.live) { openFocus(); return toast(t("live.already_running"), "timer"); }
+ if (!items.length) return;
+ const date = ymd(new Date()), quickBase = {};
+ for (const it of items) {
+  quickBase[it.ex] = work(state.entries.find(e => e.date === date && e.ex === it.ex)?.sets || []).length;
+  delete fDraft[it.ex];
+ }
+ state.live = { start: Date.now(), date, prog: null, items, idx: 0, prs: 0, quick: true, quickBase };
+ save(); buzz(20); openFocus();
 }

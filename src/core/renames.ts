@@ -109,7 +109,7 @@ export function migrateExNames(s: State): State {
         const t = res[i];
         const at = Math.max(t.u || 0, e.u || 0, t.ts || 0, e.ts || 0, 1);
         out.deleted = [...(out.deleted || []).filter(d => !(d.c === "entries" && d.k === e.id)), { c: "entries", k: e.id, at }];
-        res[i] = { ...t, u: at + 1, sets: [...(t.sets || []), ...(e.sets || [])], ...(e.note ? { note: t.note ? t.note + "\n" + e.note : e.note } : {}) };
+        res[i] = { ...t, u: at + 1, sets: [...(t.sets || []), ...(e.sets || [])], ...(e.note ? { note: t.note && t.note !== e.note ? t.note + "\n" + e.note : e.note } : {}) };
       } else res.push({ ...e, ex: to });
     }
     // özgün sıra korunur

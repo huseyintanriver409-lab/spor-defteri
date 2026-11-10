@@ -1,4 +1,4 @@
-import { calendarLoad, practiceSeconds } from "../core/yoga.ts";
+import { yogaWeekGoal, calendarLoad, practiceSeconds } from "../core/yoga.ts";
 import { programName } from "../core/programs.ts";
 import { locale, t } from "../core/i18n.ts";
 import { MONTHS, mondayOf, niceDate, parse, shortDate, ymd } from "../core/dates.ts";
@@ -71,6 +71,8 @@ function renderYogaWeek(list, a){
   const prev = state.entries.filter(e => e.date >= ymd(prevA) && e.date < a && isYoga(e.ex));
   $("#yogaWeek").classList.toggle("hidden", !yogaOn() || (liftOn() && !ys.length && !prev.length));
   if ($("#yogaWeek").classList.contains("hidden")) return;
+  const goal = yogaWeekGoal(state.entries, groupOf, a);
+  $("#yGoal").innerHTML = '<svg class="yoga-ring" viewBox="0 0 100 100" role="img" aria-label="' + t("stats.yoga_goal", { n: goal.days }) + '"><circle class="track" cx="50" cy="50" r="42"/><circle class="fill" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="' + (goal.progress * 100) + ' 100"/><text x="50" y="51">' + goal.days + '</text></svg>';
   const secs = yogaSecs(ys), mins = n => Math.round(n / 60);
   $("#yMin").textContent = mins(secs);
   $("#yPoses").textContent = new Set(ys.map(e => e.ex)).size;

@@ -652,3 +652,21 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 .bm-soreness[data-placed]{visibility:visible}
 .bm-soreness path:first-of-type{fill:#0B0B0B;stroke:#D7263D;stroke-width:2}
 .bm-soreness path:last-of-type{fill:none;stroke:#D7263D;stroke-width:2}
+
+/* Compact yoga controls and reachable live actions. */
+.f-done .chip{min-width:44px;min-height:44px}
+#fEnd{--cut:7px;--cut2:7px;min-height:44px;width:100%;margin-top:8px;border-radius:0}
+.f-bottom{max-height:55dvh;overflow-y:auto}
+body.focus-open:has(.snack.show) .f-bottom,body.focus-open.snack-on .f-bottom{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+body.focus-open .snack{bottom:calc(10px + env(safe-area-inset-bottom))}
+body.focus-open .toast{top:calc(65px + env(safe-area-inset-top));bottom:auto}
+.quick-row{display:flex;gap:8px;margin:12px 0}
+.quick-row .btn{flex:1;min-width:44px;min-height:44px;padding:8px;border-radius:0;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.quick-row [aria-pressed="true"]{background:#D7263D;color:#0B0B0B}
+.pose-info{display:inline-flex;align-items:center;gap:6px;font-size:12px;margin:4px 8px;color:var(--muted);white-space:nowrap}
+.pose-info .ic{width:16px;height:16px}
+.yoga-ring{width:100px;height:100px;display:block;margin:8px auto}
+.yoga-ring circle{fill:none;stroke-width:6}
+.yoga-ring .track{stroke:#2A2A2A}
+.yoga-ring .fill{stroke:#D7263D;transform:rotate(-90deg);transform-origin:50% 50%}
+.yoga-ring text{fill:var(--text);text-anchor:middle;dominant-baseline:middle;font:700 26px var(--font)}

@@ -13,7 +13,6 @@ export default {
   seg_lib: "Exercises",
   train_empty: "Empty workout",
   yoga_title: "Yoga",
-  yoga_help: "There are 4 yoga programs: beginner, flow, morning, and evening. Poses are held for time; no weight is entered, and a mat is enough.",
   yoga_progs: "Programs",
   yoga_moves: "Exercises",
   prog_name_label: "Program name",

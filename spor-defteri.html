@@ -45,8 +45,8 @@
       <div id="pList"></div>
       <div class="card" id="yogaCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span><span data-i18n="html.yoga_title">Yoga</span></h2>
-        <p class="muted help" style="margin-top:-4px" data-i18n="html.yoga_help">Başlangıç, akış, sabah ve akşam olmak üzere 4 yoga programı var. Pozlar süreyle tutulur; kilo girilmez, mat yeterli.</p>
         <div class="row">
+          <button class="btn" id="yogaQuick" data-i18n-title="programs.quick_flow" data-i18n-aria="programs.quick_flow"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg></button>
           <button class="btn" id="yogaProgs"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg><span data-i18n="html.yoga_progs">Programlar</span></button>
           <button class="btn" id="yogaMoves"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="html.yoga_moves">Hareketler</span></button>
         </div>
@@ -195,6 +195,7 @@
       </div>
       <div class="card hidden" id="yogaWeek">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-leaf"/></svg></span><span data-i18n="html.yoga_title">Yoga</span></h2>
+        <div id="yGoal"></div>
         <div class="stats two">
           <div class="stat"><b id="yMin">0</b><span data-i18n="html.y_min">dk tutuş</span></div>
           <div class="stat"><b id="yPoses">0</b><span data-i18n="html.y_poses">farklı poz</span></div>
@@ -490,7 +491,6 @@
   <div class="f-top">
     <button class="iconbtn" id="fMin" title="Küçült" data-i18n-title="html.minimize_title"><svg class="ic" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
     <div class="f-clock"><span class="dot"></span><span id="fElapsed">0:00</span></div>
-    <button class="btn sm" id="fEnd" data-i18n="html.focus_end">Bitir</button>
   </div>
   <div class="f-list" id="fList"></div>
   <div class="f-body" id="fBody"></div>
@@ -501,6 +501,7 @@
       <button class="btn sm quiet" id="fRestMinus">−15</button><button class="btn sm quiet" id="fRestPlus">+15</button><button class="btn sm" id="fRestSkip" data-i18n="html.rest_skip">Atla</button>
     </div>
     <button class="btn primary xl" id="fComplete"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="live.complete">Seti tamamla</span></button>
+    <button class="btn sm" id="fEnd" data-i18n="html.focus_end">Bitir</button>
     <div class="f-nav"><button id="fPrev"><svg class="ic" aria-hidden="true"><use href="#i-chevron-left"/></svg><span></span></button><button id="fNext"><span></span><svg class="ic" aria-hidden="true"><use href="#i-chevron-right"/></svg></button></div>
   </div>
 </div>

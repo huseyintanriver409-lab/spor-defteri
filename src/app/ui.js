@@ -34,10 +34,10 @@ export async function keepAwake(on){
 export let undoTimer = null;
 export function undoable(msg, undo){
   const s = $("#snack");
-  $("#snackMsg").textContent = msg; $("#toast").classList.remove("show"); s.classList.add("show");
+  $("#snackMsg").textContent = msg; $("#toast").classList.remove("show"); s.classList.add("show"); document.body.classList.add("snack-on");
   clearTimeout(undoTimer);
-  $("#snackBtn").onclick = () => { clearTimeout(undoTimer); s.classList.remove("show"); undo(); toast(t("ui.undo_done"), "undo-2"); };
-  undoTimer = setTimeout(() => s.classList.remove("show"), 5000);
+  $("#snackBtn").onclick = () => { clearTimeout(undoTimer); s.classList.remove("show"); document.body.classList.remove("snack-on"); undo(); toast(t("ui.undo_done"), "undo-2"); };
+  undoTimer = setTimeout(() => { s.classList.remove("show"); document.body.classList.remove("snack-on"); }, 5000);
 }
 
 export let sheetOnClose = null;

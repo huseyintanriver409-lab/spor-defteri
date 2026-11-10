@@ -13,7 +13,6 @@ export default {
   seg_lib: "Hareketler",
   train_empty: "Boş antrenman",
   yoga_title: "Yoga",
-  yoga_help: "Başlangıç, akış, sabah ve akşam olmak üzere 4 yoga programı var. Pozlar süreyle tutulur; kilo girilmez, mat yeterli.",
   yoga_progs: "Programlar",
   yoga_moves: "Hareketler",
   prog_name_label: "Program adı",

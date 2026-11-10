@@ -15,9 +15,9 @@ describe("timed yoga flow", () => {
     expect(restSeconds(false, 90, 0)).toBe(90);
     expect(restSeconds(false, 90, 120)).toBe(120);
   });
-  it("continues only natural zero-rest holds to unfinished timed yoga", () => {
+  it("continues natural and manual zero-rest holds to unfinished timed yoga", () => {
     expect(autoYogaHold(true, true, true, 0, true, true, true)).toBe(true);
-    expect(autoYogaHold(false, true, true, 0, true, true, true)).toBe(false);
+    expect(autoYogaHold(false, true, true, 0, true, true, true)).toBe(true);
     expect(autoYogaHold(true, true, true, 30, true, true, true)).toBe(false);
     expect(autoYogaHold(true, false, true, 0, true, true, true)).toBe(false);
     expect(autoYogaHold(true, true, true, 0, false, true, true)).toBe(false);

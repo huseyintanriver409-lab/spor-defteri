@@ -4,7 +4,7 @@ const env = vi.hoisted(() => {
   const nodes = new Map<string, any>();
   const node = (key: string): any => {
     if (!nodes.has(key)) nodes.set(key, {
-      value: "", style: {}, classList: { toggle() {}, add() {}, remove() {} },
+      value: "", style: {}, classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } },
       querySelectorAll: () => [], setAttribute() {}, scrollIntoView() {},
       set innerHTML(html: string) {
         // Minimal form surface: rendering the current exercise replaces its inputs.
@@ -43,7 +43,7 @@ vi.mock("../src/app/streak.js", () => ({ celebrateStreak: vi.fn() }));
 // @ts-expect-error App modules are JavaScript; exercised through Vitest.
 import { state, toast, ask } from "../src/app/store.js";
 // @ts-expect-error App modules are JavaScript; exercised through Vitest.
-import { toggleHold, hold, fDraft, completeSet, openExPrefs, resetHold, finishHold, addFocusExercise, finishWorkout } from "../src/app/live.js";
+import { toggleHold, hold, fDraft, completeSet, openExPrefs, resetHold, finishHold, addFocusExercise, finishWorkout, removeDoneSet, startQuickWorkout, workDone } from "../src/app/live.js";
 // @ts-expect-error App modules are JavaScript; exercised through Vitest.
 import { startTimer } from "../src/app/tools.js";
 beforeEach(() => {
@@ -91,10 +91,10 @@ it("preserves sport timed rest and PR", () => {
   expect(state.live.prs).toBe(1);
   expect(toast).toHaveBeenCalledWith(expect.any(String), "trophy");
 });
-it("manual save does not automatically start another hold", () => {
+it("manual yoga save automatically starts another hold", () => {
   state.live = { start: Date.now(), date: "2026-11-10", idx: 0, items: [{ ex: "Mountain Pose", sets: 2 }] };
   env.node("#f_w").value = "0"; env.node("#f_r").value = "30";
-  completeSet(); expect(hold).toBeNull(); expect(startTimer).not.toHaveBeenCalled();
+  completeSet(); expect(hold?.phase).toBe("lead"); expect(startTimer).not.toHaveBeenCalled();
 });
 it("saves and clears explicit zero in the existing preference form", () => {
   const it = { ex: "Mountain Pose", sets: 1, reps: "30" };
@@ -138,4 +138,43 @@ it('B2: deleting earlier item preserves held exercise; deleting held item stops 
  vi.mocked(ask).mockResolvedValueOnce(true);
  openExPrefs(state.live.items[0]); await env.node('#xpRemove').onclick();
  expect(hold).toBeNull();
+});
+
+it("early manual hold completion advances to the next yoga pose", () => {
+ start("Mountain Pose", "Child's Pose");
+ vi.advanceTimersByTime(13000); toggleHold();
+ expect(state.entries[0].sets[0].sec).toBe(10);
+ expect(state.live.idx).toBe(1); expect(hold?.phase).toBe("lead");
+ expect(hold.item.ex).toBe("Child's Pose");
+ expect(startTimer).not.toHaveBeenCalled();
+});
+it("early manual plank completion preserves sport behavior", () => {
+ start("Plank", "Child's Pose");
+ vi.advanceTimersByTime(13000); toggleHold();
+ expect(state.entries[0].sets[0].sec).toBe(10);
+ expect(hold).toBeNull(); expect(startTimer).toHaveBeenCalledWith(90);
+});
+it("deletes immediately without confirmation and restores through undo", async () => {
+ // @ts-expect-error App modules are JavaScript; exercised through Vitest.
+ const { undoable } = await import("../src/app/ui.js");
+ state.live = { start: Date.now(), date: "2026-11-10", idx: 0, items: [{ ex: "Mountain Pose", sets: 1 }] };
+ const entry = { id: "e", date: state.live.date, ex: "Mountain Pose", sets: [{ sec: 30 }] };
+ state.entries = [entry];
+ await removeDoneSet(0);
+ expect(ask).not.toHaveBeenCalled(); expect(state.entries).toHaveLength(0);
+ expect(undoable).toHaveBeenCalledOnce();
+ vi.mocked(undoable).mock.calls[0][1]();
+ expect(state.entries).toEqual([entry]); expect(entry.sets).toEqual([{ sec: 30 }]);
+});
+it("quick flow uses its generated target and preserves earlier daily practice", () => {
+ vi.stubGlobal("document", { body: { classList: { add() {}, toggle() {} } } });
+ try {
+  state.entries = [{ id: "prior", date: new Date().toLocaleDateString("sv-SE"), ex: "Mountain Pose", sets: [{ sec: 99 }] }];
+  startQuickWorkout([{ ex: "Mountain Pose", sets: 1, reps: "40", rest: 0 }]);
+  expect(workDone(state.live.items[0])).toBe(0);
+  expect(env.node("#f_r").value).toBe("40");
+  completeSet();
+  expect(workDone(state.live.items[0])).toBe(1);
+  expect(state.entries[0].sets.map((s: any) => s.sec)).toEqual([99, 40]);
+ } finally { vi.unstubAllGlobals(); }
 });

@@ -47,14 +47,37 @@ const oldState = () => {
 };
 
 describe("migrateExNames", () => {
-  it("merges a stale remote alias into a local canonical entry only once", () => {
+  it("uses the newer same-id record without resurrecting deleted sets", () => {
     const local = DEFAULTS(), remote = DEFAULTS();
-    local.entries = [{ id: "new", u: 20, date: "2026-10-01", ex: "Machine Chest Press", sets: [{ w: 20, r: 5 }] }];
-    remote.entries = [{ id: "old", u: 10, date: "2026-10-01", ex: "Chest Press Makinesi", sets: [{ w: 10, r: 8 }] }];
+    local.entries = [{ id: "same", u: 30, date: "2026-10-01", ex: "Machine Chest Press", sets: [{ w: 20, r: 8 }] }];
+    remote.entries = [{ id: "same", u: 20, date: "2026-10-01", ex: "Chest Press Makinesi", sets: [{ w: 20, r: 8 }, { w: 20, r: 8 }] }];
     const once = mergeStates(local, remote).state;
-    expect(once.entries).toHaveLength(1);
-    expect(once.entries[0].sets).toHaveLength(2);
+    expect(once.entries[0].sets).toHaveLength(1);
     expect(mergeStates(once, remote).state).toEqual(once);
+    expect(mergeStates(remote, local).state.entries).toEqual(once.entries);
+    remote.entries[0].u = 40;
+    expect(mergeStates(local, remote).state.entries[0].sets).toHaveLength(2);
+  });
+  it("preserves identical sets in distinct records across devices", () => {
+    const local = DEFAULTS(), remote = DEFAULTS();
+    const sets = [{ w: 20, r: 8 }, { w: 20, r: 8 }];
+    local.entries = [{ id: "new", u: 20, date: "2026-10-01", ex: "Machine Chest Press", sets }];
+    remote.entries = [{ id: "old", u: 30, date: "2026-10-01", ex: "Chest Press Makinesi", sets }];
+    const once = mergeStates(local, remote).state;
+    expect(once.entries).toHaveLength(2);
+    expect(once.entries.map(e => e.sets.length)).toEqual([2, 2]);
+    expect(mergeStates(once, remote).state).toEqual(once);
+  });
+  it("combines aliases within one state once without content deduplication", () => {
+    const s = DEFAULTS();
+    s.entries = [
+      { id: "new", date: "2026-10-01", ex: "Machine Chest Press", sets: [{ w: 20, r: 8 }, { w: 20, r: 8 }] },
+      { id: "old", date: "2026-10-01", ex: "Chest Press Makinesi", sets: [{ w: 20, r: 8 }] },
+    ];
+    const once = migrateExNames(s);
+    expect(once.entries).toHaveLength(1);
+    expect(once.entries[0].sets).toHaveLength(3);
+    expect(migrateExNames(once)).toEqual(once);
   });
   it("preserves repeated program rows and targets in their original order", () => {
     const s = DEFAULTS();

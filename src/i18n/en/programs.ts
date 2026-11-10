@@ -1,4 +1,13 @@
 export default {
+  quick_flow: "Quick flow",
+  flow_minutes: "{n} minutes",
+  region_all: "Full body",
+  region_hips: "Hips",
+  region_back: "Back",
+  region_shoulders: "Shoulders / neck",
+  region_legs: "Legs",
+  pose_info: "{region}, level {level}, {sec} seconds",
+  both_sides: "Left and right",
   "ss_title": "Superset with previous exercise",
   "ex_placeholder": "Select exercise",
   "ex_aria": "Exercise",
