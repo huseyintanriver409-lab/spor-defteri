@@ -62,12 +62,13 @@ it("body profile fields stay together outside training settings", () => {
   const general = html.slice(html.indexOf('data-i18n="html.general_settings_title"')).split("</details>")[0];
   const training = html.slice(html.indexOf('data-i18n="html.train_settings_title"')).split("</details>")[0];
   const body = html.slice(html.indexOf('data-i18n="html.profile_body_title"')).split('<details')[0];
-  for (const id of ["profileHeight", "profileAge", "profileWeight", "bSex"]) {
+  for (const id of ["profileHeight", "profileAge", "profileWeight", "bSex", "profileModel", "profileExp"]) {
     expect(body).toContain('id="' + id + '"');
     expect(training).not.toContain('id="' + id + '"');
     expect(html.split('id="' + id + '"')).toHaveLength(2);
   }
-  for (const id of ["setLang", "bBody"]) {
+  expect(html).not.toContain('id="bBody"');
+  for (const id of ["setLang"]) {
     expect(general).toContain('id="' + id + '"');
     expect(training).not.toContain('id="' + id + '"');
     expect(html.split('id="' + id + '"')).toHaveLength(2);

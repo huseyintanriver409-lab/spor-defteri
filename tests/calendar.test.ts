@@ -392,7 +392,7 @@ describe("görev modu", () => {
     expect(r.planUpdated).toBe(true);
     const tasks = tc.lists[st.gcal.taskList!];
     expect(tasks.map(t => t.due!.slice(0, 10))).toEqual(MO_TH);
-    expect(tasks[0]).toMatchObject({ title: "Antrenman: Push", notes: "• Bench Press (Barbell)", status: "needsAction", due: "2026-11-02T00:00:00.000Z" });
+    expect(tasks[0]).toMatchObject({ title: "Antrenman: Push", notes: "• Bench Press (Barbell)\n[spor-defteri]", status: "needsAction", due: "2026-11-02T00:00:00.000Z" });
     expect(cal.log).toEqual([]);
     expect(st.gcal.taskSig).toBe(planSignature(st.plan, progs));
     tc.log.length = 0;
@@ -476,7 +476,7 @@ describe("stale cleanup", () => {
  });
  it("cleans tasks older than backfill and preserves finished and unrelated tasks", async () => {
   const tc=fakeTasks(), st=taskState(); await runCalendar(st,fakeCalendar(),helpers,tc);
-  tc.lists[st.gcal.taskList!].push({id:"old",title:"Workout: Push",due:"2025-01-01",status:"needsAction"},{id:"done",title:"Workout: Push",due:"2025-01-02",status:"completed"},{id:"other",title:"Personal",due:"2025-01-01",status:"needsAction"});
+  tc.lists[st.gcal.taskList!].push({id:"old",title:"Workout: Push",notes:"[spor-defteri]",due:"2025-01-01",status:"needsAction"},{id:"done",title:"Workout: Push",due:"2025-01-02",status:"completed"},{id:"other",title:"Personal",due:"2025-01-01",status:"needsAction"});
   await runCalendar(st,fakeCalendar(),helpers,tc);
   const ids=tc.lists[st.gcal.taskList!].map(t=>t.id);
   expect(ids).not.toContain("old"); expect(ids).toContain("done"); expect(ids).toContain("other");

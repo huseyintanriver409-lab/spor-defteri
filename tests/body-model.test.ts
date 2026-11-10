@@ -30,13 +30,13 @@ describe("independent body model", () => {
     expect(bodyModel(withDefaults({ profile: { sex: "f" }, prefs: { body: "m" } }).prefs)).toBe("m");
     expect(bodyModel(withDefaults({ profile: { sex: "o" } }).prefs)).toBe("m");
   });
-  it("offers all four genders and keeps the general model selector available", () => {
+  it("offers all four genders and keeps the profile model selector available", () => {
     const html = readFileSync("spor-defteri.html", "utf8");
     const gender = html.match(/<select id="bSex">([\s\S]*?)<\/select>/)![1];
     expect([...gender.matchAll(/value="([^"]*)"/g)].map(x => x[1])).toEqual(["m", "f", "o", ""]);
     expect(html).toContain('id="profileModelWrap"');
     const settings = readFileSync("src/app/settings.js", "utf8");
-    expect(settings).toContain('$("#bBodyWrap").classList.remove("hidden")');
+    expect(settings).toContain('$("#profileModelWrap").classList.remove("hidden")');
     expect(settings).toContain('setGender(state, $("#bSex").value)');
     const onboarding = readFileSync("src/app/presets.js", "utf8");
     expect(onboarding).toContain('["", t("html.sex_none")]');

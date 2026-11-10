@@ -126,6 +126,10 @@ export function mergeStates(local: State, remoteRaw: any): { state: State; stats
     SETTINGS.forEach(k => out[k] = remote[k]); out.settingsU = remote.settingsU;
     // eski sürümdeki bir cihaz başlangıç verisini bilmez; dosyada hiç yoksa yereldeki silinmesin
     if (remoteRaw && !("baseline" in remoteRaw)) out.baseline = local.baseline;
+    // Older clients may save a profile without the optional experience fields.
+    if (remoteRaw?.profile?.exp === undefined && local.profile.exp !== undefined) {
+      out.profile = { ...out.profile, exp: local.profile.exp, expAt: local.profile.expAt };
+    }
   }
   out.deleted = [...tomb.values()];
   // aktif program, canlı antrenman ve taslak bu cihaza özeldir

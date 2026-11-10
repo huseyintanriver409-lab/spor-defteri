@@ -11,6 +11,7 @@ const muscles: Record<string, { p: string[]; s: string[] }> = {
   "Treadmill Run": { p: ["Quadriceps"], s: [] },
 };
 const base = {
+  profile: { exp: "active" as const },
   isCardio: (ex: string) => ex.startsWith("Treadmill"),
   musclesOf: (ex: string) => muscles[ex] || { p: [], s: [] },
 };

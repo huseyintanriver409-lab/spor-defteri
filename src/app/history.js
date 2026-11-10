@@ -36,7 +36,16 @@ export function renderHistory(){
     html += `<button class="${d.getMonth() !== m ? "out " : ""}${v ? `has l${lv} ` : ""}${pl ? "plan " : ""}${k === today ? "today " : ""}${k === selDay ? "sel" : ""}" style="${v ? `--lv:${lv}` : ""}" data-d="${k}" aria-label="${niceDate(k)}${v ? `, ${t("history.sets_count", { n: v })}` : ""}${pl ? t("history.aria_planned", { name: esc(programName(pl)) }) : ""}" aria-pressed="${k === selDay}">${d.getDate()}</button>`;
   }
   $("#calGrid").innerHTML = html;
-  $("#calGrid").querySelectorAll("[data-d]").forEach(b => b.onclick = () => { selDay = b.dataset.d; renderHistory(); });
+  $("#calGrid").querySelectorAll("[data-d]").forEach(b => b.onclick = () => { selDay = b.dataset.d; renderHistory();
+    const target = $("#hdList").closest(".card"), rect = target.getBoundingClientRect();
+    const top = document.querySelector("header")?.getBoundingClientRect().bottom || 0;
+    const bottom = document.querySelector(".tabs")?.getBoundingClientRect().top || innerHeight;
+    if (rect.top < top || rect.bottom > bottom) {
+      target.style.scrollMarginTop = `${top + 8}px`;
+      target.style.scrollMarginBottom = `${innerHeight - bottom + 8}px`;
+      target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
   const list = state.entries.filter(e => e.date === selDay).sort((a, b) => a.ts - b.ts);
   $("#hdTitle").textContent = selDay === today ? t("history.today") : niceDate(selDay);
   const ss = state.sessions.filter(s => s.date === selDay);

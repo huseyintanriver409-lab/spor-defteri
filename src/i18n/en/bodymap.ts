@@ -1,4 +1,5 @@
 export default {
+  soreness: "Soreness possible",
   front: "Front",
   back: "Back",
   view_aria: "{side} view",

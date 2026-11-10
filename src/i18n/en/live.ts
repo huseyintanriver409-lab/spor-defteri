@@ -1,4 +1,5 @@
 export default {
+  rir: "RIR",
   side_left: "Left",
   side_right: "Right",
   already_running: "A workout is already in progress",
@@ -43,7 +44,7 @@ export default {
   next_none: "No next exercise",
   start: "Start",
   extra_set_btn: "Extra set",
-  complete: "Complete",
+  complete: "Complete set",
   plates: "Plates",
   bar_heavier: "Bar ({bar} kg) is heavier than this weight",
   plates_aria: "{list} kilograms per side",

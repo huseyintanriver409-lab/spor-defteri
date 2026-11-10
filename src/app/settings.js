@@ -1,3 +1,6 @@
+import { experienceMode } from "../core/recovery.ts";
+import { hold } from "./live.js";
+import { updateBusy } from "../core/update-busy.ts";
 import { setGender } from "../core/body-model.ts";
 import { redrawBodyMaps } from "./bodymap.js";
 import { $, esc, ic, save, state } from "./store.js";
@@ -6,7 +9,7 @@ import { openRecommender } from "./presets.js";
 import { focus } from "./exercises.js";
 import { refreshDatalist } from "./log.js";
 import { latestWeight } from "./stats.js";
-import { mmss, setTDur } from "./tools.js";
+import { mmss, setTDur, tEnd } from "./tools.js";
 import { getLangPref, setLangPref, t, locale } from "../core/i18n.ts";
 
 /* ---------- Settings ---------- */
@@ -21,6 +24,7 @@ export function renderSettings(){
   $("#profileWeight").readOnly = !!weight;
   $("#profileBodyNote").textContent = t(weight ? "settings.profile_weight_history" : "settings.profile_autosave");
   $("#bSex").value = state.profile.sex || "";
+  $("#profileExp").value = experienceMode(state.profile);
   renderTrainPrefs();
   $("#goalSum").textContent = t("settings.goal_sum", { goal: state.goal, streak: $("#setStreak").selectedOptions[0].textContent.toLocaleLowerCase(locale()) });
 }
@@ -29,12 +33,8 @@ export function renderSettings(){
 export function renderTrainPrefs(){
   $("#setRest").innerHTML = [30,45,60,90,120,150,180,240,300].map(v => `<option value="${v}"${v===state.rest?" selected":""}>${mmss(v)}</option>`).join("");
   $("#autoRest").checked = state.autoRest; $("#prefWake").checked = state.prefs.wake; $("#prefHaptic").checked = state.prefs.haptics;
-  // Gender controls only the secondary question, never the general selector.
-  const sx = state.profile.sex || "", given = sx === "m" || sx === "f";
-  $("#bBody").value = state.prefs.body === "f" ? "f" : "m";
-  $("#bBodyWrap").classList.remove("hidden");
-  $("#profileModelWrap").classList.toggle("hidden", given);
-  $("#profileModel").value = $("#bBody").value;
+  $("#profileModelWrap").classList.remove("hidden");
+  $("#profileModel").value = state.prefs.body === "f" ? "f" : "m";
   $("#prefFocus").value = focus();
   $("#focusHelp").textContent = { both: t("settings.focus_both"), lift: t("settings.focus_lift"), yoga: t("settings.focus_yoga") }[focus()];
 }
@@ -111,7 +111,11 @@ const changeModel = value => {
   state.prefs.body = value;
   save(); redrawBodyMaps(); refreshAll(); renderSettings();
 };
-$("#bBody").onchange = () => changeModel($("#bBody").value);
+$("#profileExp").onchange = () => {
+  state.profile.exp = $("#profileExp").value;
+  state.profile.expAt = Date.now();
+  save(); refreshAll(); renderSettings();
+};
 $("#profileModel").onchange = () => changeModel($("#profileModel").value);
 document.addEventListener("click", e => {
   if (e.target.closest("[data-body-toggle]")) changeModel(state.prefs.body === "f" ? "m" : "f");
@@ -141,10 +145,11 @@ if (/^https?:$/.test(location.protocol)) {
     const reload = () => { if (!reloading) { reloading = true; location.reload(); } };
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (!hadController) return;  // ilk kurulum: zaten en yeni sürüm açık
-      const busy = () => { const a = document.activeElement; return a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName); };
-      if (document.hidden || !busy()) return reload();
+      const busy = () => { const a = document.activeElement; return updateBusy(state.live, hold, tEnd, a?.tagName, document.hidden); };
+      if (!busy()) return reload();
+      const pending = setInterval(() => { if (!busy()) { clearInterval(pending); reload(); } }, 500);
       document.addEventListener("focusout", () => setTimeout(() => { if (!busy()) reload(); }, 300));
-      document.addEventListener("visibilitychange", () => { if (document.hidden) reload(); });
+      document.addEventListener("visibilitychange", () => { if (!busy()) reload(); });
     });
   }
 }

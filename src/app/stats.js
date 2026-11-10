@@ -7,10 +7,11 @@ import { recoveryMap as recoveryMapCore } from "../core/recovery.ts";
 import { muscleLabel, setsByMuscle } from "../core/musclemap.ts";
 import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, focus, groupOf, groupShown, isCardio, isSport, goalDates, visiblePrograms, isTimed, isYoga, liftOn, musclesOf, yogaOn } from "./exercises.js";
-import { renderSeg, segState } from "./ui.js";
+import { renderSeg, segState, showTab } from "./ui.js";
 import { entryHTML } from "./log.js";
 import { bindBodyMap, bodyMap, fatigueTiers, legend, loadTiers, weekSets } from "./bodymap.js";
 
+const emptyAdd = () => `<button type="button" class="iconbtn empty-add" data-stats-add aria-label="${t("stats.add_workout")}">${ic("plus")}</button>`;
 /* ---------- Week ---------- */
 export let weekStart = mondayOf(new Date());
 export function renderWeek(){
@@ -39,7 +40,7 @@ export function renderWeek(){
     // yeşil bölge: en verimli aralık (4–10 set)
     const v = ms[m] || 0, cls = v >= 4 ? "ok" : "";
     return `<div class="mbar"><span>${muscleLabel(m)}</span><div class="track"><div class="zone" style="left:${4/scale*100}%;width:${6/scale*100}%"></div><i class="${cls}" style="width:${v/scale*100}%"></i></div><b>${fmt(v)}</b></div>`;
-  }).join("") + muscleAdvice(ms) : `<div class="empty">${t("stats.no_records")}</div>`;
+  }).join("") + muscleAdvice(ms) : `<div class="empty">${t("stats.no_records")}${emptyAdd()}</div>`;
 
   const byEx = {};
   list.forEach(e => {
@@ -53,7 +54,7 @@ export function renderWeek(){
         ? `<tr><td>${esc(n)}</td><td>${o.sets}</td><td colspan="3">${t("stats.min_val", { n: fmt(o.mins) })}${o.km ? " · "+t("stats.km_val", { n: fmt(o.km) }) : ""}</td></tr>`
         : o.timed ? `<tr><td>${esc(n)}</td><td>${o.sets}</td><td colspan="3">${t("stats.total_time", { t: fmtSec(o.secs) })}${o.max ? ` · +${t("stats.kg_val", { n: fmt(o.max) })}` : ""}</td></tr>`
         : `<tr><td>${esc(n)}</td><td>${o.sets}</td><td>${o.reps}</td><td>${fmt(o.max)}</td><td>${fmt(o.vol)}</td></tr>`).join("")
-    : `<tr><td class="empty">${t("stats.no_records")}</td></tr>`;
+    : `<tr><td class="empty">${t("stats.no_records")}${emptyAdd()}</td></tr>`;
 
   let html = "";
   for (let i=0;i<7;i++){
@@ -61,7 +62,7 @@ export function renderWeek(){
     const es = list.filter(e => e.date===k).sort((x,y) => x.ts-y.ts);
     if (es.length) html += `<h3 style="font-size:14px;margin:14px 0 2px">${niceDate(k)}</h3>` + es.map(e => entryHTML(e,false)).join("");
   }
-  $("#wDays").innerHTML = html || `<div class="empty">${t("stats.no_records")}</div>`;
+  $("#wDays").innerHTML = html || `<div class="empty">${t("stats.no_records")}${emptyAdd()}</div>`;
 }
 // Yoga özeti: toplam tutuş süresi, farklı poz ve geçen haftayla fark
 const yogaSecs = es => es.reduce((t, e) => t + practiceSeconds(e.sets), 0);
@@ -146,7 +147,7 @@ export function renderHist(){
   // rekor setleri işaretle (ısınma setleri hariç)
   let best = 0; const prMap = {};
   if (!c && !isYoga(ex)) list.forEach(e => { const set = new Set(); e.sets.forEach((s,i) => { if (s.t !== "w" && (+s.w||0) > best) { if (best > 0) set.add(i); best = +s.w||0; } }); prMap[e.id] = set; });
-  $("#histList").innerHTML = list.length ? list.slice().reverse().map(e => `<div style="margin-top:8px" class="muted small">${niceDate(e.date)}</div>` + entryHTML(e,false,prMap[e.id])).join("") : `<div class="empty">${t("stats.no_records")}</div>`;
+  $("#histList").innerHTML = list.length ? list.slice().reverse().map(e => `<div style="margin-top:8px" class="muted small">${niceDate(e.date)}</div>` + entryHTML(e,false,prMap[e.id])).join("") : `<div class="empty">${t("stats.no_records")}${emptyAdd()}</div>`;
 }
 export function chart(pts, proj){
   if (pts.length < 2) return `<div class="empty">${pts.length ? t("stats.chart_need") : t("stats.no_records")}</div>`;
@@ -181,7 +182,7 @@ export function renderRecords(){
   const names = Object.keys(by).sort((a,b) => groupOf(a).localeCompare(groupOf(b),locale()) || a.localeCompare(b,locale()));
   $("#recTable").innerHTML = names.length
     ? `<tr><th>${t("stats.th_exercise")}</th>${REP_COLS.map(n => `<th>${t("stats.rep_col", { n })}</th>`).join("")}<th>${t("stats.th_1rm")}</th></tr>` + names.map(n => `<tr class="click" data-ex="${esc(n)}"><td>${esc(n)}</td>${REP_COLS.map(c => `<td>${by[n].reps[c] ? fmt(by[n].reps[c]) : "–"}</td>`).join("")}<td><b>${by[n].e1 ? fmt(by[n].e1) : "–"}</b></td></tr>`).join("")
-    : `<tr><td class="empty">${t("stats.no_records")}</td></tr>`;
+    : `<tr><td class="empty">${t("stats.no_records")}${emptyAdd()}</td></tr>`;
   $("#recTable").querySelectorAll("[data-ex]").forEach(tr => tr.onclick = () => {
     segState.stats = "hist"; renderSeg("stats"); $("#histEx").value = tr.dataset.ex; renderHist(); scrollTo(0,0);
   });
@@ -197,7 +198,7 @@ export function renderRecords(){
 }
 
 /* ---------- Recovery ---------- */
-export const recoveryMap = () => recoveryMapCore({ entries: state.entries.filter(e => isSport(e.ex)), sessions: state.sessions, isCardio, musclesOf });
+export const recoveryMap = () => recoveryMapCore({ entries: state.entries.filter(e => isSport(e.ex)), sessions: state.sessions, isCardio, musclesOf, profile: state.profile });
 export function renderRecovery(){
   const R = recoveryMap();
   // vücut haritası: şu anki yorgunluk ya da bu haftanın set yükü
@@ -268,6 +269,9 @@ export function renderPower(keepInput){
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-stats-add]")) { segState.train = "log"; showTab("train"); }
+});
 $("#wPrev").onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderWeek(); };
 $("#wNext").onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderWeek(); };
 $("#wToday").onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); };

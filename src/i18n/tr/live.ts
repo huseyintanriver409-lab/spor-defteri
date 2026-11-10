@@ -1,4 +1,5 @@
 export default {
+  rir: "RIR",
   side_left: "Sol",
   side_right: "Sağ",
   already_running: "Zaten süren bir antrenman var",
@@ -43,7 +44,7 @@ export default {
   next_none: "Sonraki hareket yok",
   start: "Başlat",
   extra_set_btn: "Ekstra set",
-  complete: "Tamamla",
+  complete: "Seti tamamla",
   plates: "Plakalar",
   bar_heavier: "Bar ({bar} kg) bu kilodan ağır",
   plates_aria: "Her tarafa {list} kilogram",

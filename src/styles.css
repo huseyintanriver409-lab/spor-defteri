@@ -75,7 +75,8 @@ header h1{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em;line-hei
 .syncbtn[data-s="err"]{color:var(--danger)}
 .syncbtn[data-s="busy"] .ic{animation:spin 1.1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.i-help summary{list-style:none;display:inline-grid;place-items:center;width:30px;height:30px;color:var(--faint);cursor:pointer}
+.i-help summary{list-style:none;display:inline-grid;place-items:center;width:30px;height:30px;color:var(--faint);cursor:pointer;position:relative}
+.i-help summary::after{content:"";position:absolute;inset:-7px}
 .i-help summary::-webkit-details-marker{display:none}
 .i-help .ic{width:16px;height:16px}
 .i-help[open] summary{color:var(--accent)}
@@ -111,6 +112,8 @@ nav.tabs button.on::before{content:"";position:absolute;top:-8px;left:50%;width:
 .card:not(.help-open) .help{display:none}
 .infobtn{display:inline-grid;place-items:center;width:30px;height:30px;margin:-8px -6px -8px 0;padding:0;border:0;border-radius:0;background:none;color:var(--faint);cursor:pointer;flex:none}
 .infobtn .ic{width:16px;height:16px}
+.infobtn{position:relative}
+.infobtn::after{content:"";position:absolute;inset:-7px}
 .help-open .infobtn{color:var(--accent)}
 .hi{display:inline-grid;place-items:center;flex:none}
 .hi .ic{width:16px;height:16px;stroke-width:2.3}
@@ -148,7 +151,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 .btn.primary{--fill:var(--accent);--bd:var(--accent);--cut:10px;color:var(--accent-ink)}
 .btn.primary:hover{--bd:var(--accent);filter:brightness(1.07)}
 .btn.primary:active{--fill:var(--accent-press);--bd:var(--accent-press)}
-.btn.sm{--cut:4px;--cut2:0px;min-height:36px;padding:6px 12px;font-size:13.5px}
+.btn.sm{--cut:4px;--cut2:0px;min-height:44px;padding:6px 12px;font-size:13.5px}
 .btn.xl{--cut:10px;min-height:62px;font-size:18px;font-weight:800;width:100%}
 .btn.block{width:100%}
 .btn.quiet{--fill:transparent}
@@ -166,11 +169,11 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 .seg{display:flex;gap:4px;margin:0 -16px 14px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
 .seg::-webkit-scrollbar{display:none}
 .seg button,.fchip{--cut:0px;--cut2:0px;--fill:transparent;flex:none;color:var(--muted);font:inherit;font-size:13.5px;font-weight:650;padding:8px 14px;
-  cursor:pointer;min-height:38px;white-space:nowrap}
+  cursor:pointer;min-height:44px;white-space:nowrap}
 .seg button.on,.fchip.on{--cut:4px;--fill:var(--text);--bd:var(--text);color:var(--bg)}
 .fchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
 .fchips::-webkit-scrollbar{display:none}
-.fchip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:13px;min-height:36px}
+.fchip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:13px;min-height:44px}
 .fchip .ic{width:15px;height:15px}
 
 /* ---------- Büyük sayılar ---------- */
@@ -188,7 +191,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 
 /* ---------- Elle kayıt editörü ---------- */
 .sets{display:grid;gap:8px;margin:12px 0}
-.setrow{display:grid;grid-template-columns:40px 1fr 1fr 62px 32px;gap:6px;align-items:center}
+.setrow{display:grid;grid-template-columns:40px 1fr 1fr 62px 44px;gap:6px;align-items:center}
 .setrow input{padding:8px 10px;min-height:46px;font-size:17px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums}
 .setrow select{padding:8px 4px;min-height:46px;font-size:15px;text-align:center}
 .setrow.head{font-size:12px;font-weight:600;color:var(--muted);text-align:center;letter-spacing:0}
@@ -219,7 +222,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 .chip .ic{width:13px;height:13px}
 .chip.warm{background:none;border:1px dashed var(--line2);color:var(--muted)}
 .chip.pr{background:var(--warnsoft);color:var(--warn)}
-button.chip{border:0;color:var(--text);font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+button.chip{border:0;min-height:44px;color:var(--text);font:inherit;font-size:13px;font-weight:650;cursor:pointer}
 .note{display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(--muted);margin-top:8px}
 .note .ic{width:14px;height:14px;margin-top:2px}
 .tag.good{background:var(--goodsoft);color:var(--good)}
@@ -228,7 +231,7 @@ button.chip{border:0;color:var(--text);font:inherit;font-size:13px;font-weight:6
 .bodymap{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:340px;margin:4px auto 0}
 .card:has(.bm-toggle){position:relative}
 .card .bodymap{position:static}
-.bodymap .bm-toggle{position:absolute;top:10px;right:10px;z-index:1;width:36px;height:36px;opacity:.7}
+.bodymap .bm-toggle{position:absolute;top:10px;right:10px;z-index:1;width:44px;height:44px;min-width:44px;min-height:44px;opacity:.7}
 .bm-toggle:hover,.bm-toggle:focus-visible{opacity:1}
 .bm-swap{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .bodymap.small{max-width:220px}
@@ -298,7 +301,7 @@ svg text{fill:var(--muted);font-size:10px;font-family:var(--font)}
 /* ---------- Takvim (Geçmiş) ---------- */
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
 .cal .wd{font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted);padding:4px 0}
-.cal button{position:relative;aspect-ratio:1;border:0;border-radius:0;background:none;color:var(--text);font:inherit;font-size:14px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.cal button{position:relative;aspect-ratio:1;min-height:44px;border:0;border-radius:0;background:none;color:var(--text);font:inherit;font-size:14px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
 .cal button.out{color:var(--muted);opacity:.55}
 .cal button.has{background:color-mix(in srgb,var(--accent) calc(var(--lv,1)*22%),var(--card2));color:var(--text)}
 .cal button.has.l4{color:var(--accent-ink)}
@@ -329,7 +332,7 @@ details.card.fold{border-top:0}
 .planday b{display:block;font-size:18px;margin:2px 0 4px;letter-spacing:-.01em}
 
 /* ---------- Programlar ---------- */
-.prow{display:grid;grid-template-columns:40px 1fr 50px 68px 32px;gap:6px;align-items:center}
+.prow{display:grid;grid-template-columns:40px 1fr 50px 68px 44px;gap:6px;align-items:center}
 .prow input{padding:8px 10px;min-height:46px}
 .prow .pss{display:grid;place-items:center;height:46px;border-radius:0;border:0;background:var(--card2);color:var(--faint);cursor:pointer;padding:0}
 .prow .pss .ic{width:17px;height:17px}
@@ -339,7 +342,7 @@ details.card.fold{border-top:0}
 .progcard li:first-child{border-top:0}
 .progcard li span{margin-left:auto;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .progcard .row{gap:0 2px}
-.progcard .row .iconbtn{width:40px;height:40px}
+.progcard .row .iconbtn{width:44px;height:44px}
 .progcard .row .btn{padding:10px 12px;gap:6px}
 .progcard h3{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-.01em}
 .progcard .progtop{display:flex;align-items:center;gap:8px}
@@ -376,7 +379,7 @@ html.reel-open,html.reel-open body{overflow:hidden}
 .reel-legend i{width:12px;height:12px;border-radius:3px;flex:none}
 .reel-sets{display:flex;align-items:center;gap:4px;margin-bottom:8px}
 .reel-sets b{min-width:48px;text-align:center;font-size:14px}
-.reel-sets .iconbtn{width:32px;height:32px}
+.reel-sets .iconbtn{width:44px;height:44px}
 .reel-scale{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted);margin-bottom:14px}
 .reel-scale span{display:flex;align-items:center;gap:4px}
 .reel-scale i{width:8px;height:8px;border-radius:2px}
@@ -426,7 +429,7 @@ body.focus-open{overflow:hidden}
 .f-list{display:flex;gap:6px;overflow-x:auto;padding:4px 14px 10px;scrollbar-width:none}
 .f-list::-webkit-scrollbar{display:none}
 .f-list button{--cut:0px;--cut2:0px;--fill:transparent;flex:none;display:inline-flex;align-items:center;gap:6px;max-width:190px;color:var(--muted);font:inherit;font-size:13px;font-weight:650;
-  padding:7px 12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:36px}
+  padding:7px 12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:44px}
 .f-list button.on{--cut:4px;--fill:var(--text);--bd:var(--text);color:var(--bg)}
 .f-list button.done{color:var(--good);--bd:color-mix(in srgb,var(--good) 40%,transparent)}
 .f-list button .ic{width:14px;height:14px}
@@ -446,8 +449,8 @@ body.focus-open{overflow:hidden}
 .steppers{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .steppers.one{grid-template-columns:1fr}
 .stats.four.two{grid-template-columns:repeat(2,1fr)}
-.stepper{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 6px;min-height:104px}
-.stepper button{width:40px;height:44px;border-radius:0;transition:transform 100ms ease-out;border:0;background:var(--card2);color:var(--text);display:grid;place-items:center;cursor:pointer;touch-action:manipulation;user-select:none}
+.stepper{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 6px;min-height:104px}
+.stepper button{width:44px;height:44px;border-radius:0;transition:transform 100ms ease-out;border:0;background:var(--card2);color:var(--text);display:grid;place-items:center;cursor:pointer;touch-action:manipulation;user-select:none}
 .stepper button:active{background:var(--card3);transform:translateY(1px)}
 .stepper button .ic{width:20px;height:20px;stroke-width:2.6}
 .stepper .val{text-align:center;min-width:0}
@@ -457,7 +460,7 @@ body.focus-open{overflow:hidden}
 .f-chips{display:flex;align-items:center;gap:6px;margin-top:12px;overflow-x:auto;scrollbar-width:none}
 .f-chips::-webkit-scrollbar{display:none}
 .f-chips > span{font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted);min-width:44px}
-.f-chips button{--cut:0px;--cut2:0px;--fill:transparent;flex:none;min-width:40px;min-height:36px;padding:6px 11px;color:var(--muted);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+.f-chips button{--cut:0px;--cut2:0px;--fill:transparent;flex:none;min-width:44px;min-height:44px;padding:6px 11px;color:var(--muted);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
 .f-chips button.on{--cut:4px;--fill:var(--soft);--bd:var(--accent-line);color:var(--accent)}
 .f-chips button.on[data-t="w"]{--fill:var(--warnsoft);--bd:transparent;color:var(--warn)}
 .f-chips button.on[data-t="f"]{--fill:var(--dangersoft);--bd:transparent;color:var(--danger)}
@@ -471,7 +474,7 @@ body.focus-open{overflow:hidden}
 .f-rest .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:2px}
 .f-nav{display:flex;gap:8px;margin-top:8px}
 .f-nav button{flex:1;min-width:0;display:flex;align-items:center;gap:6px;justify-content:center;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:650;
-  padding:8px;border-radius:0;cursor:pointer;min-height:40px}
+  padding:8px;border-radius:0;cursor:pointer;min-height:44px}
 .f-nav button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .f-nav button:disabled{opacity:.3;cursor:default}
 .f-nav button:not(:disabled):hover{background:var(--card2);color:var(--text)}
@@ -545,7 +548,7 @@ body.focus-open{overflow:hidden}
 .star.on{color:var(--warn)}
 .pk-head{font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--muted);margin:14px 0 4px}
 .optgrid{display:flex;flex-wrap:wrap;gap:6px}
-.optgrid button{min-height:40px}
+.optgrid button{min-height:44px}
 
 /* ---------- Araçlar ---------- */
 .plates{display:flex;align-items:center;justify-content:center;gap:3px;min-height:92px;margin-top:14px}
@@ -560,7 +563,7 @@ body.focus-open{overflow:hidden}
 .toast.show,.snack.show{opacity:1;transform:translate(-50%,0)}
 .snack{padding:6px 6px 6px 16px}
 .snack.show{pointer-events:auto}
-.snack button{border:0;background:none;color:var(--bg);text-decoration:underline;font:inherit;font-weight:700;padding:8px 12px;border-radius:0;cursor:pointer;min-height:40px}
+.snack button{border:0;background:none;color:var(--bg);text-decoration:underline;font:inherit;font-weight:700;padding:8px 12px;border-radius:0;cursor:pointer;min-height:44px}
 body.focus-open .toast,body.focus-open .snack{bottom:calc(160px + env(safe-area-inset-bottom))}
 .modal{position:fixed;inset:0;z-index:40;background:var(--overlay);display:grid;place-items:center;padding:16px;animation:fade .2s}
 .modal .box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;max-width:390px;width:100%}
@@ -577,7 +580,7 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
   border-radius:22px;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.4)}
 .sheet .clock{font-size:60px;font-weight:800;letter-spacing:-.01em;text-align:center;font-variant-numeric:tabular-nums;margin:4px 0 12px}
 .presets{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
-.presets button{padding:8px 0;min-height:40px;font-size:14px}
+.presets button{padding:8px 0;min-height:44px;font-size:14px}
 .presets button.on{--bd:var(--accent);--fill:var(--soft);color:var(--accent)}
 
 @media (min-width:640px){ main{padding:12px 24px 24px} .card{padding:18px} .hero h2{font-size:44px} }
@@ -643,3 +646,9 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 .shhelp summary .ic{width:16px;height:16px}
 .shhelp[open] summary{color:var(--accent)}
 .shhelp p{margin:0;font-size:13px;font-weight:400;text-transform:none}
+
+.empty-add{min-width:44px;min-height:44px;margin-left:8px}
+.bm-soreness{visibility:hidden;pointer-events:none}
+.bm-soreness[data-placed]{visibility:visible}
+.bm-soreness path:first-of-type{fill:#0B0B0B;stroke:#D7263D;stroke-width:2}
+.bm-soreness path:last-of-type{fill:none;stroke:#D7263D;stroke-width:2}

@@ -1,4 +1,10 @@
 export default {
+  experience: "Deneyim",
+  exp_auto: "Oto",
+  exp_new: "Yeni",
+  exp_back: "Döndüm",
+  exp_active: "Aktif",
+
   profile_weight_history: "Kilo, son vücut ölçümünden alınır. Diğer bilgiler otomatik kaydedilir.",
   profile_autosave: "İsteğe bağlı. Değişiklikler otomatik kaydedilir.",
   welcome_title: "Spor Defteri’ne hoş geldin",

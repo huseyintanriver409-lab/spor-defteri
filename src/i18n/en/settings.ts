@@ -1,4 +1,10 @@
 export default {
+  experience: "Experience",
+  exp_auto: "Auto",
+  exp_new: "New",
+  exp_back: "Returning",
+  exp_active: "Active",
+
   profile_weight_history: "Weight comes from your latest body measurement. Other changes save automatically.",
   profile_autosave: "Optional. Changes save automatically.",
   welcome_title: "Welcome to Spor Defteri",

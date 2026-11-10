@@ -1,3 +1,4 @@
+import { buzz } from "./ui.js";
 import { e1rm, platesFor as platesForCore, warmupSets } from "../core/training.ts";
 import { pad } from "../core/dates.ts";
 import { fmtNum, t } from "../core/i18n.ts";
@@ -55,7 +56,7 @@ export let tEnd = 0, tTick = null, tDur = 90, tTotal = 90, audio = null;
 export const mmss = s => Math.floor(s/60) + ":" + pad(Math.max(0, Math.floor(s%60)));
 export function renderPresets(){
   $("#presets").innerHTML = PRESETS.map(s => `<button class="btn sm${s===tDur?" on":""}" data-s="${s}">${s<120 ? s+t("tools.u_sec") : (s/60)+t("tools.u_min")}</button>`).join("");
-  $("#presets").querySelectorAll("button").forEach(b => b.onclick = () => { tDur = +b.dataset.s; state.rest = tDur; save(); if (tEnd) startTimer(); else { renderPresets(); $("#clock").textContent = mmss(tDur); } });
+  $("#presets").querySelectorAll("button").forEach(b => b.onclick = () => { tDur = +b.dataset.s; if (tEnd) startTimer(); else { renderPresets(); $("#clock").textContent = mmss(tDur); } });
 }
 export function adjust(d){
   if (tEnd) { tEnd += d*1000; tTotal = Math.max(1, tTotal + d); tickTimer(); }
@@ -85,7 +86,7 @@ export function renderFocusRest(left){
   $("#fRestBar").style.width = Math.max(0, Math.min(100, l / tTotal * 100)) + "%";
 }
 export function beep(){
-  try { navigator.vibrate && navigator.vibrate([250,120,250,120,250]); } catch(e){}
+  buzz([250,120,250,120,250]);
   if (!audio) return;
   try { [0, .3, .6].forEach(off => { const o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = 880; o.connect(g); g.connect(audio.destination);
     g.gain.setValueAtTime(.25, audio.currentTime+off); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime+off+.25); o.start(audio.currentTime+off); o.stop(audio.currentTime+off+.26); }); } catch(e){}

@@ -120,7 +120,7 @@ export function renderFocus(){
     ${bar ? `<div id="fPlates">${platesHTML(d.w, bar)}</div>` : ""}
     ${warmPlan.length ? `<div class="f-warm"><div class="f-setlabel" style="margin:0"><span>${t("live.warmup")}</span></div><div class="chips">${warmPlan.map((x, j) => `<button class="chip${j < warmDone ? " done" : ""}" data-wi="${j}">${fmt(x.w)} × ${x.r}</button>`).join("")}</div></div>` : ""}
     ${tm ? `<div class="f-manual"><button class="ghost" id="fManual">${ic("check")}${t("live.save_no_timer")}</button></div>` : ""}
-    ${c || tm ? "" : `<div class="f-chips" id="fRirChips"><span>RIR</span>${["",0,1,2,3,4].map(v => `<button type="button" data-v="${v}" class="${String(fRir ?? "") === String(v) ? "on" : ""}">${v === "" ? "–" : v === 4 ? "4+" : v}</button>`).join("")}</div>
+    ${c || tm ? "" : `<div class="f-chips" id="fRirChips"><span>${t("live.rir")}</span>${["",0,1,2,3,4].map(v => `<button type="button" data-v="${v}" class="${String(fRir ?? "") === String(v) ? "on" : ""}">${v === "" ? "–" : v === 4 ? "4+" : v}</button>`).join("")}</div>
     <div class="f-chips" id="fTypeChips"><span>${t("live.type")}</span>${[["", t("live.type_normal")], ["w", t("live.warmup")], ["d", t("live.type_drop")], ["f", t("live.type_failure")]].map(([ty, l]) => `<button type="button" data-t="${ty}" class="${fType === ty ? "on" : ""}">${l}</button>`).join("")}</div>`}
     ${done.length ? `<div class="f-done" title="${t("live.tap_delete")}"><div class="f-setlabel" style="margin:0"><span>${t("live.completed")}</span></div><div class="chips">${doneChips}</div></div>` : ""}`;
   $("#fPrefs").onclick = () => openExPrefs(it);
@@ -192,14 +192,16 @@ export function tone(f, dur){
 }
 export function toggleHold(){
   if (hold) { if (hold.phase === "lead") cancelHold(); else finishHold(Math.round((Date.now() - hold.t0) / 1000)); return; }
+  if (!state.live || !liveItems()[state.live.idx]) return;
   const target = parseNum($("#f_r").value);
   if (!target) return toast(t("live.enter_time"));
   try { setAudio(audio || new (window.AudioContext || window.webkitAudioContext)()); audio.resume(); } catch(e){}
   stopTimer();
-  hold = { phase: "lead", t0: Date.now() + 3000, target, last: null };
+  hold = { workout: state.live, item: liveItems()[state.live.idx], phase: "lead", t0: Date.now() + 3000, target, last: null };
   hold.iv = setInterval(holdTick, 100); holdTick(); keepAwake(true);
 }
 export function holdTick(){
+  if (!holdValid()) { resetHold(); return; }
   const now = Date.now();
   if (hold.phase === "lead") {
     const left = Math.ceil((hold.t0 - now) / 1000);
@@ -224,9 +226,12 @@ export function renderHold(){
   $("#fHoldBar").style.width = lead ? "0%" : Math.min(100, (now - hold.t0) / 10 / hold.target) + "%";
   $("#fComplete").innerHTML = lead ? ic("x") + t("live.cancel") : ic("square") + t("live.save");
 }
-export function cancelHold(){ clearInterval(hold.iv); hold = null; renderFocus(); }
+export function holdValid(){ return !!hold && !!state.live && hold.workout === state.live && liveItems()[state.live.idx] === hold.item; }
+export function resetHold(){ if (hold) clearInterval(hold.iv); hold = null; }
+export function cancelHold(){ resetHold(); renderFocus(); }
 export function finishHold(secs, full){
-  clearInterval(hold.iv); hold = null;
+  if (!holdValid()) { resetHold(); return; }
+  resetHold();
   if (full) beep();
   $("#f_r").value = String(secs);
   if (secs > 0) completeSet(full === true); else renderFocus();
@@ -241,13 +246,18 @@ export function gotoItem(k){
 // yana kaydırarak hareketler arasında geçiş
 export let swX = null, swY = 0;
 export function addFocusExercise(){
+  if (hold) return toast(t("live.finish_hold_first"), "timer");
+  const workout = state.live;
+  if (!workout) return;
   openPicker(t("live.add_ex"), n => {
+    if (state.live !== workout || hold) return;
     const items = liveItems(), at = items.findIndex(x => x.ex === n);
     if (at >= 0) { gotoItem(at); return; }
     items.push({ ex: n, sets: 3, reps: "" }); state.live.idx = items.length - 1; save(); renderFocus();
   });
 }
 export function completeSet(fullHold = false){
+  if (!state.live || (hold && !holdValid())) return;
   const items = liveItems(), k = state.live.idx, it = items[k]; if (!it) return;
   const done = () => doneSetsOf(it.ex);
   const c = isCardio(it.ex), d = fDraft[it.ex] ||= {};
@@ -356,15 +366,23 @@ export function openExPrefs(it){
     closeSheet();
     if (!(await ask(t("live.confirm_remove", { ex: it.ex }), t("live.remove")))) return;
     const items = liveItems(), i = items.indexOf(it); if (i < 0) return;
-    items.splice(i, 1); if (state.live.sides) delete state.live.sides[it.ex]; save(); closeSheet(); renderFocus();
+    const current = items[state.live.idx];
+    if (hold?.item === it) resetHold();
+    items.splice(i, 1);
+    state.live.idx = Math.max(0, items.indexOf(current));
+    if (state.live.sides) delete state.live.sides[it.ex]; save(); closeSheet(); renderFocus();
     undoable(t("live.removed", { ex: it.ex }), () => { items.splice(i, 0, it); state.live.idx = i; save(); renderFocus(); });
   };
 }
 export async function finishWorkout(){
-  const { start, date, prs } = state.live;
+  const workout = state.live;
+  if (!workout) return;
+  const { start, date, prs } = workout;
   const lifts = () => state.entries.filter(e => e.date === date && isSport(e.ex));
   const n = lifts().reduce((a, e) => a + work(e.sets).length, 0);
   if (!(await ask(t("live.confirm_finish", { dur: durText(Date.now() - start), n }), t("live.finish")))) return;
+  if (state.live !== workout) return;
+  resetHold();
   const end = Date.now();
   if (state.entries.some(e => e.date === date)) state.sessions.push({ id: uid(), date, start, end, prog: state.live.prog || null });
     state.live = null; state.active = null; save();

@@ -186,8 +186,12 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
   // eski sürümün haftalık tekrarlayan etkinlikleri silinir: ilk sefer ve eski sürümde kalmış bir cihaz
   // onları yeniden yazdıysa (imzası eski biçimde)
   if (!g.dated || (g.planSig && !g.planSig.startsWith(SIG_PREFIX))) {
-    if (g.id) await withCal(async cal => { for (const [code] of WEEKDAYS) await client.deleteEvent(cal, planEventId(code)); });
-    g.dated = 1;
+    let deleted = true;
+    if (g.id) for (const [code] of WEEKDAYS) {
+      try { await withCal(cal => client.deleteEvent(cal, planEventId(code))); }
+      catch { deleted = false; }
+    }
+    g.dated = deleted ? 1 : 0;
   }
 
   // geçmiş tarihler ve antrenmanı yapılmış günler artık planın değil (yapılan gün ✅ etkinliğiyle değişti)
@@ -210,15 +214,18 @@ export async function runCalendar(state: CalendarState, client: CalendarClient, 
   g.dates = g.dates.filter(d => (d >= today || failed.has(d)) && !done.has(d));
   const want = eventPlan(g) ? plannedDates(state.plan, state.programs, new Date(now)).filter(x => !done.has(x.date)) : [];
   const target = eventPlan(g) ? planSignature(state.plan, state.programs) : "";
-  if (target !== g.planSig) {
-    if (!g.id) g.dates = [];
-    // plandan çıkan tarihler silinir; kalanlar aşağıda yeni haliyle yeniden yazılır
-    const keep = new Set(want.map(x => x.date));
-    for (const d of [...g.dates]) {
-      if (!keep.has(d)) await withCal(cal => client.deleteEvent(cal, dayEventId(d)));
-      g.dates = g.dates.filter(x => x !== d);
+  const changed = target !== g.planSig;
+  const keep = new Set(want.map(x => x.date));
+  for (const d of [...g.dates]) {
+    if (!keep.has(d) && !failed.has(d)) {
+      try { await withCal(cal => client.deleteEvent(cal, dayEventId(d))); }
+      catch { failed.add(d); continue; }
+      g.dates = g.dates.filter(x => x !== d); out.planUpdated = true;
     }
-    g.dates = []; // Rewrite remaining planned events when labels or language change.
+  }
+  if (changed) {
+    // Retain failed deletions after accepting the new signature; retry on every sync.
+    g.dates = [...failed];
     g.planSig = target; out.planUpdated = true;
   }
   let n = 0;
@@ -239,7 +246,9 @@ export const currentSig = (g: CalendarState["gcal"]) => taskPlan(g) ? g.taskSig 
 
 export const TASK_LIST = "Spor Defteri";
 const taskTitle = (name: string) => t("programs.workout_title", { name });
-const isWorkoutTask = (title: string) => ["Antrenman: ", "Workout: "].some(prefix => title.startsWith(prefix));
+export const TASK_MARK = "[spor-defteri]";
+const isWorkoutTask = (task: Task) => (task.notes || "").split(/\r?\n/).includes(TASK_MARK);
+const markedNotes = (notes: string) => isWorkoutTask({ id: "", notes }) ? notes : (notes ? notes + "\n" : "") + TASK_MARK;
 const dueOf = (date: string) => `${date}T00:00:00.000Z`;
 
 // Görev modu: plandaki tarihler görev olur, antrenmanı yapılan günün görevi tiklenir; plandan çıkan
@@ -259,29 +268,42 @@ async function runTasks(state: CalendarState, tc: TasksClient, h: CalendarHelper
   }
   const done = new Set([...state.sessions.filter(s => s.end).map(s => s.date), ...(state.entries || []).filter(e => e.sets?.length).map(e => e.date)]);
   const byDate = new Map<string, Task>();
-  for (const t of list.filter(t => t.due && isWorkoutTask(String(t.title || "")))) {
+  const legacyDays = new Map(plannedDates(state.plan, state.programs, now).map(x => [x.date, x]));
+  for (const task of list) {
+    if (!task.due || isWorkoutTask(task)) continue;
+    const x = legacyDays.get(task.due.slice(0, 10));
+    if (!x || task.title !== taskTitle(programName(x.p)) ||
+        (task.notes && task.notes !== h.describeProgram(x.p))) continue;
+    const notes = markedNotes(task.notes || "");
+    try { await tc.patchTask(g.taskList, task.id, { notes }); }
+    catch { continue; } // Persist ownership before destructive operations.
+    task.notes = notes;
+  }
+  for (const t of list.filter(t => t.due && isWorkoutTask(t))) {
     const d = t.due!.slice(0, 10), other = byDate.get(d);
     // iki cihaz aynı tarihe görev açtıysa biri kalır (tamamlanmış olan tercih edilir)
     if (other) {
       const drop = other.status === "completed" || t.status !== "completed" ? t : other;
-      if (drop.status !== "completed") await tc.deleteTask(g.taskList, drop.id);
+      if (drop.status !== "completed") { try { await tc.deleteTask(g.taskList, drop.id); } catch { /* retry from remote list */ } }
       if (drop === other) byDate.set(d, t);
     } else byDate.set(d, t);
   }
-  for (const [d, t] of byDate) if (done.has(d) && t.status !== "completed") { await tc.patchTask(g.taskList, t.id, { status: "completed" }); t.status = "completed"; out.ticked++; }
+  for (const [d, t] of byDate) if (done.has(d) && t.status !== "completed") { await tc.patchTask(g.taskList, t.id, { status: "completed", notes: markedNotes(t.notes || "") }); t.status = "completed"; out.ticked++; }
   // planlı olmayan ya da plan kurulmadan önce yapılmış antrenmanlar: tamamlanmış görev olarak eklenir
   if (want.length) for (const d of [...done].filter(d => d >= since && d <= today && !byDate.has(d)).sort()) {
     const ses = state.sessions.find(s => s.date === d && s.prog), p = (ses && state.programs.find(x => x.id === ses.prog)) || plannedOn(state.plan, state.programs, d);
-    await tc.insertTask(g.taskList, { title: taskTitle(p ? programName(p) : t("cloud.free_workout")), notes: p ? h.describeProgram(p) : "", due: dueOf(d), status: "completed" });
+    await tc.insertTask(g.taskList, { title: taskTitle(p ? programName(p) : t("cloud.free_workout")), notes: markedNotes(p ? h.describeProgram(p) : ""), due: dueOf(d), status: "completed" });
     byDate.set(d, { id: "", status: "completed" }); out.ticked++;
   }
   const wantBy = new Map(want.map(x => [x.date, x]));
   for (const [d, t] of byDate) {
-    if (!done.has(d) && t.status !== "completed" && !wantBy.has(d)) { await tc.deleteTask(g.taskList, t.id); byDate.delete(d); out.planUpdated = true; }
+    if (!done.has(d) && t.status !== "completed" && !wantBy.has(d)) { try { await tc.deleteTask(g.taskList, t.id); byDate.delete(d); out.planUpdated = true; } catch { /* retry from remote list */ } }
   }
   let n = 0;
   for (const x of want) {
-    const t = byDate.get(x.date), body = { title: taskTitle(programName(x.p)), notes: h.describeProgram(x.p) };
+    const t = byDate.get(x.date), owned = !!t && isWorkoutTask(t);
+    // uygulamaya ait görevin açıklaması her seferinde güncel şablondan kurulur; diğerleri mevcut notu korur
+    const body = { title: taskTitle(programName(x.p)), notes: markedNotes(owned || !t?.notes ? h.describeProgram(x.p) : t.notes) };
     if (t && (t.status === "completed" || (t.title === body.title && (t.notes || "") === body.notes))) continue;
     if (n++ >= MAX_PLAN_PER_RUN) break;
     if (t) await tc.patchTask(g.taskList, t.id, body);

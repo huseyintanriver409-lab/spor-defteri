@@ -1,4 +1,5 @@
 import { bodyModel } from "../core/body-model.ts";
+import { sorenessPossible } from "../core/recovery.ts";
 import { programName } from "../core/programs.ts";
 // Vücut haritası: önden ve arkadan kaslar; renk kademesi core/musclemap.ts'ten. Kasa dokununca o kasın hareketleri açılır.
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
@@ -58,7 +59,23 @@ function figure(side, tiers, caption){
     const title = ms.map(m => esc(muscleLabel(m)) + (LABEL[tiers[m]] ? " · " + LABEL[tiers[m]] : "")).join(", ");
     return ds.map(d => `<path d="${d}" data-m="${esc(ms.join("|"))}" data-t="${tier}"><title>${title}</title></path>`).join("");
   }).join("");
-  return `<figure><svg viewBox="${vb}" style="width:${wPct}%;margin:0 auto" role="img" aria-label="${t("bodymap.view_aria", { side: caption })}"><g class="bm-m">${paths}</g></svg><figcaption>${caption}</figcaption></figure>`;
+  const R = Object.values(tiers).includes("toparlaniyor") ? recoveryMap() : {};
+  const front = new Set(regionParts(bodySex(), "front").flatMap(([, , ms]) => ms || []));
+  const icons = [...new Set(order.flatMap(([, , ms]) => ms || []))]
+    .filter(m => (side === "front" || !front.has(m)) && tiers[m] === "toparlaniyor" && sorenessPossible(R[m]))
+    .map(m => `<g class="bm-soreness" data-soreness="${esc(m)}" role="img" aria-label="${esc(muscleLabel(m) + ": " + t("bodymap.soreness"))}"><title>${esc(muscleLabel(m) + ": " + t("bodymap.soreness"))}</title><path d="M12 2 23 22H1Z"/><path d="M12 8v7m0 3v1"/></g>`).join("");
+  if (icons) queueMicrotask(placeSorenessIcons);
+  return `<figure><svg viewBox="${vb}" style="width:${wPct}%;margin:0 auto" role="img" aria-label="${t("bodymap.view_aria", { side: caption })}"><g class="bm-m">${paths}</g>${icons}</svg><figcaption>${caption}</figcaption></figure>`;
+}
+function placeSorenessIcons(){
+  document.querySelectorAll("[data-soreness]").forEach(icon => {
+    const svg = icon.closest("svg"), size = svg.viewBox.baseVal.height * .035;
+    const boxes = [...svg.querySelectorAll("path[data-m]")].filter(p => p.dataset.m.split("|").includes(icon.dataset.soreness)).map(p => p.getBBox()).sort((a, b) => b.width * b.height - a.width * a.height);
+    if (!boxes.length) return;
+    const b = boxes[0];
+    icon.setAttribute("transform", `translate(${b.x + b.width / 2 - size / 2} ${b.y + b.height / 2 - size / 2}) scale(${size / 24})`);
+    icon.dataset.placed = "";
+  });
 }
 // tiers: kas → kademe (yorgunluk, "y-" haftalık ya da "g-" tek antrenman yükü)
 // large: ekran genişliğinde (Hareketler); plain: dokununca açılan pencerede yorgunluk bilgisi yok, yalnız hareketler
@@ -183,7 +200,7 @@ export function bindBodyMap(root, onTap){
 // Kas başına toparlanma core/recovery.ts'teki araştırmaya dayalı sürelerle; bu özet yalnız onların ortalaması.
 export const FATIGUE_LEVELS = [t("bodymap.fl_0"), t("bodymap.fl_1"), t("bodymap.fl_2"), t("bodymap.fl_3"), t("bodymap.fl_4"), t("bodymap.fl_5")];
 export function fatigueSummary(R = recoveryMap()){
-  const recent = Object.values(R).filter(r => r.hrs < 96);
+  const recent = Object.values(R).filter(r => r.hrs < Math.max(96, r.need));
   const score = recent.length ? recent.reduce((a, r) => a + (1 - r.pct), 0) / recent.length : 0;
   const lvl = score <= 0 ? 0 : Math.min(5, 1 + Math.floor(score * 5));
   return { lvl, label: FATIGUE_LEVELS[lvl] };

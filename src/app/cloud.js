@@ -8,7 +8,7 @@ import { currentSig, planSignature, runCalendar, taskPlan } from "../core/calend
 import { calendarClient } from "../sync/calendar.ts";
 import { tasksClient } from "../sync/tasks.ts";
 import { $, choose, esc, ic, save, setState, stampChanges, state, takeSnapshot, toast } from "./store.js";
-import { _mCache } from "./exercises.js";
+import { _mCache, visiblePrograms } from "./exercises.js";
 import { helpTip, openSheet, refreshAll, sheetHead } from "./ui.js";
 import { refreshDatalist } from "./log.js";
 import { describeSession, openUrl, progDetails, renderPlan } from "./programs.js";
@@ -194,7 +194,7 @@ export function runCal(interactive){
     try {
       if (tokenP) token = await tokenP;
       // sıra beklerken Drive birleştirmesi state'i değiştirmiş olabilir: güncel state kullanılır
-      r = await runCalendar(state, calendarClient(token), { describeProgram: progDetails, describeSession, timeZone: timeZone() }, needTasks() ? tasksClient(token) : undefined);
+      r = await runCalendar({ ...state, programs: visiblePrograms() }, calendarClient(token), { describeProgram: progDetails, describeSession, timeZone: timeZone() }, needTasks() ? tasksClient(token) : undefined);
       sync.calLast = Date.now(); saveSync();
       if (interactive) toast(r.written || r.planUpdated || r.ticked ? t("cloud.cal_updated") : t("cloud.cal_current"), "calendar-days");
     } catch(e){
@@ -214,7 +214,7 @@ export function runCal(interactive){
 export function calSoon(){
   clearTimeout(calTimer);
   calTimer = setTimeout(() => {
-    const g = state.gcal, target = g.plan ? planSignature(state.plan, state.programs) : "";
+    const g = state.gcal, target = g.plan ? planSignature(state.plan, visiblePrograms()) : "";
     if (target !== currentSig(g)) runCal(false);
   }, 4000);
 }

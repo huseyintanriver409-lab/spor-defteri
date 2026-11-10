@@ -24,7 +24,7 @@ export function pRow(it = {ex:"", sets:3, reps:"10"}){
     <div class="pickfield"><input class="pe" readonly placeholder="${t("programs.ex_placeholder")}" value="${esc(it.ex)}" aria-label="${t("programs.ex_aria")}"></div>
     <input class="ps" type="number" inputmode="numeric" min="1" value="${esc(it.sets)}" aria-label="${t("programs.sets_aria")}">
     <input class="pr" placeholder="8-12" value="${esc(it.reps)}" aria-label="${t("programs.reps_aria")}">
-    <button class="iconbtn danger" title="${t("programs.remove_ex")}" style="width:32px">${ic("x")}</button>`;
+    <button class="iconbtn danger" title="${t("programs.remove_ex")}">${ic("x")}</button>`;
   const ss = div.querySelector(".pss");
   ss.onclick = () => { ss.classList.toggle("on"); ss.setAttribute("aria-pressed", ss.classList.contains("on")); };
   const pe = div.querySelector(".pe");
@@ -220,7 +220,7 @@ export function renderPlan(){
       + `<div class="pk-head" style="margin-top:14px">${t("programs.order")}</div>`
       + R.map((id, i) => `<div class="row" style="margin-top:6px;flex-wrap:nowrap"><span class="small" style="flex:0 0 22px;font-weight:700">${i + 1}.</span>
           <select class="grow" data-pr="${i}">${opts(id)}</select>
-          <button class="iconbtn danger" data-prx="${i}" title="${t("programs.order_remove")}" style="width:32px"${R.length < 2 ? " disabled" : ""}>${ic("x")}</button></div>`).join("")
+          <button class="iconbtn danger" data-prx="${i}" title="${t("programs.order_remove")}"${R.length < 2 ? " disabled" : ""}>${ic("x")}</button></div>`).join("")
       + `<div class="row" style="margin-top:8px;gap:8px"><button class="btn sm" id="planRotAdd">${ic("plus")}${t("programs.order_add")}</button>${R.length > 1 && n ? `<button class="btn sm quiet" id="planRotShift">${ic("arrow-left-right")}${t("programs.order_shift")}</button>` : ""}</div>`
       + (R.length && n ? rotPreview(P) : "");
   } else {

@@ -1,4 +1,5 @@
 export default {
+  add_workout: "Antrenman ekle",
   no_records: "Kayıt yok",
   th_exercise: "Hareket",
   th_set: "Set",

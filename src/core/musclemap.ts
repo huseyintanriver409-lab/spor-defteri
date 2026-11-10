@@ -41,6 +41,7 @@ export const HEAVY_DAY = 12;
 export function fatigueTier(r?: MuscleRecovery): FatigueTier {
   if (!r) return "yok";
   if (r.pct >= 1) return "hazir";
+  if ((r.multiplier || 1) > 1) return "toparlaniyor";
   if (r.pct >= .5) return "toparlaniyor";
   return r.sets >= HEAVY_DAY ? "asiri" : "yorgun";
 }

@@ -41,12 +41,13 @@ vi.mock("../src/app/tools.js", () => ({
 vi.mock("../src/app/cloud.js", () => ({ runCal: vi.fn(), runSync: vi.fn() }));
 vi.mock("../src/app/streak.js", () => ({ celebrateStreak: vi.fn() }));
 // @ts-expect-error App modules are JavaScript; exercised through Vitest.
-import { state, toast } from "../src/app/store.js";
+import { state, toast, ask } from "../src/app/store.js";
 // @ts-expect-error App modules are JavaScript; exercised through Vitest.
-import { toggleHold, hold, fDraft, completeSet, openExPrefs } from "../src/app/live.js";
+import { toggleHold, hold, fDraft, completeSet, openExPrefs, resetHold, finishHold, addFocusExercise, finishWorkout } from "../src/app/live.js";
 // @ts-expect-error App modules are JavaScript; exercised through Vitest.
 import { startTimer } from "../src/app/tools.js";
 beforeEach(() => {
+  resetHold();
   vi.useFakeTimers(); vi.clearAllMocks(); env.nodes.clear();
   Object.assign(state, DEFAULTS());
   for (const k in fDraft) delete fDraft[k];
@@ -104,4 +105,37 @@ it("saves and clears explicit zero in the existing preference form", () => {
   expect(state.exPrefs[it.ex].rest).toBe(0);
   openExPrefs(it); env.node("#xpRest").value = ""; env.node("#xpSave").onclick();
   expect(state.exPrefs[it.ex]?.rest).toBeUndefined();
+});
+
+it('B1: ignores ended and replaced workouts', () => {
+ start('Mountain Pose'); state.live = null;
+ expect(() => completeSet()).not.toThrow(); finishHold(30, true);
+ expect(hold).toBeNull(); expect(state.entries).toHaveLength(0);
+ start('Mountain Pose'); state.live = { ...state.live };
+ vi.advanceTimersByTime(33000);
+ expect(hold).toBeNull(); expect(state.entries).toHaveLength(0);
+});
+it('B2: blocks adding and rejects removed exercise', () => {
+ start('Mountain Pose'); addFocusExercise();
+ expect(state.live.items).toHaveLength(2);
+ state.live.items.splice(0, 1); vi.advanceTimersByTime(33000);
+ expect(hold).toBeNull(); expect(state.entries).toHaveLength(0);
+});
+
+it('B1: finishing clears hold immediately', async () => {
+ start('Mountain Pose'); vi.mocked(ask).mockResolvedValueOnce(true);
+ vi.stubGlobal('document', { body: { classList: { remove() {}, toggle() {} } } });
+ env.node('#focus').classList.contains = () => true;
+ try { await finishWorkout(); expect(hold).toBeNull(); expect(state.live).toBeNull(); }
+ finally { vi.unstubAllGlobals(); }
+});
+it('B2: deleting earlier item preserves held exercise; deleting held item stops it', async () => {
+ start('Mountain Pose'); resetHold();
+ const previous = state.live.items[0]; state.live.idx = 1; toggleHold();
+ vi.mocked(ask).mockResolvedValueOnce(true);
+ openExPrefs(previous); await env.node('#xpRemove').onclick();
+ expect(state.live.idx).toBe(0); expect(hold.item).toBe(state.live.items[0]);
+ vi.mocked(ask).mockResolvedValueOnce(true);
+ openExPrefs(state.live.items[0]); await env.node('#xpRemove').onclick();
+ expect(hold).toBeNull();
 });

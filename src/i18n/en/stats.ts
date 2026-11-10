@@ -1,4 +1,5 @@
 export default {
+  add_workout: "Add a workout",
   no_records: "No records",
   th_exercise: "Exercise",
   th_set: "Set",

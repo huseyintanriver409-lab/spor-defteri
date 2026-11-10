@@ -1,4 +1,5 @@
 export default {
+  soreness: "Ağrı olabilir",
   front: "Ön",
   back: "Arka",
   view_aria: "{side} görünüm",
