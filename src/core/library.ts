@@ -51,10 +51,7 @@ export const UNILATERAL = new Set([
   "Machine Glute Kickback", "Cable Hip Abduction", "Banded Clamshell", "Single-Leg Calf Raise",
   "Side Plank", "Pallof Press", "Cable Woodchopper", "Side Bend (Dumbbell)",
   "Copenhagen Plank", "Cable Side Bend", "Suitcase Carry", "Turkish Get-up",
-  "Kettlebell Snatch", "Dumbbell Snatch", "Warrior I", "Warrior II", "Reverse Warrior",
-  "Triangle Pose", "Extended Side Angle", "Half Moon", "Tree Pose", "Low Lunge",
-  "Pigeon Pose", "Supine Twist", "Hamstring Stretch", "Quad Stretch", "Hip Flexor Stretch",
-  "Shoulder Stretch", "Chest Stretch",
+  "Kettlebell Snatch", "Dumbbell Snatch",
 ]);
 export const isUnilateral = (name: string): boolean => UNILATERAL.has(name) ||
   /single[- ](?:arm|leg)|split squat|woodchop|lunge/i.test(name);
