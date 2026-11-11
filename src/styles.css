@@ -13,7 +13,7 @@
   --shadow:none; --overlay:rgba(0,0,0,.6);
   --mz:#3A3F48; --bm-base:#0E0F10; --teal:#2dd4bf; --over:#d946ef;
   /* kas çalıştırma ölçeği (tek antrenman / tek hareket): mavi çok az → mor kas hasarı */
-  --g-dusuk:#3B82F6; --g-koruma:#22C55E; --g-minimum:#FACC15; --g-iyi:#F97316; --g-maksimum:#F04452; --g-hasar:#A855F7;
+  --g-dusuk:#3B82F6; --g-koruma:#22C55E; --g-minimum:#FACC15; --g-iyi:#F97316; --g-yuksek:#F04452; --g-maksimum:#94302F; --g-hasar:#A855F7;
   --r-lg:18px; --r:10px; --r-sm:8px;
   --font:"ArchivoV",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --ease:cubic-bezier(.2,.8,.2,1);
@@ -27,7 +27,7 @@
     --good:#15a34a; --goodsoft:rgba(21,163,74,.1); --warn:#c27a00; --warnsoft:rgba(194,122,0,.1); --danger:#dc2626; --dangersoft:rgba(220,38,38,.08);
     --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.04); --overlay:rgba(10,10,12,.45);
     --mz:#BFC4CC; --bm-base:#8B929B; --teal:#0d9488; --over:#a21caf;
-    --g-dusuk:#1D4ED8; --g-koruma:#15803D; --g-minimum:#A17A00; --g-iyi:#C54B0B; --g-maksimum:#C81D35; --g-hasar:#7E22CE;
+    --g-dusuk:#1D4ED8; --g-koruma:#15803D; --g-minimum:#A17A00; --g-iyi:#C54B0B; --g-yuksek:#C81D35; --g-maksimum:#6E1F1F; --g-hasar:#7E22CE;
     color-scheme:light;
   }
 }
@@ -38,7 +38,7 @@
   --good:#15a34a; --goodsoft:rgba(21,163,74,.1); --warn:#c27a00; --warnsoft:rgba(194,122,0,.1); --danger:#dc2626; --dangersoft:rgba(220,38,38,.08);
   --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.04); --overlay:rgba(10,10,12,.45);
   --mz:#BFC4CC; --bm-base:#8B929B; --teal:#0d9488; --over:#a21caf;
-  --g-dusuk:#1D4ED8; --g-koruma:#15803D; --g-minimum:#A17A00; --g-iyi:#C54B0B; --g-maksimum:#C81D35; --g-hasar:#7E22CE;
+  --g-dusuk:#1D4ED8; --g-koruma:#15803D; --g-minimum:#A17A00; --g-iyi:#C54B0B; --g-yuksek:#C81D35; --g-maksimum:#6E1F1F; --g-hasar:#7E22CE;
   color-scheme:light;
 }
 
@@ -253,6 +253,7 @@ button.chip{border:0;min-height:44px;color:var(--text);font:inherit;font-size:13
 :is(.bm-m path,.bm-legend i,.bm-dot,.reel-legend i,.reel-scale i)[data-t=g-koruma]{fill:var(--g-koruma);background:var(--g-koruma)}
 :is(.bm-m path,.bm-legend i,.bm-dot,.reel-legend i,.reel-scale i)[data-t=g-minimum]{fill:var(--g-minimum);background:var(--g-minimum)}
 :is(.bm-m path,.bm-legend i,.bm-dot,.reel-legend i,.reel-scale i)[data-t=g-iyi]{fill:var(--g-iyi);background:var(--g-iyi)}
+:is(.bm-m path,.bm-legend i,.bm-dot,.reel-legend i,.reel-scale i)[data-t=g-yuksek]{fill:var(--g-yuksek);background:var(--g-yuksek)}
 :is(.bm-m path,.bm-legend i,.bm-dot,.reel-legend i,.reel-scale i)[data-t=g-maksimum]{fill:var(--g-maksimum);background:var(--g-maksimum)}
 :is(.bm-m path,.bm-legend i,.bm-dot,.reel-legend i,.reel-scale i)[data-t=g-hasar]{fill:var(--g-hasar);background:var(--g-hasar)}
 :is(.bm-m path,.bm-legend i,.bm-dot)[data-t=sec]{fill:var(--accent-line);background:var(--accent-line)}

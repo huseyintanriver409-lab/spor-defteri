@@ -52,7 +52,7 @@ describe("vücut haritası", () => {
     expect(r[0].level).toBe(EVIDENCE["Göğüs"][0].level);
   });
   it("tek antrenman kademeleri ve kas başına dağılım", () => {
-    expect([0, .99, 1, 2.99, 3, 4.99, 5, 7.99, 8, 12.5, 12.51, -1, NaN].map(n => sessionTier(n))).toEqual(["yok", "dusuk", "koruma", "koruma", "minimum", "minimum", "iyi", "iyi", "maksimum", "maksimum", "hasar", "yok", "yok"]);
+    expect([0, .99, 1, 2.99, 3, 4.99, 5, 6.99, 7, 8.99, 9, 12.5, 12.51, -1, NaN].map(n => sessionTier(n))).toEqual(["yok", "dusuk", "koruma", "koruma", "minimum", "minimum", "iyi", "iyi", "yuksek", "yuksek", "maksimum", "maksimum", "hasar", "yok", "yok"]);
     const b = sessionBreakdown([{ ex: "Bench Press (Barbell)", sets: 4 }, { ex: "Close-Grip Bench Press", sets: 3 }], musclesOf);
     expect(b[0]).toEqual({ muscle: "Göğüs", sets: 5.5, risk: 5.5, baseTier: "iyi", tier: "iyi", from: [{ ex: "Bench Press (Barbell)", sets: 4, share: 1, stretch: false }, { ex: "Close-Grip Bench Press", sets: 1.5, share: .5, stretch: false }] });
   });
@@ -67,10 +67,10 @@ describe("vücut haritası", () => {
   it("risk seanstaki tüm hareketlerden toplanır; ana kasın üç seti minimumdur", () => {
     const h = sessionLoad([{ ex: "Deadlift", sets: 5 }, { ex: "Romanian Deadlift", sets: 7 }], realMuscles).Hamstring;
     expect(h.sets).toBe(9.5); expect(h.risk).toBe(13); expect(h.baseTier).toBe("maksimum"); expect(h.tier).toBe("hasar");
-    expect(sessionLoad([{ ex: "Romanian Deadlift", sets: 7 }], realMuscles).Hamstring.tier).toBe("iyi");
+    expect(sessionLoad([{ ex: "Romanian Deadlift", sets: 7 }], realMuscles).Hamstring.tier).toBe("yuksek");
     expect(sessionLoad([{ ex: "Bench Press (Barbell)", sets: 3 }], realMuscles)["Göğüs"].tier).toBe("minimum");
     expect(STRETCH_FACTOR).toBe(1.5); expect(SESSION_RISK_LIMIT).toBe(12.5);
-    expect(sessionTier(8, 12.5 + 1e-10)).toBe("maksimum");
+    expect(sessionTier(9, 12.5 + 1e-10)).toBe("maksimum");
     expect(sessionTier(3 - 1e-10)).toBe("minimum");
   });
   it("tüm hazır program günleri mor olmayan yük taşır", () => {
@@ -98,10 +98,10 @@ describe("vücut haritası", () => {
     expect(Object.keys(sessionLoad([{ ex: "Deadlift", sets: 3 }], userMuscles))).toEqual(["Biceps"]);
   });
   it("iki dilde aralıklar hesap sabitleriyle tutarlıdır", () => {
-    expect(SESSION_TIER_LIMITS).toEqual([1, 3, 5, 8]);
+    expect(SESSION_TIER_LIMITS).toEqual([1, 3, 5, 7, 9]);
     for (const dict of [tr, en]) {
-      for (const [tier, range] of [["koruma", "1–3"], ["minimum", "3–5"], ["iyi", "5–8"], ["maksimum", "8+"]]) expect(dict["session_" + tier + "_d"]).toContain(range);
+      for (const [tier, range] of [["koruma", "1–3"], ["minimum", "3–5"], ["iyi", "5–7"], ["yuksek", "7–9"], ["maksimum", "9+"]]) expect(dict["session_" + tier + "_d"]).toContain(range);
     }
-    expect(tr.session_iyi).toBe("Yüksek gelişim"); expect(en.session_iyi).toBe("High growth");
+    expect(tr.session_yuksek).toBe("Yüksek gelişim"); expect(en.session_yuksek).toBe("High growth"); expect(tr.session_maksimum).toBe("Maksimum gelişim");
   });
 });

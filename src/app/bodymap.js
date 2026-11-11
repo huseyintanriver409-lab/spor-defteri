@@ -33,7 +33,7 @@ const SPLIT = {
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-baslangic": 1, "y-verimli": 2, "y-orta": 3, "y-dusukverim": 4,
-  "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-iyi": 4, "g-maksimum": 5, "g-hasar": 6, sec: 1, "assign-main": 2, "assign-secondary": 1 };
+  "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-iyi": 4, "g-yuksek": 5, "g-maksimum": 6, "g-hasar": 7, sec: 1, "assign-main": 2, "assign-secondary": 1 };
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
 const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
@@ -105,8 +105,8 @@ function miniSymbol(sex, side){
   return id;
 }
 // Tek hareketin kaslara verdiği uyarı, programdaki ölçekle aynı: pay araştırma verisinden (muscledata.ts WEIGHTS); yalnız kütüphane dışı/kullanıcı hareketlerinde yedek ana 1, yardımcı 0,5.
-// Hareket listesinde ve kartlarda varsayılan 3 set (kartta değiştirilebilir).
-export const EX_SETS = 3;
+// Hareket listesinde ve kartlarda varsayılan 9 set (ana kas maksimum, yardımcılar payına göre) (kartta değiştirilebilir).
+export const EX_SETS = 9;
 const RANKED = SESSION_TIERS.map(([k]) => k).reverse();  // hasar → dusuk
 export function exerciseTiers(m, sets = EX_SETS){
   const ex = typeof m === "string" ? m : m.ex || "";

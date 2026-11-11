@@ -56,15 +56,15 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
 // süren performans kaybı. McHugh 2003, Scand J Med Sci Sports 13:88-97: alışkın olunan egzersizde
 // hasar belirgin azalır (tekrarlı seans etkisi). Damas ve ark. 2016, J Physiol 594:5209-5222:
 // hasar büyümenin koşulu değil.
-// YORUM (kaynağı yok, uygulama kalibrasyonu): 1/3/5/8 kesim noktaları; "8+ = maksimum"
+// YORUM (kaynağı yok, uygulama kalibrasyonu): 1/3/5/7/9 kesim noktaları; "9+ = maksimum"
 // (PUOS ~11'e yaklaşan bölge); risk eşiği 12,5 ve uzamış pozisyon çarpanı 1,5. Bu iki sayı örnek
 // programlarla kalibre edildi: "5 set Deadlift + 7 set Romanian Deadlift" hamstring'de mor (R=13),
 // hazır programların hiçbiri mor değil (en yüksek R≈11,9). Mor ölçülmüş hasar değil,
 // "bu kasa tek seansta olağandışı çok yük bindi" uyarısıdır. Tükeniş ve deneyim çarpanı bilerek
 // eklenmedi (recovery.ts zaten ele alıyor).
-export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "iyi" | "maksimum" | "hasar";
-export const SESSION_TIERS: [SessionTier, string, string][] = (["dusuk", "koruma", "minimum", "iyi", "maksimum", "hasar"] as SessionTier[]).map(id => [id, mt("session_" + id), mt("session_" + id + "_d")]);
-export const SESSION_TIER_LIMITS = [1, 3, 5, 8] as const;
+export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "iyi" | "yuksek" | "maksimum" | "hasar";
+export const SESSION_TIERS: [SessionTier, string, string][] = (["dusuk", "koruma", "minimum", "iyi", "yuksek", "maksimum", "hasar"] as SessionTier[]).map(id => [id, mt("session_" + id), mt("session_" + id + "_d")]);
+export const SESSION_TIER_LIMITS = [1, 3, 5, 7, 9] as const;
 export const STRETCH_FACTOR = 1.5;
 export const SESSION_RISK_LIMIT = 12.5;
 export const SESSION_TOO_MUCH = SESSION_RISK_LIMIT;
@@ -72,9 +72,9 @@ const SESSION_EPSILON = 1e-9;
 export function sessionTier(sets: number, risk = sets): SessionTier {
   if (!(sets > 0)) return "yok";
   if (risk > SESSION_RISK_LIMIT + SESSION_EPSILON) return "hasar";
-  const [maintenance, minimum, high, maximum] = SESSION_TIER_LIMITS;
+  const [maintenance, minimum, mid, high, maximum] = SESSION_TIER_LIMITS;
   return sets < maintenance - SESSION_EPSILON ? "dusuk" : sets < minimum - SESSION_EPSILON ? "koruma"
-    : sets < high - SESSION_EPSILON ? "minimum" : sets < maximum - SESSION_EPSILON ? "iyi" : "maksimum";
+    : sets < mid - SESSION_EPSILON ? "minimum" : sets < high - SESSION_EPSILON ? "iyi" : sets < maximum - SESSION_EPSILON ? "yuksek" : "maksimum";
 }
 export type Muscles = { p: string[]; s: string[]; w?: Record<string, number> };
 type MusclesOf = (ex: string) => Muscles;
