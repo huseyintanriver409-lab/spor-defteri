@@ -234,8 +234,8 @@ export function openRecoveryAnalysis(focus){
        <div style="font-size:26px;font-weight:800;letter-spacing:-.02em">${label}</div>${levelBar(lvl)}</div></div>
      ${infoTip(`<p class="muted small" style="margin:4px 0">${t("bodymap.analysis_avg")}</p>`)}
      ${bodyMap(fatigueTiers(R), { tap: false, toggle: true })}${legend("fatigue")}
-     ${rows.length ? `<div style="margin-top:14px">` + rows.map(({ m, r, t }) => `<div class="exitem rec-row${m === focus ? " hl" : ""}" data-rm="${esc(m)}">
-       <i class="bm-dot" data-t="${t}" role="img" aria-label="${LABEL[t]}" title="${LABEL[t]}" style="margin-right:6px"></i><div class="grow"><div>${esc(muscleLabel(m))}</div>
+     ${rows.length ? `<div style="margin-top:14px">` + rows.map(({ m, r, t: tier }) => `<div class="exitem rec-row${m === focus ? " hl" : ""}" data-rm="${esc(m)}">
+       <i class="bm-dot" data-t="${tier}" role="img" aria-label="${LABEL[tier]}" title="${LABEL[tier]}" style="margin-right:6px"></i><div class="grow"><div>${esc(muscleLabel(m))}</div>
        <div class="ms">${t("bodymap.sets_n", { n: fmt(r.sets) })} · ${shortDate(r.date)}${r.fail ? " · " + t("bodymap.failure") : ""}</div></div><b>${left(r)}</b></div>`).join("") + `</div>`
      : `<p class="muted">${t("bodymap.no_records")}</p>`}`);
   const f = focus && [...body.querySelectorAll("[data-rm]")].find(x => x.dataset.rm === focus);
