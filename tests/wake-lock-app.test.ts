@@ -14,6 +14,8 @@ vi.mock("../src/app/backup.js", () => ({}));
 vi.mock("../src/app/settings.js", () => ({}));
 vi.mock("../src/app/cloud.js", () => ({}));
 vi.mock("../src/app/streak.js", () => ({}));
+vi.mock("../src/app/bodymap.js", () => ({}));
+vi.mock("../src/app/muscleassign.js", () => ({}));
 // @ts-expect-error JavaScript app module
 import { buzz, keepAwake, wakeLock } from "../src/app/ui.js";
 afterEach(async () => { await keepAwake(false); env.state.prefs = { wake: true, haptics: true }; vi.unstubAllGlobals(); });

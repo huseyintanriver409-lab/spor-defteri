@@ -1,3 +1,4 @@
+import { NEW_EXERCISES } from "./new-exercises.ts";
 import { t } from "./i18n.ts";
 // Hazır hareket kütüphanesi (kas grubuna göre). Tarayıcıya bağlı değildir; program şablonları ve testler de kullanır.
 export const LIB: Record<string, string[]> = {
@@ -15,6 +16,7 @@ export const LIB: Record<string, string[]> = {
   "Kardiyo": ["Treadmill Run","Outdoor Run","Walking / Incline Walk","Stationary Bike","Outdoor Cycling","Elliptical","Rowing Machine","Stair Climber","Jump Rope","Swimming","Assault Bike","HIIT","SkiErg"],
   "Yoga & Esneme": ["Mountain Pose","Sun Salutation","Downward Dog","Upward Dog","Cobra Pose","Chaturanga","Child's Pose","Cat-Cow","Warrior I","Warrior II","Reverse Warrior","Triangle Pose","Extended Side Angle","Half Moon","Tree Pose","Chair Pose","Standing Forward Fold","Seated Forward Fold","Low Lunge","Pigeon Pose","Butterfly Pose","Bridge Pose","Camel Pose","Boat Pose","Happy Baby","Supine Twist","Legs Up the Wall","Corpse Pose","Hamstring Stretch","Quad Stretch","Hip Flexor Stretch","Shoulder Stretch","Chest Stretch"]
 };
+for (const ex of NEW_EXERCISES) LIB[ex.group].push(ex.name);
 export const CARDIO = "Kardiyo";
 // yoga pozları ve esnemeler süreyle tutulur, kilo almaz; kas toparlanmasına ve kas analizine girmez
 export const YOGA = "Yoga & Esneme";

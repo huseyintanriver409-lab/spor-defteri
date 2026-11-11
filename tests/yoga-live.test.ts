@@ -198,3 +198,34 @@ it("Y2: cancelling preparation releases wake lock", () => {
   start("Mountain Pose"); cancelHold();
   expect(hold).toBeNull(); expect(keepAwake).toHaveBeenLastCalledWith(false);
 });
+
+it("finishes, notifies, syncs and celebrates even when summary rendering throws", async () => {
+ // @ts-expect-error JavaScript app surface.
+ const { openSheet, showTab } = await import("../src/app/ui.js");
+ // @ts-expect-error JavaScript app surface.
+ const { runSync, runCal } = await import("../src/app/cloud.js");
+ // @ts-expect-error JavaScript app surface.
+ const { celebrateStreak } = await import("../src/app/streak.js");
+ state.live = { start: Date.now(), date: "day", sessionId: "current", idx: 0, items: [{ ex: "Deadlift", sets: 1 }] };
+ state.entries = [{ id: "e", date: "day", ex: "Deadlift", sets: [{ r: 8, sid: "current" }] }];
+ vi.mocked(ask).mockResolvedValueOnce(true);
+ vi.mocked(openSheet).mockImplementationOnce(() => { throw new Error("summary failure"); });
+ const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+ vi.stubGlobal("document", { body: { classList: { remove() {}, toggle() {} } } });
+ try {
+  await expect(finishWorkout()).resolves.toBeUndefined();
+  expect(state.live).toBeNull(); expect(state.sessions).toHaveLength(1);
+  expect(showTab).toHaveBeenCalledWith("home");
+  vi.advanceTimersByTime(2500);
+  expect(toast).toHaveBeenCalled(); expect(runSync).toHaveBeenCalledWith(false); expect(runCal).toHaveBeenCalledWith(false);
+  expect(celebrateStreak).toHaveBeenCalledOnce();
+ } finally { vi.unstubAllGlobals(); warning.mockRestore(); }
+});
+
+it("modern live progress excludes earlier same-day workouts like the plan and summary", () => {
+ state.live = { date: "day", sessionId: "second", items: [{ ex: "Deadlift", sets: 3 }], idx: 0 };
+ state.entries = [{ id: "e", date: "day", ex: "Deadlift", sets: [{ r: 8 }, { r: 8, sid: "first" }, { r: 8, sid: "second" }] }];
+ expect(workDone(state.live.items[0])).toBe(1);
+ state.entries[0].sets.shift();
+ expect(workDone(state.live.items[0])).toBe(1);
+});

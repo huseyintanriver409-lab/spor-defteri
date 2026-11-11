@@ -1,8 +1,10 @@
 export default {
   unit_week: "weeks",
+  unit_week_one: "week",
   adj_week: "week",
   was_week: "weeks",
   unit_day: "days",
+  unit_day_one: "day",
   adj_day: "day",
   was_day: "days",
   title: "Streak: {n} {unit}",

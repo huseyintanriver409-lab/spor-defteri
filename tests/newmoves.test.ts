@@ -25,10 +25,10 @@ describe("yeni hareketler (2026-11)", () => {
     const low = all.map(x => x.toLowerCase());
     expect(low.length).toBe(new Set(low).size);
   });
-  it("SkiErg kardiyoda ve kas payı yok; Medicine Ball Slam bilerek boş", () => {
+  it("SkiErg kardiyoda ve kas payı yok; Medicine Ball Slam mekanik kas payları taşır", () => {
     expect(LIB["Kardiyo"]).toContain("SkiErg");
     expect(WEIGHTS["SkiErg"]).toBeUndefined();
-    expect(WEIGHTS["Medicine Ball Slam"]).toEqual({});
+    expect(WEIGHTS["Medicine Ball Slam"]).toEqual({ Lat: .5, "Karın": .5, "Oblik": .3, Triceps: .25, "Ön Omuz": .25, "Kalça": .25, "Yan Omuz": .2, "Göğüs": .2, Quadriceps: .2 });
   });
   it("paylar temel hareketin birebir kopyasıdır (Copenhagen ve Suitcase istisnası hariç)", () => {
     for (const n of names) {

@@ -1,17 +1,20 @@
+import { bodyMap, sessionLoadHTML } from "./bodymap.js";
+import { assignmentButton, bindMuscleAssignments } from "./muscleassign.js";
+import { sessionEntries, entryBaseline, plannedSessionItems, targetSets } from "../core/session-load.ts";
 import { volumePlan } from "./beginner-volume.js";
 import { yogaTransitionHaptic } from "../core/haptics.ts";
 import { poseInfo } from "./yoga.js";
 import { autoYogaHold, recordAllowed } from "../core/yoga.ts";
 import { supersetRestSeconds } from "../core/rest.ts";
-import { isUnilateral } from "../core/library.ts";
+import { groupLabel, isUnilateral } from "../core/library.ts";
 import { completeSide, pendingSide } from "../core/unilateral.ts";
 import { pad, shortDate, ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
 import { e1rm, overloadDecision, repRange, warmupSets, work } from "../core/training.ts";
 import { baseSet } from "../core/baseline.ts";
-import { muscleLabel } from "../core/musclemap.ts";
+import { sessionLoad, muscleLabel } from "../core/musclemap.ts";
 import { $, ask, esc, fmt, ic, save, setState, state, toast, uid } from "./store.js";
-import { TYPE_LETTER, allEx, durText, fmtSec, groupOf, isCardio, isTimed, isYoga, isSport, musclesOf, setLabel, timedByDefault } from "./exercises.js";
+import { TYPE_LETTER, allEx, durText, fmtSec, groupOf, isCardio, isTimed, isYoga, isSport, musclesOf, unassignedMuscles, unmappedMuscles, setLabel, timedByDefault } from "./exercises.js";
 import { buzz, closeSheet, keepAwake, openPicker, openSheet, refreshAll, sheetHead, showTab, undoable } from "./ui.js";
 import { barFor, bestOf, bestSecOf } from "./log.js";
 import { at, defaultInc, defaultStep, exPref, overloadStep, restFor, ssLabels, stepFor } from "./programs.js";
@@ -22,6 +25,7 @@ import { celebrateStreak } from "./streak.js";
 /* ---------- Live workout: tam ekran antrenman modu ----------
    Her "Seti tamamla" seti hemen kayda yazar; sayfa kapansa da hiçbir set kaybolmaz.
    state.live = { start, date, prog, items: [{ex, sets, reps, ss?}], idx, prs? } (prs: o antrenmandaki rekor sayısı) */
+export { targetSets };
 export const fDraft = {};
 export let fType = "", fRir = null;
 export const liveItems = () => state.live ? (state.live.items ||= []) : [];
@@ -34,15 +38,17 @@ export function elapsedText(){
 export function startWorkout(progId){
   if (state.live) { openFocus(); return toast(t("live.already_running"), "timer"); }
   const p = progId && state.programs.find(x => x.id===progId);
-  state.live = { start: Date.now(), date: ymd(new Date()), prog: p ? p.id : null, items: p ? volumePlan(p).items.map(i => ({...i})) : [], idx: 0, prs: 0 };
+  state.live = { sessionId: uid(), entryBase: entryBaseline(state.entries), start: Date.now(), date: ymd(new Date()), prog: p ? p.id : null, items: p ? volumePlan(p).items.map(i => ({...i})) : [], idx: 0, prs: 0 };
   state.active = p ? p.id : null;
   // bugün zaten yapılmış hareketleri atla
-  const firstOpen = liveItems().findIndex(it => workDone(it) < (it.sets || 3));
+  const firstOpen = liveItems().findIndex(it => workDone(it) < targetSets(it));
   state.live.idx = Math.max(0, firstOpen);
   save(); buzz(20); openFocus();
 }
 export const doneSetsOf = ex => { const e = state.live && state.entries.find(x => x.date===state.live.date && x.ex===ex); return e ? e.sets : []; };
-export const workDone = it => Math.max(0, work(doneSetsOf(it.ex)).length - (state.live?.quickBase?.[it.ex] || 0));
+export const workDone = it => state.live?.sessionId
+  ? sessionEntries(state.entries, state.live).filter(e => e.ex === it.ex).reduce((n, e) => n + e.sets, 0)
+  : Math.max(0, work(doneSetsOf(it.ex)).length - (state.live?.quickBase?.[it.ex] || 0));
 export function openFocus(){
   if (!state.live) return;
   document.body.classList.add("focus-open"); $("#focus").classList.remove("hidden");
@@ -57,7 +63,7 @@ export function suggestFor(it){
   const b = !prev && state.baseline[it.ex], fromBase = !!b;
   if (b) prev = { date: b.date, sets: [baseSet(b)] };
   const last = fromBase ? t("live.base_label") : t("live.last_label");
-  const range = repRange(it.reps), { lo } = range, sets = it.sets || 3;
+  const range = repRange(it.reps), { lo } = range, sets = targetSets(it);
   const ws = prev ? work(prev.sets) : [];
   const { hitTop, easy, hard, increase } = overloadDecision(ws, sets, range, c);
   const inc = increase ? overloadStep(it.ex) : 0;
@@ -86,7 +92,7 @@ export function renderFocus(){
   const idx = state.live.idx = Math.min(Math.max(0, state.live.idx || 0), Math.max(0, items.length - 1));
   const L = ssLabels(items);
   $("#fList").innerHTML = items.map((it,k) => {
-    const done = workDone(it) >= (it.sets || 3);
+    const done = workDone(it) >= targetSets(it);
     return `<button class="${k===idx ? "on" : ""}${done ? " done" : ""}" data-k="${k}">${done ? ic("check") : ""}${L[k] ? `<span class="ssl">${L[k]}</span>` : ""}${esc(it.ex)}</button>`;
   }).join("") + `<button data-add="1">${ic("plus")}${t("live.add_ex")}</button>`;
   $("#fList").querySelectorAll("[data-k]").forEach(b => b.onclick = () => gotoItem(+b.dataset.k));
@@ -101,22 +107,29 @@ export function renderFocus(){
   }
   $("#fComplete").classList.remove("hidden"); $(".f-nav").classList.remove("hidden");
   const it = items[idx], c = isCardio(it.ex), tm = isTimed(it.ex), sug = suggestFor(it), done = doneSetsOf(it.ex), wd = workDone(it);
-  const target = it.sets || 3, bar = !c && !tm ? barOf(it.ex) : 0;
+  const target = targetSets(it), bar = !c && !tm ? barOf(it.ex) : 0;
   const d = fDraft[it.ex] ||= (() => { if (state.live.quick) return { w: 0, r: +it.reps }; const last = pendingSide(state.live, it.ex, done.length)?.first || work(done).slice(-1)[0]; return last ? { w: last.w, r: last.sec ?? last.r } : { w: sug.w, r: state.live.quick ? +it.reps : sug.r }; })();
   // ısınma rehberi: henüz çalışma seti yokken, çalışma kilosuna göre
   const warmDone = done.filter(x => x.t === "w").length, workW = d.work ? d.work.w : d.w;
   const warmPlan = !c && !tm && !wd && +workW > 0 ? warmupSets(+workW, bar) : [];
   const note = state.exNotes[it.ex], m = musclesOf(it.ex);
+  const cardSets = Math.max(targetSets(it), wd);
+  const cardLoad = sessionLoad([{ ex: it.ex, sets: cardSets }], musclesOf);
+  const sessionItems = plannedSessionItems(items.filter(x => isSport(x.ex)), sessionEntries(state.entries, state.live).filter(x => isSport(x.ex)));
+  const totalLoad = sessionLoad(sessionItems, musclesOf);
+  const riskMuscles = Object.keys(cardLoad).filter(x => totalLoad[x]?.tier === "hasar");
+  const cardTiers = Object.fromEntries(Object.entries(cardLoad).map(([m, v]) => [m, "g-" + v.tier]));
   const goal = it.reps ? `<b>${target} × ${esc(it.reps)}${tm ? " " + t("live.u_sec") : ""}</b>` : "";
   let k = 0;
   const doneChips = done.map((s,i) => { const warm = s.t === "w", lbl = warm ? "I" : (s.t ? TYPE_LETTER[s.t] : "") + (++k);
     return `<button class="chip${warm ? " warm" : ""}" data-i="${i}" aria-label="${t("live.delete_set")}" title="${t("live.delete_set")}">${lbl}) ${setLabel(s,c)}</button>`; }).join("");
   $("#fBody").innerHTML = `
-    <div class="eyebrow">${esc(groupOf(it.ex))}${L[idx] ? ` · ${t("live.superset", { l: L[idx] })}` : ""}</div>
+    <div class="eyebrow">${esc(groupLabel(groupOf(it.ex)))}${L[idx] ? ` · ${t("live.superset", { l: L[idx] })}` : ""}</div>
     <div class="f-title"><h2>${esc(it.ex)}</h2>${poseInfo(it.ex)}<button class="iconbtn" id="fPrefs" title="${t("live.ex_prefs")}" aria-label="${t("live.ex_prefs")}" data-i18n-aria="live.ex_prefs">${ic("sliders-horizontal")}</button></div>
     <button class="f-note ghost" id="fNote" style="padding:0">${ic("pin")}<span>${note ? esc(note) : t("live.add_note")}</span></button>
     <div class="f-hint">${[sug.msg, goal].filter(Boolean).join("<br>") || t("live.first_time")}</div>
     <div class="f-prog" aria-hidden="true">${Array.from({ length: Math.max(target, wd) }, (_, j) => `<i class="${j < wd ? "on" : j === wd ? "cur" : ""}"></i>`).join("")}</div>
+    ${isSport(it.ex) ? `<div class="row live-muscle-row">${unmappedMuscles(it.ex) ? `<span class="muted small">${t("muscles.unmapped")}</span>` : unassignedMuscles(it.ex) ? assignmentButton(it.ex) : `<button class="ghost live-muscle-map" id="fMuscleMap" aria-label="${t("muscles.session_map")}">${bodyMap(cardTiers, { tap: false, small: true })}</button>`}${riskMuscles.length ? `<span class="muscle-risk" role="img" aria-label="${esc(t("muscles.session_risk", { muscles: riskMuscles.map(muscleLabel).join(", ") }))}">&#9888;</span>` : ""}</div>` : ""}
     <div class="f-setlabel"><span>${wd >= target ? t("live.extra_set", { n: wd + 1 }) : `${wd + 1}/${target}`}</span><span>${esc(m.p.map(muscleLabel).join(", "))}</span></div>
     ${isUnilateral(it.ex) ? `<div class="f-setlabel" role="status" aria-live="polite"><span>${t(pendingSide(state.live, it.ex, done.length) ? "live.side_right" : "live.side_left")}</span></div>` : ""}
     <div class="steppers${tm && isYoga(it.ex) ? " one" : ""}">${tm ? (isYoga(it.ex) ? `<div class="hidden">${stepperHTML("w", d.w, t("live.u_extra_kg"), t("live.l_extra_weight"))}</div>` : stepperHTML("w", d.w, t("live.u_extra_kg"), t("live.l_extra_weight"))) + stepperHTML("r", d.r, t("live.u_seconds"), t("live.l_time"))
@@ -127,6 +140,11 @@ export function renderFocus(){
     ${c || tm ? "" : `<div class="f-chips" id="fRirChips"><span>${t("live.rir")}</span>${["",0,1,2,3,4].map(v => `<button type="button" data-v="${v}" aria-pressed="${String(fRir ?? "") === String(v)}" class="${String(fRir ?? "") === String(v) ? "on" : ""}">${v === "" ? "–" : v === 4 ? "4+" : v}</button>`).join("")}</div>
     <div class="f-chips" id="fTypeChips"><span>${t("live.type")}</span>${[["", t("live.type_normal")], ["w", t("live.warmup")], ["d", t("live.type_drop")], ["f", t("live.type_failure")]].map(([ty, l]) => `<button type="button" data-t="${ty}" aria-pressed="${fType === ty}" class="${fType === ty ? "on" : ""}">${l}</button>`).join("")}</div>`}
     ${done.length ? `<div class="f-done" title="${t("live.tap_delete")}"><div class="f-setlabel" style="margin:0"><span>${t("live.completed")}</span></div><div class="chips">${doneChips}</div></div>` : ""}`;
+  bindMuscleAssignments($("#fBody"), renderFocus);
+  if ($("#fMuscleMap")) $("#fMuscleMap").onclick = () => {
+    const body = openSheet(sheetHead(it.ex), sessionLoadHTML([{ ex: it.ex, sets: cardSets }], { small: false }) + assignmentButton(it.ex));
+    bindMuscleAssignments(body, renderFocus);
+  };
   $("#fPrefs").onclick = () => openExPrefs(it);
   $("#fNote").onclick = () => editExNote(it.ex);
   $("#fBody").querySelectorAll(".stepper").forEach(st => {
@@ -271,7 +289,7 @@ export function completeSet(fullHold = false){
   const continueFlow = () => {
     const next = items[state.live.idx];
     if (next && autoYogaHold(isYoga(it.ex), tm, restFor(it.ex),
-      isYoga(next.ex), isTimed(next.ex), workDone(next) < (next.sets || 3))) toggleHold();
+      isYoga(next.ex), isTimed(next.ex), workDone(next) < targetSets(next))) toggleHold();
   };
   if (tm && !r) return toast(t("live.enter_time"));
   if (!w && !r) return toast(c ? t("live.enter_time_or_dist") : t("live.enter_weight_reps"));
@@ -283,6 +301,7 @@ export function completeSet(fullHold = false){
     set = completeSide(state.live, it.ex, done().length, set);
     if (!set) { stopTimer(); save(); renderFocus(); continueFlow(); buzz(yogaTransitionHaptic(isYoga(it.ex), true, false) || 15); return; }
   }
+  if (state.live.sessionId) set.sid = state.live.sessionId;
   w = +set.w || 0; r = +(set.sec ?? set.r) || 0;
   const before = bestOf(it.ex), beforeSec = bestSecOf(it.ex);
   if (!allEx().some(e => e.name === it.ex)) state.custom.push({ name: it.ex, group: "Diğer" });
@@ -306,7 +325,7 @@ export function completeSet(fullHold = false){
   }
   let rest = state.autoRest && !warm;
   let restDuration = restFor(it.ex, it);
-  const L = ssLabels(items), target = x => x.sets || 3;
+  const L = ssLabels(items), target = targetSets;
   const advance = () => {
     const nxt = items.findIndex((x, j) => j > k && workDone(x) < target(x));
     const any = nxt >= 0 ? nxt : items.findIndex(x => workDone(x) < target(x));
@@ -336,11 +355,14 @@ export async function removeDoneSet(i){
   if (!e0 || !e0.sets[i]) return;
   const e = state.entries.find(x => x.date === state.live.date && x.ex === it.ex);
   if (!e || !e.sets[i]) return;
+  const baseline = state.live.entryBase;
+  const beforeSession = baseline && i < (baseline[e.id] ?? 0);
+  if (beforeSession) baseline[e.id]--;
   const [s] = e.sets.splice(i, 1); let pos = -1;
   if (state.live.sides) delete state.live.sides[it.ex];
   if (!e.sets.length) { pos = state.entries.indexOf(e); state.entries.splice(pos, 1); }
   save(); renderFocus(); buzz(15);
-  undoable(t("live.set_deleted"), () => { e.sets.splice(i, 0, s); if (pos >= 0) state.entries.splice(pos, 0, e); save(); renderFocus(); });
+  undoable(t("live.set_deleted"), () => { e.sets.splice(i, 0, s); if (beforeSession) baseline[e.id]++; if (pos >= 0) state.entries.splice(pos, 0, e); save(); renderFocus(); });
 }
 export function editExNote(ex){
   const body = openSheet(sheetHead(t("live.ex_note")), `<details class="small i-help" style="margin-top:0"><summary class="muted small" aria-label="${t("live.help_aria")}">${ic("info")}</summary>${t("live.note_help_html", { ex: esc(ex) })}</details>
@@ -352,7 +374,7 @@ export function openExPrefs(it){
   const p = state.exPrefs[it.ex] || {};
   const opts = (vals, cur, def, f) => `<option value="">${def}</option>` + vals.map(v => `<option value="${v}"${cur != null && cur !== "" && +cur === v ? " selected" : ""}>${f(v)}</option>`).join("");
   openSheet(sheetHead(it.ex), `<div class="grid2">
-      <div><label for="xpSets">${t("live.f_sets")}</label><select id="xpSets">${[1,2,3,4,5,6,7,8].map(v => `<option${v === (it.sets || 3) ? " selected" : ""}>${v}</option>`).join("")}</select></div>
+      <div><label for="xpSets">${t("live.f_sets")}</label><select id="xpSets">${[1,2,3,4,5,6,7,8].map(v => `<option${v === targetSets(it) ? " selected" : ""}>${v}</option>`).join("")}</select></div>
       <div><label for="xpReps">${t("live.f_target_reps")}</label><input id="xpReps" value="${esc(it.reps || "")}" placeholder="8-12"></div>
       <div><label for="xpRest">${t("live.f_rest")}</label><select id="xpRest">${opts(isYoga(it.ex) ? [0,30,45,60,90,120,150,180,240,300] : [30,45,60,90,120,150,180,240,300], p.rest, t("live.default_val", { v: (isYoga(it.ex) ? mmss(0) : state.restAuto ? t("settings.rest_auto") : mmss(state.rest)) }), mmss)}</select></div>
       <div><label for="xpStep">${t("live.f_step")}</label><select id="xpStep">${opts([1,1.25,2,2.5,5], p.step, t("live.auto_kg", { kg: fmt(defaultStep(it.ex)) }), v => fmt(v) + " " + t("live.u_kg"))}</select></div>
@@ -392,16 +414,27 @@ export async function finishWorkout(){
   if (!(await ask(t("live.confirm_finish", { dur: durText(Date.now() - start), n }), t("live.finish")))) return;
   if (state.live !== workout) return;
   resetHold();
+  let summaryItems = [];
+  try { summaryItems = sessionEntries(state.entries, workout).filter(e => isSport(e.ex)); }
+  catch (error) { console.warn("Workout summary unavailable", error); }
   const end = Date.now();
   if (state.entries.some(e => e.date === date)) state.sessions.push({ id: uid(), date, start, end, prog: state.live.prog || null });
-    state.live = null; state.active = null; save();
+  state.live = null; state.active = null; save();
   stopTimer(); keepAwake(false); buzz([40, 60, 40]);
   closeFocus(); showTab("home");
+  const showSummary = () => {
+    const body = openSheet(sheetHead(t("muscles.session_summary")), sessionLoadHTML(summaryItems, { small: false }) + `<button class="btn primary block" id="sessionDone">${t("muscles.session_done")}</button>`, () => setTimeout(celebrateStreak, 300));
+    body.querySelector("#sessionDone").onclick = closeSheet;
+    bindMuscleAssignments(body, showSummary);
+  };
+  // Essential finish work is scheduled before the optional summary renderer.
   setTimeout(() => toast(n ? (prs ? t("live.done_toast_prs", { dur: durText(end - start), n, prs }) : t("live.done_toast", { dur: durText(end - start), n })) : t("live.closed"), n ? "biceps-flexed" : "check"), 50);
-  // toast'ın ardından, ekranı meşgul etmeden
   setTimeout(() => { runSync(false); runCal(false); }, 2500);
-  // seri arttıysa kutla (bitiş bildiriminden sonra)
-  if (state.entries.some(e => e.date === date)) setTimeout(celebrateStreak, 1600);
+  let summaryShown = false;
+  try {
+    if (summaryItems.some(i => i.sets > 0)) { showSummary(); summaryShown = true; }
+  } catch (error) { console.warn("Workout summary unavailable", error); }
+  if (!summaryShown && state.entries.some(e => e.date === date)) setTimeout(celebrateStreak, 1600);
 }
 export function renderLiveBar(){
   const show = !!state.live && $("#focus").classList.contains("hidden");
@@ -446,6 +479,6 @@ export function startQuickWorkout(items) {
   quickBase[it.ex] = work(state.entries.find(e => e.date === date && e.ex === it.ex)?.sets || []).length;
   delete fDraft[it.ex];
  }
- state.live = { start: Date.now(), date, prog: null, items, idx: 0, prs: 0, quick: true, quickBase };
+ state.live = { sessionId: uid(), entryBase: entryBaseline(state.entries), start: Date.now(), date, prog: null, items, idx: 0, prs: 0, quick: true, quickBase };
  save(); buzz(20); openFocus();
 }

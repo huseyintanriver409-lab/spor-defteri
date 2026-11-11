@@ -20,8 +20,6 @@ export default {
   sets_n: "{n} set",
   failure: "tükeniş",
   no_records: "Henüz kayıt yok.",
-  heavy_html: "<b>{muscle}: {n} set</b> (tek antrenmanda 11 setin üstünde ek fayda ölçülemiyor; toparlanmayı da uzatır)",
-  heavy_tip: "Bir hareketi çıkar ya da başka güne al.",
   lv_strong: "Güçlü",
   lv_strong_d: "Kası büyüttüğü birden çok antrenman çalışmasıyla ölçüldü.",
   lv_mid: "Orta",

@@ -1,3 +1,4 @@
+import { mountEquipment } from "./equipment.js";
 import { experienceMode } from "../core/recovery.ts";
 import { hold } from "./live.js";
 import { updateBusy } from "../core/update-busy.ts";
@@ -14,6 +15,7 @@ import { getLangPref, setLangPref, t, locale } from "../core/i18n.ts";
 
 /* ---------- Settings ---------- */
 export function renderSettings(){
+  mountEquipment($("#profileEquipment"));
   $("#setGoal").innerHTML = [1,2,3,4,5,6,7].map(v => `<option value="${v}"${v===state.goal?" selected":""}>${t("settings.goal_days", { n: v })}</option>`).join("");
   $("#setStreak").value = state.streakMode || "auto";
   $("#streakHelp").textContent = { auto: t("settings.streak_auto"), week: t("settings.streak_week"), off: t("settings.streak_off") }[$("#setStreak").value];

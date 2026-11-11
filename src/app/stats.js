@@ -7,7 +7,7 @@ import { recoveryMap as recoveryMapCore } from "../core/recovery.ts";
 import { muscleLabel, setsByMuscle } from "../core/musclemap.ts";
 import { $, esc, fmt, ic, save, state } from "./store.js";
 import { MUSCLE_ORDER, durText, fmtSec, focus, groupOf, groupShown, isCardio, isSport, goalDates, visiblePrograms, isTimed, isYoga, liftOn, musclesOf, yogaOn } from "./exercises.js";
-import { renderSeg, segState, showTab } from "./ui.js";
+import { renderSeg, saveNav, segState, showTab } from "./ui.js";
 import { entryHTML } from "./log.js";
 import { bindBodyMap, bodyMap, fatigueTiers, legend, loadTiers, weekSets } from "./bodymap.js";
 
@@ -205,7 +205,7 @@ export function renderRecovery(){
   const R = recoveryMap();
   // vücut haritası: şu anki yorgunluk ya da bu haftanın set yükü
   const week = segState.bm === "week", ws = week ? weekSets() : null;
-  $("#bmView").querySelectorAll("button").forEach(x => x.classList.toggle("on", (x.dataset.v === "week") === week));
+  $("#bmView").querySelectorAll("button").forEach(x => { const on = (x.dataset.v === "week") === week; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
   $("#bmNote").textContent = week ? t("stats.bm_week_note")
     : t("stats.bm_fatigue_note");
   $("#restMap").innerHTML = bodyMap(week ? loadTiers(ws) : fatigueTiers(R), { toggle: true }) + legend(week ? "load" : "fatigue");
@@ -278,7 +278,7 @@ $("#wPrev").onclick = () => { weekStart.setDate(weekStart.getDate()-7); renderWe
 $("#wNext").onclick = () => { weekStart.setDate(weekStart.getDate()+7); renderWeek(); };
 $("#wToday").onclick = () => { weekStart = mondayOf(new Date()); renderWeek(); };
 $("#histEx").onchange = renderHist;
-$("#bmView").querySelectorAll("button").forEach(b => b.onclick = () => { segState.bm = b.dataset.v; renderRecovery(); });
+$("#bmView").querySelectorAll("button").forEach(b => b.onclick = () => { segState.bm = b.dataset.v; renderRecovery(); saveNav(); });
 document.querySelectorAll('input[name=hMetric], input[name=hMetricT]').forEach(r => r.onchange = renderHist);
 $("#pfBw").oninput = () => { state.profile.bw = $("#pfBw").value; save(); renderPower(true); };
 }

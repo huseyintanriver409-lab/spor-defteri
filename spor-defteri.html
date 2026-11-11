@@ -38,9 +38,9 @@
 
   <!-- ==================== ANTRENMAN ==================== -->
   <section id="tab-train" class="hidden">
-    <div class="seg" data-seg="train"><button data-v="prog" class="on" data-i18n="html.seg_programs">Programlar</button><button data-v="log" data-i18n="html.seg_log">Elle kayıt</button><button data-v="plan" data-i18n="html.seg_plan">Plan</button><button data-v="lib" data-i18n="html.seg_lib">Hareketler</button></div>
+    <div class="seg" data-seg="train"><button class="on" data-v="lib"><svg class="ic" aria-hidden="true"><use href="#i-dumbbell"/></svg><span data-i18n="html.seg_lib">Hareketler</span></button><button data-v="prog"><svg class="ic" aria-hidden="true"><use href="#i-clipboard-list"/></svg><span data-i18n="html.seg_programs">Programlar</span></button><button data-v="log"><svg class="ic" aria-hidden="true"><use href="#i-pencil"/></svg><span data-i18n="html.seg_log">Elle kayıt</span></button><button data-v="plan"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg><span data-i18n="html.seg_plan">Plan</span></button></div>
 
-    <div id="train-prog">
+    <div id="train-prog" class="hidden">
       <button class="btn quiet block" id="startEmpty" style="margin-bottom:12px"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg><span data-i18n="html.train_empty">Boş antrenman</span></button>
       <div id="pList"></div>
       <div class="card" id="yogaCard">
@@ -75,7 +75,7 @@
           <div style="flex:1 1 230px"><label for="logEx" data-i18n="html.move">Hareket</label><div class="pickfield"><input id="logEx" readonly placeholder="Hareket seç" data-i18n-placeholder="html.pick_move_ph"><svg class="ic" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
           <div style="flex:1 1 140px"><label for="logDate" data-i18n="html.date">Tarih</label><input type="date" id="logDate"></div>
         </div>
-        <textarea class="exnote hidden" id="exNote" rows="1" placeholder="Kalıcı not" data-i18n-placeholder="html.note_perm_ph" aria-label="Hareketin kalıcı notu" data-i18n-aria-label="html.note_perm_aria"></textarea>
+        <textarea class="exnote hidden" id="exNote" rows="1" placeholder="Kalıcı not" data-i18n-placeholder="html.note_perm_ph" aria-label="Hareketin kalıcı notu" data-i18n-aria="html.note_perm_aria"></textarea>
         <div id="lastHint" class="hint hidden"></div>
         <div id="ovHint" class="hint good hidden"></div>
         <div class="sets">
@@ -83,7 +83,7 @@
           <div id="setRows" style="display:grid;gap:8px"></div>
         </div>
         <div class="muted small help" style="margin:-4px 0 12px" data-i18n-html="html.log_help_html">Set numarasına dokun: <b style="color:var(--warn)">I</b> ısınma, <b style="color:var(--text);font-weight:800">D</b> drop set, <b style="color:var(--danger)">T</b> tükeniş. RIR, kaç tekrar daha yapabileceğini gösterir.</div>
-        <input id="logNote" placeholder="Not" data-i18n-placeholder="html.note_ph" aria-label="Seans notu" data-i18n-aria-label="html.session_note_aria" style="margin-bottom:12px">
+        <input id="logNote" placeholder="Not" data-i18n-placeholder="html.note_ph" aria-label="Seans notu" data-i18n-aria="html.session_note_aria" style="margin-bottom:12px">
         <div class="row">
           <button class="btn" id="addSet"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="html.btn_set">Set</span></button>
           <button class="btn" id="addWarm" title="Çalışma kilosuna göre ısınma setleri ekle" data-i18n-title="html.warm_title"><svg class="ic" aria-hidden="true"><use href="#i-flame"/></svg><span data-i18n="html.btn_warm">Isınma</span></button>
@@ -127,25 +127,25 @@
       </div>
     </div>
 
-    <div id="train-lib" class="hidden">
+    <div id="train-lib">
       <div class="card" id="libMapCard">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-activity"/></svg></span><span data-i18n="html.libmap_title">Kasa göre</span></h2>
         <p class="muted small help" style="margin-top:-6px" data-i18n="html.libmap_help">Bir kasa dokun; o kası en iyi çalıştıran hareketler sırayla açılır.</p>
         <div id="libMap"></div>
       </div>
       <div class="card">
-        <div class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" placeholder="Hareket veya kas ara" data-i18n-placeholder="html.lib_search_ph" aria-label="Hareket ara" data-i18n-aria-label="html.lib_search_aria"></div>
+        <div class="search"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><input id="libSearch" placeholder="Hareket veya kas ara" data-i18n-placeholder="html.lib_search_ph" aria-label="Hareket ara" data-i18n-aria="html.lib_search_aria"></div>
         <div class="row" style="margin-top:10px">
-          <div class="grow"><select id="libEquip" aria-label="Ekipman" data-i18n-aria-label="html.equip_aria"></select></div>
-          <label class="check row" style="margin:0;gap:6px"><input type="checkbox" id="libHome"> <span data-i18n="html.home_only">Evde yapılabilir</span></label>
+          <div id="libEquipment"></div>
         </div>
       </div>
       <div class="card" id="libList"></div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></span><span data-i18n="html.own_move_title">Kendi hareketini ekle</span></h2>
         <div class="row">
-          <div class="grow"><input id="cName" placeholder="Hareket adı" data-i18n-placeholder="html.ex_name_ph" aria-label="Hareket adı" data-i18n-aria-label="html.ex_name_aria"></div>
-          <div style="flex:0 0 150px"><select id="cGroup" aria-label="Kas grubu" data-i18n-aria-label="html.group_aria"></select></div>
+          <div class="grow"><input id="cName" placeholder="Hareket adı" data-i18n-placeholder="html.ex_name_ph" aria-label="Hareket adı" data-i18n-aria="html.ex_name_aria"></div>
+          <div style="flex:0 0 150px"><select id="cGroup" aria-label="Kas grubu" data-i18n-aria="html.group_aria"></select></div>
+          <div id="customEquipment"></div>
           <button class="btn primary" id="cAdd"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="html.add_btn">Ekle</span></button>
         </div>
       </div>
@@ -177,9 +177,9 @@
 
   <!-- ==================== İLERLEME ==================== -->
   <section id="tab-progress" class="hidden">
-    <div class="seg" data-seg="stats"><button data-v="week" class="on"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg><span data-i18n="html.prog_week">Hafta</span></button><button data-v="hist"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg><span data-i18n="html.prog_hist">Hareket</span></button><button data-v="rec"><svg class="ic" aria-hidden="true"><use href="#i-trophy"/></svg><span data-i18n="html.prog_rec">Rekorlar</span></button><button data-v="rest"><svg class="ic" aria-hidden="true"><use href="#i-biceps-flexed"/></svg><span data-i18n="html.prog_rest">Kaslar</span></button><button data-v="power"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg><span data-i18n="html.prog_power">Güç skoru</span></button><button data-v="body"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg><span data-i18n="html.prog_body">Vücut</span></button></div>
+    <div class="seg" data-seg="stats"><button class="on" data-v="rest"><svg class="ic" aria-hidden="true"><use href="#i-biceps-flexed"/></svg><span data-i18n="html.prog_rest">Kaslar</span></button><button data-v="week"><svg class="ic" aria-hidden="true"><use href="#i-calendar-days"/></svg><span data-i18n="html.prog_week">Hafta</span></button><button data-v="hist"><svg class="ic" aria-hidden="true"><use href="#i-history"/></svg><span data-i18n="html.prog_hist">Hareket</span></button><button data-v="rec"><svg class="ic" aria-hidden="true"><use href="#i-trophy"/></svg><span data-i18n="html.prog_rec">Rekorlar</span></button><button data-v="power"><svg class="ic" aria-hidden="true"><use href="#i-trending-up"/></svg><span data-i18n="html.prog_power">Güç skoru</span></button><button data-v="body"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg><span data-i18n="html.prog_body">Vücut</span></button></div>
 
-    <div id="stats-week">
+    <div id="stats-week" class="hidden">
       <div class="card">
         <div class="weeknav">
           <button class="iconbtn" id="wPrev" title="Önceki hafta" data-i18n-title="html.prev_week_title"><svg class="ic" aria-hidden="true"><use href="#i-chevron-left"/></svg></button>
@@ -251,7 +251,7 @@
 
     <div id="stats-rec" class="hidden">
       <div class="card">
-        <h2 aria-label="Rekorlar" data-i18n-aria-label="html.records_aria"><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-trophy"/></svg></span></h2>
+        <h2 aria-label="Rekorlar" data-i18n-aria="html.records_aria"><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-trophy"/></svg></span></h2>
         <p class="muted small help" style="margin-top:-6px" data-i18n="html.rec_help">Her tekrar sayısında kaldırdığın en ağır kilo (ısınma hariç). Satıra dokunduğunda geçmiş açılır.</p>
         <div class="tablewrap"><table id="recTable"></table></div>
       </div>
@@ -261,7 +261,7 @@
       </div>
     </div>
 
-    <div id="stats-rest" class="hidden">
+    <div id="stats-rest">
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-battery-medium"/></svg></span><span data-i18n="html.rest_title">Kaslar</span></h2>
         <div class="fchips" id="bmView" style="margin-bottom:6px"><button class="fchip on" data-v="now" data-i18n="html.fchip_now">Şu an</button><button class="fchip" data-v="week" data-i18n="html.fchip_week">Bu hafta</button></div>
@@ -318,7 +318,7 @@
         <div class="row" style="margin-top:12px"><span class="grow muted small" data-i18n="settings.profile_autosave">Boş bıraktıkların kaydedilmez.</span></div>
       </div>
       <div class="card">
-        <div style="margin-bottom:12px"><select id="bMetric" aria-label="Ölçü" data-i18n-aria-label="html.metric_aria"></select></div>
+        <div style="margin-bottom:12px"><select id="bMetric" aria-label="Ölçü" data-i18n-aria="html.metric_aria"></select></div>
         <div id="bChart"></div>
         <div id="bDelta" class="muted small"></div>
       </div>
@@ -334,6 +334,7 @@
     <div class="seg" data-seg="profile"><button data-v="settings" class="on" data-i18n="html.profile_settings">Ayarlar</button><button data-v="tools" data-i18n="html.profile_tools">Araçlar</button><button data-v="backup" data-i18n="html.profile_backup">Yedek</button></div>
 
     <div id="profile-settings">
+      <div class="card" id="profileEquipment"></div>
       <div class="card">
         <h2><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-user"/></svg></span><span data-i18n="html.profile_body_title">Vücut Bilgilerim</span></h2>
         <div class="grid2">
@@ -466,7 +467,7 @@
         </div>
       </div>
       <div class="card">
-        <h2 aria-label="Yedek" data-i18n-aria-label="html.backup_aria"><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg></span></h2>
+        <h2 aria-label="Yedek" data-i18n-aria="html.backup_aria"><span class="hi"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg></span></h2>
         <p class="muted help" style="margin-top:-4px" data-i18n="html.data_help">Veriler bu tarayıcıda saklanır. Tarayıcı verisini silersen kayıtlar da silinir; ara sıra yedek al.</p>
         <p class="muted small help" data-i18n="html.sync_alt_help">Drive senkronizasyonu kullanmıyorsan telefon ve bilgisayar için: bir cihazda İndir, diğerinde Yükle > Birleştir. Ters yönde tekrarlayınca iki cihaz eşitlenir.</p>
         <div class="row">
@@ -488,7 +489,7 @@
 <datalist id="exList"></datalist>
 
 <!-- Canlı antrenman: tam ekran -->
-<div class="focus hidden" id="focus" role="dialog" aria-modal="true" aria-label="Canlı antrenman" data-i18n-aria-label="html.focus_aria">
+<div class="focus hidden" id="focus" role="dialog" aria-modal="true" aria-label="Canlı antrenman" data-i18n-aria="html.focus_aria">
   <div class="f-top">
     <button class="iconbtn" id="fMin" title="Küçült" data-i18n-title="html.minimize_title"><svg class="ic" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
     <div class="f-clock"><span class="dot"></span><span id="fElapsed">0:00</span></div>

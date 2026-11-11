@@ -1,3 +1,4 @@
+import { volumePlan } from "./beginner-volume.js";
 import { shortHelp } from "./short-help.js";
 import { buildQuickFlow } from "../core/yoga.ts";
 import { YOGA_POSES } from "../core/library.ts";
@@ -75,8 +76,8 @@ export function ssLabels(items){
 }
 export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
 // Programın bir antrenmanda kaslara yükü: aynı kası çalıştıran hareketler üst üste binerse uyarır
-function openProgramMap(p){
-  const html = sessionLoadHTML(p.items, { tap: true, small: false });
+export function openProgramMap(p){
+  const html = sessionLoadHTML(volumePlan(p).items, { tap: true, small: false });
   const body = openSheet(sheetHead(programName(p)), `<p class="muted" style="margin:0">${t("programs.map_hint")}</p>
     ${html || `<p class="muted">${t("programs.map_empty")}</p>`}`);
   bindBodyMap(body);
@@ -86,6 +87,7 @@ export function renderEditorLoad(){
   const items = [...$("#pRows").children].map(d => ({ ex: d.querySelector(".pe").value.trim(), sets: Math.max(1, parseInt(d.querySelector(".ps").value) || 1) }));
   const html = liftOn() ? sessionLoadHTML(items) : "";
   $("#pLoad").innerHTML = html ? `<div class="pk-head">${t("programs.editor_load")}</div>${html}` : "";
+  bindBodyMap($("#pLoad"));
 }
 export function renderProg(){
   $("#yogaQuick").onclick = openQuickFlow;

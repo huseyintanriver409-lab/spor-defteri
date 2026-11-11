@@ -1,3 +1,5 @@
+import { discoverableEx } from "./exercises.js";
+import { bindEquipmentEmpty, equipmentEmptyHTML, openEquipment } from "./equipment.js";
 import { bodyModel } from "../core/body-model.ts";
 import { sorenessPossible } from "../core/recovery.ts";
 import { programName } from "../core/programs.ts";
@@ -5,9 +7,10 @@ import { programName } from "../core/programs.ts";
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { fmtNum, locale, t } from "../core/i18n.ts";
 import { work } from "../core/training.ts";
-import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, SESSION_TOO_MUCH, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MAIN_SHARE, MUSCLE_COMMON, muscleLabel } from "../core/musclemap.ts";
+import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, sessionLoad, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MAIN_SHARE, MUSCLE_COMMON, muscleLabel } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
-import { equipLabel, equipOf, isCardio, isSport, musclesOf, pickableEx } from "./exercises.js";
+import { equipLabel, equipOf, equipTag, isCardio, isSport, musclesOf, pickableEx, unassignedExercises } from "./exercises.js";
+import { assignmentButton, bindMuscleAssignments } from "./muscleassign.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
 import { resetEditor } from "./log.js";
 import { liveItems, openFocus, startWorkout } from "./live.js";
@@ -30,10 +33,13 @@ const SPLIT = {
 // iç bacak arkadan arka bacağın altında kalmasın diye en son çizilir
 const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-baslangic": 1, "y-verimli": 2, "y-orta": 3, "y-dusukverim": 4,
-  "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-iyi": 4, "g-maksimum": 5, "g-hasar": 6, sec: 1 };
+  "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-iyi": 4, "g-maksimum": 5, "g-hasar": 6, sec: 1, "assign-main": 2, "assign-secondary": 1 };
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
 const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
+LABEL["assign-main"] = t("muscles.assign_primary");
+LABEL["assign-secondary"] = t("muscles.assign_secondary");
+LABEL["g-yok"] = t("muscles.session_yok");
 // All drawings use the independent model preference.
 export const bodySex = () => bodyModel(state.prefs, state.profile.sex);
 
@@ -57,13 +63,13 @@ function figure(side, tiers, caption){
     if (!ms) return ds.map(d => `<path class="bm-base" d="${d}"/>`).join("");
     const tier = ms.map(m => tiers[m] || "yok").reduce((x, y) => RANK[y] > RANK[x] ? y : x);
     const title = ms.map(m => esc(muscleLabel(m)) + (LABEL[tiers[m]] ? " · " + LABEL[tiers[m]] : "")).join(", ");
-    return ds.map(d => `<path d="${d}" aria-label="${esc(ms.map(muscleLabel).join(", "))}" data-m="${esc(ms.join("|"))}" data-t="${tier}"><title>${title}</title></path>`).join("");
+    return ds.map(d => `<path d="${d}" aria-label="${title}" data-m="${esc(ms.join("|"))}" data-t="${tier}"><title>${title}</title></path>`).join("");
   }).join("");
   const R = Object.values(tiers).includes("toparlaniyor") ? recoveryMap() : {};
   const front = new Set(regionParts(bodySex(), "front").flatMap(([, , ms]) => ms || []));
   const icons = [...new Set(order.flatMap(([, , ms]) => ms || []))]
-    .filter(m => (side === "front" || !front.has(m)) && tiers[m] === "toparlaniyor" && sorenessPossible(R[m]))
-    .map(m => `<g class="bm-soreness" data-soreness="${esc(m)}" role="img" aria-label="${esc(muscleLabel(m) + ": " + t("bodymap.soreness"))}"><title>${esc(muscleLabel(m) + ": " + t("bodymap.soreness"))}</title><path d="M12 2 23 22H1Z"/><path d="M12 8v7m0 3v1"/></g>`).join("");
+    .filter(m => (side === "front" || !front.has(m)) && (tiers[m] === "g-hasar" || tiers[m] === "toparlaniyor" && sorenessPossible(R[m])))
+    .map(m => `<g class="bm-soreness ${tiers[m] === "g-hasar" ? "bm-risk" : ""}" data-soreness="${esc(m)}" role="img" aria-label="${esc(muscleLabel(m) + ": " + t(tiers[m] === "g-hasar" ? "muscles.session_hasar" : "bodymap.soreness"))}"><title>${esc(muscleLabel(m) + ": " + t(tiers[m] === "g-hasar" ? "muscles.session_hasar" : "bodymap.soreness"))}</title><path d="M12 2 23 22H1Z"/><path d="M12 8v7m0 3v1"/></g>`).join("");
   if (icons) queueMicrotask(placeSorenessIcons);
   return `<figure><svg viewBox="${vb}" style="width:${wPct}%;margin:0 auto" role="img" aria-label="${t("bodymap.view_aria", { side: caption })}"><g class="bm-m">${paths}</g>${icons}</svg><figcaption>${caption}</figcaption></figure>`;
 }
@@ -91,7 +97,7 @@ function miniSymbol(sex, side){
   const id = `mini-${sex}-${side}`;
   if (!miniDone.has(id)) {
     miniDone.add(id);
-    const paths = regionParts(sex, side).map(([k, ds, ms]) => ds.map(d => `<path d="${d}"${ms ? ` style="fill:var(--r-${k},var(--mz))"` : ` style="fill:var(--card3)"`}/>`).join("")).join("");
+    const paths = regionParts(sex, side).map(([k, ds, ms]) => ds.map(d => `<path d="${d}" vector-effect="non-scaling-stroke"${ms ? ` style="fill:var(--r-${k},var(--mz))"` : ` style="fill:var(--bm-base)"`}/>`).join("")).join("");
     let box = $("#miniSymbols");
     if (!box) { document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="miniSymbols"></defs></svg>`); box = $("#miniSymbols"); }
     box.insertAdjacentHTML("beforeend", `<g id="${id}">${paths}</g>`);
@@ -103,9 +109,9 @@ function miniSymbol(sex, side){
 export const EX_SETS = 3;
 const RANKED = SESSION_TIERS.map(([k]) => k).reverse();  // hasar → dusuk
 export function exerciseTiers(m, sets = EX_SETS){
-  // her kasa set × hareketin o kasa payı (araştırmadan) kadar etkili set düşer
-  const t = {}; for (const [x, w] of Object.entries(weightsOf(m))) t[x] = sessionTier(sets * w);
-  return t;
+  const ex = typeof m === "string" ? m : m.ex || "";
+  const load = sessionLoad([{ ex, sets }], typeof m === "string" ? musclesOf : () => m);
+  return Object.fromEntries(Object.entries(load).map(([muscle, value]) => [muscle, value.tier]));
 }
 // kademeye göre gruplu: [[kademe, ad, kaslar], …] en yüksek kademe önce
 export const exerciseLevels = (m, sets = EX_SETS) => { const t = exerciseTiers(m, sets);
@@ -116,8 +122,11 @@ const paint = (sex, side, m, sets = EX_SETS) => { const t = exerciseTiers(m, set
     const best = ms.map(x => t[x]).filter(Boolean).sort((a, b) => RANKED.indexOf(a) - RANKED.indexOf(b))[0];
     return best ? `--r-${k}:var(--g-${best})` : "";
   }).filter(Boolean).join(";"); };
+// ekran okuyucu için kısa özet: kademe adı + kaslar (görünür metin eklemez)
+const levelsLabel = (m, sets = EX_SETS) => exerciseLevels(m, sets).map(([, l, ms]) => `${l}: ${ms.map(muscleLabel).join(", ")}`).join("; ");
 export function miniMap(name){
-  const m = musclesOf(name); if (!m.p.length) return "";
+  const source = musclesOf(name); if (!Object.values(weightsOf(source)).some(w => w > 0)) return "";
+  const m = { ...source, p: source.p.length ? source.p : source.s };
   const sex = bodySex(), hits = side => Object.values(REGION[side]).flat().filter(x => m.p.includes(x)).length
     + (m.p.includes("Rotator Manşet") && side === "back" ? 1 : 0);
   const hb = hits("back"), hf = hits("front"), firstBack = Object.values(REGION.back).flat().includes(m.p[0]) || m.p[0] === "Rotator Manşet";
@@ -126,12 +135,14 @@ export function miniMap(name){
   const LEGS = ["Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır"], legs = m.p.filter(x => LEGS.includes(x)).length;
   const [x, y, w, h] = ART[sex][side][0].split(" ").map(Number);
   const vb = !legs ? [x, y, w, h * .5] : legs === m.p.length ? [x, y + h * .42, w, h * .58] : [x, y, w, h];
-  return `<svg class="minimap" data-exercise="${esc(name)}" viewBox="${vb.join(" ")}" style="${paint(sex, side, m)}" aria-hidden="true"><use href="#${miniSymbol(sex, side)}"/></svg>`;
+  return `<svg class="minimap" data-exercise="${esc(name)}" viewBox="${vb.join(" ")}" style="${paint(sex, side, m)}" role="img" aria-label="${esc(levelsLabel(m))}"><use href="#${miniSymbol(sex, side)}"/></svg>`;
 }
 // (i) düğmesi arkasında açılan açıklama (sayfa içeriği .card olmadığı için <details>)
 const infoTip = inner => `<details class="ev-help i-help"><summary class="muted small" aria-label="${t("bodymap.help_aria")}">${ic("info")}</summary>${inner}</details>`;
+const mt = k => t("muscles." + k);
+const scaleLabel = (k, l) => k.startsWith("g-") ? mt("session_short_" + k.slice(2)) : l;
 export const legend = kind => `<div class="bm-legend">${KINDS[kind]
-  .map(([k, l]) => `<span><i data-t="${k}"></i>${l}</span>`).join("")}</div>`
+  .map(([k, l]) => `<span aria-label="${esc(l)}"><i data-t="${k}" aria-hidden="true"></i>${k === "g-hasar" ? "⚠ " : ""}${scaleLabel(k, l)}</span>`).join("")}</div>`
   + infoTip(KINDS[kind].map(([, l, d]) => `<div class="small"><b>${l}:</b> ${d}</div>`).join(""));
 // ilk cümle görünür, gerisi "Ayrıntı" arkasında ("vb.", "ör." gibi kısaltmalarda bölünmez)
 const ABBR = /(?:vb|vs|ör|bkz|yak|sn|dk)\.$/i;
@@ -189,6 +200,12 @@ export function redrawBodyMaps(){
   });
 }
 export function bindBodyMap(root, onTap){
+  bindMuscleAssignments(root, () => {
+    root.querySelectorAll("[data-session-load]").forEach(box => {
+      box.outerHTML = sessionLoadHTML(JSON.parse(box.dataset.sessionLoad), { tap: box.dataset.tap === "true", small: box.dataset.small === "true" });
+    });
+    bindBodyMap(root, onTap);
+  });
   root.querySelectorAll(".bodymap.tap figure svg").forEach(svg => svg.onclick = e => {
     const ms = hitMuscles(svg, e); if (!ms.length) return;
     e.stopPropagation();
@@ -227,14 +244,15 @@ export function openRecoveryAnalysis(focus){
 
 // Tek antrenmanın kaslara verdiği uyarı: harita, renk açıklaması; tek günde fazla yüklenen kaslarda hangi hareketlerden geldiği
 export function sessionLoadHTML(items, { tap = false, small = true } = {}){
-  const list = items.filter(i => i.ex), rows = sessionBreakdown(list, musclesOf);
-  if (!rows.length) return "";
-  const ms = Object.fromEntries(rows.map(r => [r.muscle, r.sets]));
-  const heavy = rows.filter(r => r.sets > SESSION_TOO_MUCH);
-  return bodyMap(sessionTiers(ms), { tap, small }) + legend("session")
-    + heavy.map(r => `<div class="hint" style="margin-top:10px">${ic("battery-low")} <span>${t("bodymap.heavy_html", { muscle: esc(muscleLabel(r.muscle)), n: fmt(r.sets) })}
-        <span class="muted small" style="display:block">${r.from.map(f => `${esc(f.ex)} ${fmt(f.sets)}`).join(" · ")} · ${t("bodymap.heavy_tip")}</span></span></div>`).join("")
-    + `<div class="chips" style="margin-top:10px">${rows.filter(r => r.sets <= SESSION_TOO_MUCH).map(r => `<span class="chip"><i class="bm-dot" data-t="g-${sessionTier(r.sets)}"></i>${esc(muscleLabel(r.muscle))} · ${fmt(r.sets)}</span>`).join("")}</div>`;
+  const list = items.filter(i => i.ex && isSport(i.ex)).map(i => ({ ex: i.ex, sets: i.sets ?? EX_SETS }));
+  const load = sessionLoad(list, musclesOf), missing = unassignedExercises(list);
+  if (!Object.keys(load).length && !missing.length) return "";
+  const heavy = Object.entries(load).filter(([, r]) => r.tier === "hasar").map(([m]) => muscleLabel(m));
+  return `<div data-session-load="${esc(JSON.stringify(list))}" data-tap="${tap}" data-small="${small}">`
+    + (Object.keys(load).length ? bodyMap(Object.fromEntries(Object.entries(load).map(([m, r]) => [m, "g-" + r.tier])), { tap, small }) + legend("session") : "")
+    + (heavy.length ? `<p class="muscle-risk" role="status">⚠ ${esc(t("muscles.session_risk", { muscles: heavy.join(", ") }))}</p>` : "")
+    + (missing.length ? `<div class="muscle-unassigned row"><span class="grow">${esc(t(missing.length === 1 ? "muscles.unassigned_one" : "muscles.unassigned_count", { n: missing.length }))}</span>${assignmentButton(missing[0])}</div>` : "")
+    + `</div>`;
 }
 
 // Kanıt etiketleri (araştırma: arastirma/ klasörü). Aynı gruptakiler arasında fark gösterilmedi: sıralama değil, eşit seçenekler.
@@ -255,7 +273,7 @@ const evidenceHelp = `<details class="ev-help"><summary class="muted small">${t(
 export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
   const R = recoveryMap(), r = R[m], ft = fatigueTier(r);
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
-  const names = pickableEx().filter(e => e.group !== YOGA).map(e => e.name);
+  const names = discoverableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts);
   const ago = r ? (r.hrs < 1 ? t("bodymap.just_now") : r.hrs < 24 ? t("bodymap.hours_ago", { n: Math.round(r.hrs) }) : t("bodymap.days_ago", { n: Math.floor(r.hrs / 24) })) : "";
   // kullanıcının programlarından bu kası çalıştıranlar: bir antrenmanda kaç set (pay araştırma verisinden; kütüphane dışı hareketlerde yedek yardımcı 0,5)
@@ -270,13 +288,14 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
      ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(programName(p))}</div><div class="ms muted small">${t("bodymap.sets_this_muscle", { n: fmt(sets) })}</div></div>
        ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}${t("bodymap.start")}</button>`}</div>`).join("")}
      <div class="pk-head">${t("bodymap.moves")}</div>` : "") +
-    `${summaryHTML(m, "small")}${evidenceHelp}
+    `${summaryHTML(m, "small")}${evidenceHelp}${!list.length ? equipmentEmptyHTML() : ""}
      ${list.map((x, i) => { const { name, kind, group } = x, head = kind === "kanit" ? (i === 0 || list[i - 1].group !== group) : kind !== list[i - 1]?.kind;
        return (head ? `<div class="pk-head">${kind === "kanit" ? `${t("bodymap.equal_options")}${i === 0 ? `<span class="muted small" style="float:right;font-weight:400">${t("bodymap.evidence")}</span>` : ""}${groupNote(m, group) ? `<span class="muted small" style="display:block;font-weight:400;text-transform:none;letter-spacing:0">${esc(groupNote(m, group))}</span>` : ""}` : kind === "ana" ? t("bodymap.main_others") : t("bodymap.assist_others")}</div>` : "")
        + `<div class="exitem"><div class="grow"><div>${esc(name)}${counts[name] ? ` <span class="muted small">· ${t("bodymap.n_records", { n: counts[name] })}</span>` : ""}</div>
        <div class="ms">${kindTag(x)}${shareText(x.w)}</div></div>
        <a class="iconbtn" title="${t("bodymap.how_online")}" aria-label="${t("bodymap.how_online")}" data-i18n-aria="bodymap.how_online" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(name)}" title="${t("bodymap.add")}" aria-label="${t("bodymap.add_named", { name: esc(name) })}">${ic("circle-plus")}</button></div>`; }).join("")}`);
+  bindEquipmentEmpty(body, () => openMuscleSheet(m, alts, { plain }));
   body.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleSheet(b.dataset.alt, alts, { plain }));
   body.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { closeSheet(); startWorkout(b.dataset.pstart); });
   body.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { closeSheet(); useExercise(b.dataset.use); });
@@ -290,28 +309,26 @@ function useExercise(n){
 
 // Hareketler'deki haritada kasa dokununca: o kasın hareketleri tam ekran, aşağı kaydırarak birer birer.
 // Her kartta hareketin önden ve arkadan çalıştırdığı kaslar, kaç set yapıldığına göre kademe rengiyle boyalı;
-// renklerin anlamı yazılı (İyi gelişim: Göğüs…). Set sayısı kartta değiştirilir, renkler hemen güncellenir.
+// Renklerin anlamı yazılı (Minimum gelişim: Göğüs…). Set sayısı kartta değiştirilir, renkler hemen güncellenir.
 let reelSets = EX_SETS;
 const levelLegend = (mm, sets) => exerciseLevels(mm, sets).map(([k, l, ms]) =>
-  `<span><i data-t="g-${k}"></i><b>${l}</b><em>${esc(ms.map(muscleLabel).join(", "))}</em></span>`).join("");
-const SCALE = `<div class="reel-scale" aria-hidden="true">${SESSION_TIERS.map(([k, l]) => `<span><i data-t="g-${k}"></i>${l}</span>`).join("")}</div>`;
+  `<span><i data-t="g-${k}" aria-hidden="true"></i><b>${k === "hasar" ? "⚠ " : ""}${l}</b><em>${esc(ms.map(muscleLabel).join(", "))}</em></span>`).join("");
 const youtube = name => `https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}`;
 export function openMuscleReel(m, alts = [m]){
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
-  const names = pickableEx().filter(e => e.group !== YOGA).map(e => e.name);
+  const names = discoverableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts), sex = bodySex();
   const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
-  const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${side === "front" ? t("bodymap.front") : t("bodymap.back")}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
+  const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${esc((side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets))}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
   const cards = list.map((x, i) => { const { name, kind, group } = x, mm = musclesOf(name), note = kind === "kanit" ? groupNote(m, group) : ""; return `<section class="reel-card" data-ex="${esc(name)}">
       <div class="reel-figs">${figs(mm)}</div>
       <div>
-        <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x, true)}<span class="tag">${esc(equipLabel(equipOf(name)))}</span><span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
+        <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x, true)}${equipTag(name)}<span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
         <h3 class="reel-name">${esc(name)}</h3>
         ${i === 0 ? summaryHTML(m, "reel-note") : ""}${note ? `<p class="reel-note">${ic("info")}${esc(note)}</p>` : ""}${x.w < .999 ? `<p class="reel-note muted">${kind === "yardimci" ? t("bodymap.assist_prefix") : ""}${t("bodymap.share_of", { n: share(x.w), muscle: esc(muscleLabel(m)) })}</p>` : ""}
         <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}" aria-label="${t("bodymap.set_less")}" data-i18n-aria="bodymap.set_less">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: reelSets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}" aria-label="${t("bodymap.set_more")}" data-i18n-aria="bodymap.set_more">${ic("plus")}</button></div>
         <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
-        ${SCALE}
         <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}${t("bodymap.how_to")}</a>
           <button class="btn primary" data-use="${esc(name)}">${ic("circle-plus")}${state.live ? t("bodymap.add_to_workout") : t("bodymap.save")}</button></div>
         ${i === 0 && list.length > 1 ? `<div class="reel-hint">${ic("chevron-down")}${t("bodymap.scroll")}</div>` : ""}
@@ -323,12 +340,13 @@ export function openMuscleReel(m, alts = [m]){
   if (!el) { document.body.insertAdjacentHTML("beforeend", `<div class="reel hidden" id="reel" role="dialog" aria-modal="true"></div>`); el = $("#reel"); }
   el.innerHTML = `<header class="reel-head"><button class="iconbtn" data-rclose title="${t("bodymap.close")}" aria-label="${t("bodymap.close")}" data-i18n-aria="bodymap.close">${ic("chevron-left")}</button><h2 class="grow">${esc(muscleLabel(m))}${MUSCLE_COMMON[m] ? ` <small class="muted">${esc(MUSCLE_COMMON[m])}</small>` : ""}</h2></header>
     ${alts.length > 1 ? `<div class="fchips reel-alts">${alts.map(x => `<button class="fchip${x === m ? " on" : ""}" data-alt="${esc(x)}">${esc(muscleLabel(x))}</button>`).join("")}</div>` : ""}
-    <div class="reel-scroll">${cards}</div>`;
+    <div class="reel-scroll">${!list.length ? equipmentEmptyHTML() : ""}${cards}</div>`;
   el.classList.remove("hidden"); document.documentElement.classList.add("reel-open");
   const close = () => { el.classList.add("hidden"); document.documentElement.classList.remove("reel-open"); removeEventListener("keydown", esc_); };
   const esc_ = e => { if (e.key === "Escape") close(); };
   addEventListener("keydown", esc_);
   el.querySelector("[data-rclose]").onclick = close;
+  el.querySelectorAll("[data-equipment-change]").forEach(b => b.onclick = () => { close(); openEquipment(() => openMuscleReel(m, alts)); });
   el.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => { close(); openMuscleReel(b.dataset.alt, alts); });
   el.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { close(); useExercise(b.dataset.use); });
   el.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { close(); startWorkout(b.dataset.pstart); });
@@ -339,5 +357,6 @@ export function openMuscleReel(m, alts = [m]){
     card.querySelector("[data-n]").textContent = t("bodymap.sets_n", { n: reelSets });
     card.querySelectorAll(".reel-fig").forEach(f => f.setAttribute("style", paint(sex, f.dataset.side, mm, reelSets)));
     card.querySelector(".reel-legend").innerHTML = levelLegend(mm, reelSets);
+    card.querySelectorAll(".reel-fig").forEach(f => f.setAttribute("aria-label", (f.dataset.side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets)));
   });
 }

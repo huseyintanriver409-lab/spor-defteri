@@ -11,7 +11,7 @@ import { programById } from "../core/programs.ts";
 import { plannedOn } from "../core/calendar.ts";
 import { segState, showTab } from "./ui.js";
 import { elapsedText, liveItems, openFocus, startWorkout } from "./live.js";
-import { openAddProgram } from "./programs.js";
+import { openProgramMap, openAddProgram } from "./programs.js";
 import { dayLoad, recoveryMap } from "./stats.js";
 import { renderBackupBanner } from "./backup.js";
 import { flameHTML, streakNote, streakNow, streakOn } from "./streak.js";
@@ -80,7 +80,9 @@ export function renderHome(){
     <button class="ghost" id="qEmpty">${ic("play")}${t("home.empty_workout")}</button></div>`;
   const volumeProgram = !state.live && (p || best?.x), volumeKey = volumeProgram && volumePlan(volumeProgram).card;
   const volumeCard = volumeKey ? `<div class="card row volume-card"><span class="grow small">${t("programs.volume_question")}</span>${["accept", "reject"].map(k => `<button class="iconbtn" data-volume="${k}" data-i18n-aria="programs.volume_${k}" aria-label="${t(k === "accept" ? "programs.volume_accept" : "programs.volume_reject")}">${ic(k === "accept" ? "check" : "x")}</button>`).join("")}</div>` : "";
-  $("#homeMain").innerHTML = main + volumeCard + links;
+  const mapButton = volumeProgram && volumeProgram.items.some(i => isSport(i.ex)) ? `<button class="btn quiet" id="homePlanMap" aria-label="${t("muscles.session_map")}">${ic("map")}${t("muscles.session_map")}</button>` : "";
+  $("#homeMain").innerHTML = main + mapButton + volumeCard + links;
+  if ($("#homePlanMap")) $("#homePlanMap").onclick = () => openProgramMap(volumeProgram);
   $("#homeMain").querySelectorAll("[data-volume]").forEach(b => b.onclick = () => {
     (state.prefs.beginnerVolume ||= {})[volumeKey] = b.dataset.volume; save(); renderHome();
   });

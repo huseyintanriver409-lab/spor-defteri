@@ -20,8 +20,6 @@ export default {
   sets_n: "{n} sets",
   failure: "failure",
   no_records: "No records yet.",
-  heavy_html: "<b>{muscle}: {n} sets</b> (no additional benefit can be measured above 11 sets per workout; it also lengthens recovery)",
-  heavy_tip: "Remove an exercise or move it to another day.",
   lv_strong: "Strong",
   lv_strong_d: "Measured to grow the muscle across multiple training studies.",
   lv_mid: "Moderate",

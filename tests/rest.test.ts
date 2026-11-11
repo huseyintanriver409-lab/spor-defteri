@@ -23,6 +23,7 @@ describe("automatic rest", () => {
   });
   it("includes muscle share 0.5, excludes shares below it; unknown uses 75", () => {
     expect(autoRestSeconds({ ex: "Low-to-High Cable Fly" })).toBe(120);
+    expect(autoRestSeconds({ ex: " low-to-high   cable fly " })).toBe(120);
     expect(autoRestSeconds({ ex: "Incline Dumbbell Fly" })).toBe(75);
     expect(autoRestSeconds({ ex: "Unknown" })).toBe(75);
   });

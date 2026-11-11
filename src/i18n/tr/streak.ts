@@ -1,8 +1,10 @@
 export default {
   unit_week: "hafta",
+  unit_week_one: "hafta",
   adj_week: "haftalık",
   was_week: "haftaydı",
   unit_day: "gün",
+  unit_day_one: "gün",
   adj_day: "günlük",
   was_day: "gündü",
   title: "Seri: {n} {unit}",

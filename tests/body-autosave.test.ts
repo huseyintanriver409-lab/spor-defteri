@@ -1,3 +1,4 @@
+vi.mock("../src/app/equipment.js", () => ({ mountEquipment: vi.fn(), setOwnedEquipment: vi.fn() }));
 import { beforeEach, expect, it, vi } from "vitest";
 const env = vi.hoisted(() => {
  const nodes = new Map<string, any>(), state = { body: [] as any[] };
@@ -17,7 +18,7 @@ vi.mock("../src/app/live.js", () => ({}));
 vi.mock("../src/app/bodymap.js", () => ({}));
 // @ts-expect-error JavaScript app module
 import { setup, renderBody } from "../src/app/library.js";
-beforeEach(() => { env.nodes.clear(); env.state.body = []; setup(); env.node("#bDate").value = "2026-11-10"; });
+beforeEach(() => { env.nodes.clear(); env.state.body = []; vi.stubGlobal("document", { addEventListener: vi.fn() }); setup(); env.node("#bDate").value = "2026-11-10"; });
 it("U10: measurement changes update one record per day and preserve other fields", () => {
  env.node("#b_weight").value = "80"; env.node("#b_weight").onchange();
  env.node("#b_waist").value = "90"; env.node("#b_waist").onchange();

@@ -1,31 +1,34 @@
+import { equipmentAllowed } from "./exercises.js";
+import { exerciseSearchText } from "../core/names.ts";
+import { bindEquipmentEmpty, equipmentEmptyHTML, mountEquipment } from "./equipment.js";
 import { poseInfo } from "./yoga.js";
 import { shortDate, ymd } from "../core/dates.ts";
 import { searchFold, t } from "../core/i18n.ts";
 import { YOGA_POSES, filterPosePhase } from "../core/library.ts";
 import { groupLabel } from "../core/library.ts";
 import { $, LIB, YOGA, ask, esc, fmt, ic, save, state, toast } from "./store.js";
-import { EQUIPS, HOME, allEx, equipLabel, equipOf, groupShown, liftOn, musclesOf, yogaOn } from "./exercises.js";
+import { EQUIPS, HOME, allEx, equipLabel, equipOf, equipTag, groupShown, liftOn, musclesOf, unmappedMuscles, yogaOn } from "./exercises.js";
 import { emptyHTML, openPicker, renderSeg, segState, showTab, undoable } from "./ui.js";
 import { matchExercise } from "../core/importer.ts";
 import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
 import { liveItems, openFocus } from "./live.js";
 import { chart } from "./stats.js";
-import { EX_SETS, bindBodyMap, bodyMap, exerciseLevels, miniMap } from "./bodymap.js";
+import { EX_SETS, bindBodyMap, bodyMap, exerciseLevels, legend, miniMap } from "./bodymap.js";
 import { MUSCLES, muscleLabel, muscleSearchText } from "../core/musclemap.ts";
+import { assignmentButton, bindMuscleAssignments, openMuscleAssignment } from "./muscleassign.js";
 
 /* ---------- Library ---------- */
 export function groups(){ return [...Object.keys(LIB), "Diğer"].filter(groupShown); }
 let phase = "all";
 export function renderLib(){
   $("#libMapCard").classList.toggle("hidden", !liftOn());
-  if (liftOn() && !$("#libMap").innerHTML) { $("#libMap").innerHTML = bodyMap(Object.fromEntries(MUSCLES.map(m => [m, "sec"])), { large: true, plain: true, toggle: true }); bindBodyMap($("#libMap")); }
-  const q = searchFold($("#libSearch").value.trim()), eqf = $("#libEquip").value, home = $("#libHome").checked;
+  if (liftOn() && !$("#libMap").innerHTML) { $("#libMap").innerHTML = bodyMap(Object.fromEntries(MUSCLES.map(m => [m, "g-yok"])), { large: true, plain: true, toggle: true }) + legend("session"); bindBodyMap($("#libMap")); }
+  const q = searchFold($("#libSearch").value.trim());
   const ex = allEx().map(e => ({ ...e, m: musclesOf(e.name), eq: equipOf(e.name) })).filter(e => {
-    if (eqf && e.eq !== eqf) return false;
-    if (home && !HOME.includes(e.eq)) return false;
+    if (!equipmentAllowed(e.name)) return false;
     if (!q) return true;
-    return [e.name, e.group, groupLabel(e.group), e.eq, equipLabel(e.eq), ...e.m.p.map(muscleSearchText), ...e.m.s.map(muscleSearchText)].map(searchFold).join(" ").includes(q);
+    return [exerciseSearchText(e.name), e.group, groupLabel(e.group), e.eq, equipLabel(e.eq), ...e.m.p.map(muscleSearchText), ...e.m.s.map(muscleSearchText)].map(searchFold).join(" ").includes(q);
   });
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex]||0)+1);
   // özel hareket kütüphanedekiyle aynı olabilir (ör. "Conventional Deadlift" → "Deadlift"): birleştirme önerilir
@@ -38,20 +41,22 @@ export function renderLib(){
     const items = ex.filter(e => e.group===g && (g !== YOGA || phase === "all" || phaseNames.has(e.name))); if (!items.length) return "";
     return `<details ${open ? "open" : ""}${g === YOGA ? ' id="libYoga"' : ""}><summary>${esc(groupLabel(g))} <span>(${items.length})</span></summary>` + items.map(e =>
       `<div class="exitem">${miniMap(e.name)}<div class="grow" data-more><div>${esc(e.name)}${poseInfo(e.name)}${counts[e.name] ? ` <span class="muted small">· ${t("library.records", { n: counts[e.name] })}</span>` : ""}</div>
-        <div class="ms"><span class="tag">${esc(equipLabel(e.eq))}</span><span class="more">${t("library.in_sets", { n: EX_SETS })} ${exerciseLevels(e.m).map(([k, l, ms]) => `<span class="lv"><i class="bm-dot" data-t="g-${k}"></i><b>${l}</b> ${esc(ms.map(muscleLabel).join(", "))}</span>`).join("")}</span></div>
+        <div class="ms">${equipTag(e.name)}${unmappedMuscles(e.name) ? `<span class="small">${t("muscles.unmapped")}</span>` : ""}<span class="more">${t("library.in_sets", { n: EX_SETS })} ${exerciseLevels(e.m).map(([k, l, ms]) => `<span class="lv"><i class="bm-dot" data-t="g-${k}"></i><b>${l}</b> ${esc(ms.map(muscleLabel).join(", "))}</span>`).join("")}</span></div>
         ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">${t("library.merge_with", { name: esc(twin(e.name)) })}</button>` : ""}</div>
-       ${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="${t("library.merge_other")}" aria-label="${t("library.merge_other")}" data-i18n-aria="library.merge_other">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="${t("library.remove")}" aria-label="${t("library.remove")}" data-i18n-aria="library.remove">${ic("trash-2")}</button>` : ""}
+       ${assignmentButton(e.name)}${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="${t("library.merge_other")}" aria-label="${t("library.merge_other")}" data-i18n-aria="library.merge_other">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="${t("library.remove")}" aria-label="${t("library.remove")}" data-i18n-aria="library.remove">${ic("trash-2")}</button>` : ""}
        <a class="iconbtn" title="${t("library.how_to")}" aria-label="${t("library.how_to")}" data-i18n-aria="library.how_to" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>
        <button class="iconbtn" data-use="${esc(e.name)}" title="${t("library.add")}" aria-label="${t("library.add_named", { name: esc(e.name) })}">${ic("circle-plus")}</button></div>`).join("") + `</details>`;
   };
   const main = groups().filter(g => g !== YOGA).map(section).join(""), yoga = yogaOn() ? section(YOGA) : "";
   const phaseChips = yogaOn() ? `<div class="fchips phase-filters">${["all", "pre", "post"].map(k => `<button class="fchip${phase === k ? " on" : ""}" data-phase="${k}" aria-pressed="${phase === k}">${t({ all: "programs.filter_all", pre: "programs.filter_pre", post: "programs.filter_post" }[k])}</button>`).join("")}</div>` : "";
   $("#libList").innerHTML = phaseChips + ((main && yoga ? `<div class="pk-head" style="margin:0 0 6px">${liftOn() ? t("library.part_lift") : t("library.part_cardio")}</div>` : "") + main
-    + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">${t("library.part_yoga")}</div>${yoga}` : "") || emptyHTML("search", t("library.no_results"), "") + `<button class="btn sm quiet" data-clear style="margin-top:8px">${t("library.clear_filters")}</button>`);
+    + (yoga ? `<div class="pk-head" style="margin:${main ? "18px" : "0"} 0 6px">${t("library.part_yoga")}</div>${yoga}` : "") || equipmentEmptyHTML());
   $("#libList").querySelectorAll("[data-phase]").forEach(b => b.onclick = () => { phase = b.dataset.phase; renderLib(); });
+  bindMuscleAssignments($("#libList"), renderLib);
+  bindEquipmentEmpty($("#libList"), renderLib);
   // filtreleri temizle: arama, ekipman ve "Evde" filtresini sıfırlar (yogaMoves ile aynı sıfırlama)
   const clearBtn = $("#libList").querySelector("[data-clear]");
-  if (clearBtn) clearBtn.onclick = () => { phase = "all"; $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false; renderLib(); };
+  if (clearBtn) clearBtn.onclick = () => { phase = "all"; $("#libSearch").value = ""; renderLib(); };
   // kas adları resmin yerine geçmez: harekete dokununca açılır
   $("#libList").querySelectorAll("[data-more]").forEach(g => g.onclick = e => { if (!e.target.closest("button")) g.parentElement.classList.toggle("open"); });
   $("#libList").querySelectorAll("[data-use]").forEach(b => b.onclick = () => {
@@ -120,21 +125,24 @@ export function renderBody(){
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
 $("#cGroup").innerHTML = groups().map(g => `<option value="${esc(g)}">${esc(groupLabel(g))}</option>`).join("");
-$("#libEquip").innerHTML = `<option value="">${t("library.all_equip")}</option>` + EQUIPS.map(e => `<option value="${esc(e)}">${esc(equipLabel(e))}</option>`).join("");
+let customNeed = [];
+const drawCustomEquipment = mountEquipment($("#customEquipment"), { get: () => customNeed, set: ids => { customNeed = ids; }, label: "equipment.requirement" });
+const drawLibraryEquipment = mountEquipment($("#libEquipment"));
+document.addEventListener("equipmentchange", () => { drawLibraryEquipment?.(); refreshDatalist(); renderLib(); });
 $("#libSearch").addEventListener("input", renderLib);
-$("#libEquip").onchange = renderLib;
-$("#libHome").onchange = renderLib;
 // Programlar'daki yoga kartından: Hareketler'de yoga bölümü açık gelir
 $("#yogaMoves").onclick = () => {
-  phase = "all"; $("#libSearch").value = ""; $("#libEquip").value = ""; $("#libHome").checked = false;
+  phase = "all"; $("#libSearch").value = "";
   segState.train = "lib"; renderSeg("train");
   const y = $("#libYoga"); y.open = true; y.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 $("#cAdd").onclick = () => {
   const name = $("#cName").value.trim(); if (!name) return toast(t("library.name_req"));
   if (allEx().some(e => searchFold(e.name)===searchFold(name))) return toast(t("library.exists"));
-  state.custom.push({ name, group: $("#cGroup").value }); save(); refreshDatalist();
+  state.custom.push({ name, group: $("#cGroup").value, ...(customNeed.length ? { need: [...customNeed] } : {}) });
+  customNeed = []; drawCustomEquipment?.(); save(); refreshDatalist();
   $("#cName").value = ""; toast(t("library.added"), "check"); renderLib();
+  openMuscleAssignment(name, renderLib);
 };
 $("#bMetric").onchange = renderBody;
 $("#bDate").onchange = renderBody;

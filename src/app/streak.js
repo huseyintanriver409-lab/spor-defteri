@@ -66,7 +66,7 @@ export function celebrateStreak(){
     : t(r.kind === "week" ? "streak.prev_week" : "streak.prev_day", { n: before.count, was: r.was }) + (next ? " " + t("streak.next_badge", { b: next, unit: u }) : "");
   openSheet(`<div style="text-align:center;margin-top:8px">${flameHTML(r, "xl")}</div>`,
     `<div style="text-align:center">
-      <h3 style="font-size:24px;margin:8px 0 4px;letter-spacing:-.03em">${badge ? t("streak.new_badge", { b: badge, unit: u }) : t("streak.your_streak", { n: r.count, unit: u })}</h3>
+      <h3 style="font-size:24px;margin:8px 0 4px;letter-spacing:-.03em">${badge ? t("streak.new_badge", { b: badge, unit: u }) : t("streak.your_streak", { n: r.count, unit: r.count === 1 ? t(r.kind === "week" ? "streak.unit_week_one" : "streak.unit_day_one") : u })}</h3>
       <p class="muted" style="margin:0 0 16px">${sub}</p>
       <button class="btn primary" id="stOk" style="margin:0 auto">${ic("check")}${t("streak.continue")}</button></div>`);
   $("#stOk").onclick = closeSheet;

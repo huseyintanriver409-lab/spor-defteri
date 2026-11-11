@@ -8,13 +8,13 @@ describe("withDefaults", () => {
   it("eksik alanları varsayılanlarla doldurur", () => {
     const s = withDefaults({ v: 2, entries: [entry("a")] });
     expect(s.programs).toEqual([]);
-    expect(s.prefs).toEqual({ wake: true, haptics: true, focus: "both", body: "m" });
+    expect(s.prefs).toEqual({ wake: true, haptics: true, focus: "both", body: "m", equip: [] });
     expect(s.plates).toEqual([25, 20, 15, 10, 5, 2.5, 1.25]);
   });
 
   it("iç içe ayarları birleştirir, kullanıcının değerini korur", () => {
     const s = withDefaults({ v: 2, prefs: { haptics: false }, profile: { bw: "80" } });
-    expect(s.prefs).toEqual({ wake: true, haptics: false, focus: "both", body: "m" });
+    expect(s.prefs).toEqual({ wake: true, haptics: false, focus: "both", body: "m", equip: [] });
     expect(s.profile).toEqual({ sex: "", bw: "80", height: "", age: "" });
   });
 
@@ -160,4 +160,37 @@ describe("mergeStates", () => {
     expect(state.entries.find(e => e.id === "a")!.sets[0].w).toBe(100);
     expect(state.entries.map(e => e.id).sort()).toEqual(["a", "z"]);
   });
+});
+
+describe("equipment preference compatibility", () => {
+  it("defaults, sanitizes and round-trips selected ids and custom needs", () => {
+    expect(withDefaults({ v: 2 }).prefs.equip).toEqual([]);
+    const state = withDefaults({ v: 2, prefs: { equip: ["dumbbell", "invalid", "dumbbell", "bench"] }, custom: [{ name: "Mine", need: ["band", "invalid"] }] });
+    expect(state.prefs.equip).toEqual(["dumbbell", "bench"]);
+    expect(state.custom[0].need).toEqual(["band"]);
+    expect(withDefaults(JSON.parse(JSON.stringify(state))).prefs.equip).toEqual(state.prefs.equip);
+  });
+  it("preserves equipment when an older client overwrites unrelated settings or custom data", () => {
+    const local = withDefaults({ v: 2, settingsU: 10, prefs: { equip: ["dumbbell"] }, custom: [{ name: "Mine", need: ["band"], u: 10 }] });
+    const remote: any = { ...DEFAULTS(), settingsU: 20, custom: [{ name: "Mine", group: "Di?er", u: 20 }] };
+    delete (remote.prefs as any).equip;
+    const merged = mergeStates(local, remote).state;
+    expect(merged.prefs.equip).toEqual(["dumbbell"]);
+    expect(merged.custom[0].need).toEqual(["band"]);
+    remote.prefs.equip = [];
+    expect(mergeStates(local, remote).state.prefs.equip).toEqual([]);
+  });
+});
+
+it("equipment survives reverse old-client merges after defaults and accepts explicit clears", () => {
+ const equipped = withDefaults({ v: 2, settingsU: 10, prefs: { equip: ["dumbbell"] } });
+ const oldRaw: any = { ...DEFAULTS(), settingsU: 20 }; delete oldRaw.prefs.equip;
+ for (const old of [oldRaw, withDefaults(oldRaw)]) {
+  expect(mergeStates(equipped, old).state.prefs.equip).toEqual(["dumbbell"]);
+  expect(mergeStates(old, equipped).state.prefs.equip).toEqual(["dumbbell"]);
+ }
+ const cleared = withDefaults(oldRaw); cleared.prefs.equip = [];
+ expect(mergeStates(equipped, cleared).state.prefs.equip).toEqual([]);
+ expect(mergeStates(cleared, equipped).state.prefs.equip).toEqual([]);
+ expect(JSON.stringify(cleared)).not.toContain("implicitEquipment");
 });

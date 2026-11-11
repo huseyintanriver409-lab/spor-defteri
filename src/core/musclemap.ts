@@ -5,8 +5,8 @@ import { t } from "./i18n.ts";
 const mt = (k: string) => t("muscles." + k);
 import trMuscles from "../i18n/tr/muscles.ts";
 import enMuscles from "../i18n/en/muscles.ts";
-import { EVIDENCE, type Level } from "./muscledata.ts";
-export { EVIDENCE, SUMMARY, INFERENCE, WEIGHTS, type Level } from "./muscledata.ts";
+import { EVIDENCE, STRETCH, type Level } from "./muscledata.ts";
+export { EVIDENCE, SUMMARY, INFERENCE, WEIGHTS, STRETCH, type Level } from "./muscledata.ts";
 
 export const MUSCLES = ["Göğüs", "Lat", "Trapez", "Bel", "Ön Omuz", "Yan Omuz", "Arka Omuz", "Biceps", "Triceps", "Önkol", "Quadriceps", "Hamstring", "Kalça", "İç Bacak", "Baldır", "Karın", "Oblik", "Rotator Manşet"];
 
@@ -46,42 +46,74 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
   return r.sets >= HEAVY_DAY ? "asiri" : "yorgun";
 }
 
-// Tek antrenmanın (ya da tek hareketin) kasa verdiği uyarı, etkili setle (set × pay). Altı kademe,
-// her yerde aynı renk: mavi çok az, yeşil koruma, turuncu minimum gelişim, kırmızı iyi gelişim, bordo maksimum,
-// mor kas hasarı. Haftada 2-3 kez çalışılan kasa 3 set zaten güçlü bir uyarıdır. Remmert ve ark. 2025 (SportRxiv
-// ön baskı): tek antrenmanda ~11 setten sonra ek büyüme ölçülemiyor, yorgunluk ve hasar artmaya devam ediyor.
-// Yorum (araştırmada ayrı eşik yok): 3–11 arası verimli aralık ikiye bölündü; 6+ set "maksimum", 11'i aşınca "kas hasarı".
+// KAYNAK: Remmert, Pelland, Robinson, Hinson, Zourdos 2025, "Is There Too Much of a Good Thing?"
+// SportRxiv ÖN BASKI (hakemli değil), DOI 10.51224/SRXIV.537: tek seansta kas başına yaklaşık
+// 11 kesirli setten sonra ek hipertrofi getirisi ayırt edilemiyor (PUOS); yüksek hacim verisi az.
+// Kesirli sayım (dolaylı set 0,5): Pelland ve ark., Sports Medicine (haftalık hacim meta-regresyonu).
+// Nosaka & Sakamoto 2001, Med Sci Sports Exerc 33(1):22-29: aynı işte kas uzun boydayken yapılan
+// eksantrik çalışma daha fazla hasar belirtisi verir. Bartolomei ve ark. 2017, Eur J Appl Physiol
+// 117:1287-1298: yüksek hacimli seans (8×10), yüksek şiddetliye (8×3) göre daha büyük ve uzun
+// süren performans kaybı. McHugh 2003, Scand J Med Sci Sports 13:88-97: alışkın olunan egzersizde
+// hasar belirgin azalır (tekrarlı seans etkisi). Damas ve ark. 2016, J Physiol 594:5209-5222:
+// hasar büyümenin koşulu değil.
+// YORUM (kaynağı yok, uygulama kalibrasyonu): 1/3/5/8 kesim noktaları; "8+ = maksimum"
+// (PUOS ~11'e yaklaşan bölge); risk eşiği 12,5 ve uzamış pozisyon çarpanı 1,5. Bu iki sayı örnek
+// programlarla kalibre edildi: "5 set Deadlift + 7 set Romanian Deadlift" hamstring'de mor (R=13),
+// hazır programların hiçbiri mor değil (en yüksek R≈11,9). Mor ölçülmüş hasar değil,
+// "bu kasa tek seansta olağandışı çok yük bindi" uyarısıdır. Tükeniş ve deneyim çarpanı bilerek
+// eklenmedi (recovery.ts zaten ele alıyor).
 export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "iyi" | "maksimum" | "hasar";
 export const SESSION_TIERS: [SessionTier, string, string][] = (["dusuk", "koruma", "minimum", "iyi", "maksimum", "hasar"] as SessionTier[]).map(id => [id, mt("session_" + id), mt("session_" + id + "_d")]);
-export const SESSION_TOO_MUCH = 11;
-export function sessionTier(sets: number): SessionTier {
+export const SESSION_TIER_LIMITS = [1, 3, 5, 8] as const;
+export const STRETCH_FACTOR = 1.5;
+export const SESSION_RISK_LIMIT = 12.5;
+export const SESSION_TOO_MUCH = SESSION_RISK_LIMIT;
+const SESSION_EPSILON = 1e-9;
+export function sessionTier(sets: number, risk = sets): SessionTier {
   if (!(sets > 0)) return "yok";
-  return sets < 1 ? "dusuk" : sets < 2 ? "koruma" : sets < 3 ? "minimum" : sets < 6 ? "iyi" : sets <= SESSION_TOO_MUCH ? "maksimum" : "hasar";
+  if (risk > SESSION_RISK_LIMIT + SESSION_EPSILON) return "hasar";
+  const [maintenance, minimum, high, maximum] = SESSION_TIER_LIMITS;
+  return sets < maintenance - SESSION_EPSILON ? "dusuk" : sets < minimum - SESSION_EPSILON ? "koruma"
+    : sets < high - SESSION_EPSILON ? "minimum" : sets < maximum - SESSION_EPSILON ? "iyi" : "maksimum";
 }
-// Hareketin kaslara payı (1 = ana hedef). Pay araştırma verisinden (muscledata.ts WEIGHTS); w yoksa (yalnız kütüphane dışı/kullanıcı hareketi) yedek: ana 1, yardımcı 0,5.
 export type Muscles = { p: string[]; s: string[]; w?: Record<string, number> };
 type MusclesOf = (ex: string) => Muscles;
+// Açık boş pay nesnesi de bilinçli atamadır; yedek ana/yardımcı paylara düşmez.
 export function weightsOf(m: Muscles): Record<string, number> {
   if (m.w) return m.w;
   const w: Record<string, number> = {}; m.s.forEach(x => w[x] = .5); m.p.forEach(x => w[x] = 1); return w;
 }
-// Kas başına hangi hareketten kaç etkili set geldiği (set × pay); en yüklü kas önce
-export function sessionBreakdown(items: { ex: string; sets: number }[], musclesOf: MusclesOf): { muscle: string; sets: number; from: { ex: string; sets: number }[] }[] {
-  const by: Record<string, { ex: string; sets: number }[]> = {};
-  items.forEach(({ ex, sets }) => { for (const [x, w] of Object.entries(weightsOf(musclesOf(ex)))) (by[x] ||= []).push({ ex, sets: sets * w }); });
-  return Object.entries(by).map(([muscle, from]) => ({ muscle, from, sets: from.reduce((a, f) => a + f.sets, 0) })).sort((a, b) => b.sets - a.sets);
+export type SessionItem = { ex: string; sets: number };
+export type SessionContribution = { ex: string; sets: number; share: number; stretch: boolean };
+export type SessionLoad = { sets: number; risk: number; baseTier: SessionTier; tier: SessionTier; from: SessionContribution[] };
+// Yinelenen hareketler birleştirilir; set sayısı 0 ise katkı yoktur, varsayılan set eklenmez.
+export function sessionLoad(items: SessionItem[], musclesOf: MusclesOf): Record<string, SessionLoad> {
+  const counts = new Map<string, number>();
+  for (const { ex, sets } of items) if (Number.isFinite(sets) && sets > 0) counts.set(ex, (counts.get(ex) || 0) + sets);
+  const by: Record<string, SessionLoad> = {};
+  for (const [ex, sets] of counts) {
+    for (const [muscle, share] of Object.entries(weightsOf(musclesOf(ex)))) {
+      if (!Number.isFinite(share) || !(share > 0)) continue;
+      const stretch = STRETCH[ex]?.includes(muscle) || false;
+      const effective = sets * share;
+      const row = by[muscle] ||= { sets: 0, risk: 0, baseTier: "yok", tier: "yok", from: [] };
+      row.sets += effective; row.risk += effective * (stretch ? STRETCH_FACTOR : 1);
+      row.from.push({ ex, sets: effective, share, stretch });
+    }
+  }
+  for (const row of Object.values(by)) { row.baseTier = sessionTier(row.sets, 0); row.tier = sessionTier(row.sets, row.risk); }
+  return by;
+}
+export function sessionBreakdown(items: SessionItem[], musclesOf: MusclesOf): ({ muscle: string } & SessionLoad)[] {
+  return Object.entries(sessionLoad(items, musclesOf)).map(([muscle, row]) => ({ muscle, ...row })).sort((a, b) => b.sets - a.sets);
+}
+export function setsByMuscle(items: SessionItem[], musclesOf: MusclesOf): Record<string, number> {
+  return Object.fromEntries(Object.entries(sessionLoad(items, musclesOf)).map(([muscle, row]) => [muscle, row.sets]));
 }
 
-// kas başına etkili set: set × hareketin o kasa payı
-export function setsByMuscle(items: { ex: string; sets: number }[], musclesOf: MusclesOf): Record<string, number> {
-  const ms: Record<string, number> = {};
-  items.forEach(({ ex, sets }) => { for (const [x, w] of Object.entries(weightsOf(musclesOf(ex)))) ms[x] = (ms[x] || 0) + sets * w; });
-  return ms;
-}
 
-// Kasa göre hareketler, araştırmaya göre (src/core/muscledata.ts, arastirma/ klasörü). Tek "en iyi" yok:
-// önce kanıt grupları (aynı gruptakiler eşit), sonra kası ana olarak (pay ≥ 0,75), sonra yardımcı çalıştıranlar.
-// Aynı kademede çok yapılan önce; yardımcılarda payı büyük olan önce; eşitse ada göre.
+
+// Önce kanıt grupları, sonra ana (pay ≥ 0,75), sonra yardımcı; aynı grupta kullanım sayısı.
 export const MAIN_SHARE = .75;
 export type RankKind = "kanit" | "ana" | "yardimci";
 export type Ranked = { name: string; kind: RankKind; w: number; level?: Level; group?: number };

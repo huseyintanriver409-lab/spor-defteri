@@ -1,9 +1,12 @@
+import { equipmentAllowed } from "./exercises.js";
+import { exerciseSearchText } from "../core/names.ts";
+import { bindEquipmentEmpty, equipmentEmptyHTML, mountEquipment, refreshEquipmentViews } from "./equipment.js";
 import { setupShortHelp } from "./short-help.js";
 import { $, esc, ic, save, state, toast } from "./store.js";
 import { groupLabel } from "../core/library.ts";
 import { searchFold, t } from "../core/i18n.ts";
 import { muscleLabel, muscleSearchText } from "../core/musclemap.ts";
-import { allEx, equipLabel, equipOf, groupOf, groupShown, liftOn, musclesOf, pickableEx } from "./exercises.js";
+import { allEx, equipLabel, equipOf, equipTag, groupOf, groupShown, liftOn, musclesOf, pickableEx } from "./exercises.js";
 import { refreshDatalist, renderDay, updateHint } from "./log.js";
 import { renderPlan, renderProg } from "./programs.js";
 import { renderLiveBar } from "./live.js";
@@ -16,6 +19,8 @@ import { renderBackup, renderBackupBanner } from "./backup.js";
 import { renderSettings } from "./settings.js";
 import { renderAccount } from "./cloud.js";
 import { streakCardHTML, streakNow, streakOn } from "./streak.js";
+import { miniMap } from "./bodymap.js";
+import { assignmentButton, bindMuscleAssignments, openMuscleAssignment } from "./muscleassign.js";
 
 /* ---------- Helpers: haptics, wake lock, undo, bottom sheet ---------- */
 export function buzz(p){ if (state.prefs.haptics) try { navigator.vibrate && navigator.vibrate(p); } catch(e){} }
@@ -87,6 +92,7 @@ export function openPicker(title, onPick){
   openSheet(sheetHead(title) + `<div class="search">${ic("search")}<input id="pkQ" placeholder="${t("ui.ex_search")}" autocomplete="off" aria-label="${t("ui.ex_search")}"></div>
     <div class="fchips" id="pkChips" style="margin:10px 0 4px"></div>`, `<div class="pk-list" id="pkList"></div>`);
   const favs = () => state.favs.filter(n => groupShown(groupOf(n)));
+  let ignoreEquip = false; // yalnız bu açılış için geçici; kalıcı seçime dokunmaz
   let filter = recentExercises().length ? "recent" : favs().length ? "fav" : "all";
   const chips = [["recent", t("ui.recent_lbl"), "history"], ["fav", t("ui.favs_lbl"), "star"], ["all", t("ui.all_lbl"), "list"], ...groups().map(g => [g, groupLabel(g), ""])];
   const renderChips = () => {
@@ -97,21 +103,30 @@ export function openPicker(title, onPick){
   const renderList = () => {
     const raw = $("#pkQ").value.trim(), q = searchFold(raw);
     let list;
-    if (q) list = pickableEx().filter(e => { const m = musclesOf(e.name); return [e.name, e.group, groupLabel(e.group), equipOf(e.name), equipLabel(equipOf(e.name)), ...m.p.map(muscleSearchText), ...m.s.map(muscleSearchText)].map(searchFold).join(" ").includes(q); });
+    if (q) list = pickableEx().filter(e => { const m = musclesOf(e.name); return [exerciseSearchText(e.name), e.group, groupLabel(e.group), equipOf(e.name), equipLabel(equipOf(e.name)), ...m.p.map(muscleSearchText), ...m.s.map(muscleSearchText)].map(searchFold).join(" ").includes(q); });
     else if (filter === "recent") list = recentExercises().map(known);
     else if (filter === "fav") list = favs().map(known);
     else if (filter === "all") list = pickableEx();
     else list = pickableEx().filter(e => e.group === filter);
-    const exact = q && allEx().some(e => searchFold(e.name) === q);
+    const unfiltered = list;
+    if (!ignoreEquip) list = list.filter(e => equipmentAllowed(e.name));
+    const hiddenMatches = q && list.length < unfiltered.length;
+    const exact = q && allEx().some(e => searchFold(exerciseSearchText(e.name)).includes(q));
     let html = q && !exact ? `<div class="pk-item"><button class="pk-main" data-new="1"><b>${ic("circle-plus", "acc")} ${t("ui.new_ex", { raw: esc(raw) })}</b><small>${t("ui.new_ex_sub")}</small></button></div>` : "";
     html += list.map(e => {
       const m = musclesOf(e.name), fav = state.favs.includes(e.name);
-      return `<div class="pk-item"><button class="pk-main" data-ex="${esc(e.name)}"><b>${esc(e.name)}</b><small><span class="tag">${esc(equipLabel(equipOf(e.name)))}</span>${esc(m.p.map(muscleLabel).join(", ") || groupLabel(e.group))}</small></button>
+      return `<div class="pk-item">${miniMap(e.name)}<button class="pk-main" data-ex="${esc(e.name)}"><b>${esc(e.name)}</b><small>${equipTag(e.name)}${esc(m.p.map(muscleLabel).join(", ") || groupLabel(e.group))}</small></button>${assignmentButton(e.name)}
         <button class="iconbtn star${fav ? " on" : ""}" data-fav="${esc(e.name)}" title="${fav ? t("ui.fav_remove") : t("ui.fav_add")}" aria-pressed="${fav}">${ic("star")}</button></div>`;
     }).join("");
     if (!html) html = filter === "fav" ? emptyHTML("star", t("ui.no_favs"), "")
       : emptyHTML("history", t("ui.no_records"), "");
+    if (hiddenMatches) html = `<button class="btn quiet" data-remove-equipment>${ic("x")}${esc(t("equipment.remove_filter"))}</button>` + html;
+    if (!list.length && !hiddenMatches && (state.prefs.equip || []).length) html = equipmentEmptyHTML() + html;
     $("#pkList").innerHTML = html;
+    const removeFilter = $("#pkList [data-remove-equipment]");
+    if (removeFilter) removeFilter.onclick = () => { ignoreEquip = true; renderList(); };
+    bindEquipmentEmpty($("#pkList"), () => openPicker(title, onPick));
+    bindMuscleAssignments($("#pkList"), () => openPicker(title, onPick));
     $("#pkList").querySelectorAll("[data-ex]").forEach(b => b.onclick = () => { closeSheet(); onPick(b.dataset.ex); });
     $("#pkList").querySelectorAll("[data-fav]").forEach(b => b.onclick = () => {
       const n = b.dataset.fav;
@@ -119,7 +134,12 @@ export function openPicker(title, onPick){
       save(); renderList(); buzz(8);
     });
     const nb = $("#pkList [data-new]");
-    if (nb) nb.onclick = () => { state.custom.push({ name: raw, group: "Diğer" }); save(); refreshDatalist(); closeSheet(); toast(t("ui.ex_added", { raw }), "check"); onPick(raw); };
+    if (nb) nb.onclick = () => {
+      let need = [];
+      const body = openSheet(sheetHead(raw), '<div data-custom-equipment></div><button class="btn primary" data-create-ex>' + ic("plus") + esc(t("library.add")) + '</button>');
+      mountEquipment(body.querySelector("[data-custom-equipment]"), { get: () => need, set: ids => { need = ids; }, label: "equipment.requirement" });
+      body.querySelector("[data-create-ex]").onclick = () => { state.custom.push({ name: raw, group: "Diğer", ...(need.length ? { need } : {}) }); save(); refreshDatalist(); closeSheet(); toast(t("ui.ex_added", { raw }), "check"); onPick(raw); openMuscleAssignment(raw); };
+    };
   };
   $("#pkQ").oninput = renderList;
   renderChips(); renderList();
@@ -131,7 +151,7 @@ export const TABS = ["home", "train", "history", "progress", "profile"];
 export let curTab = "home";
 // Sayfa yenilenince aynı sekme, bölüm ve kaydırma yerinde açılır. sessionStorage: uygulama yeniden açılınca ana sayfadan başlar.
 const NAV_KEY = "sporDefteri.nav";
-const saveNav = () => { try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ tab: curTab, seg: segState, y: scrollY })); } catch(e){} };
+export const saveNav = () => { try { sessionStorage.setItem(NAV_KEY, JSON.stringify({ tab: curTab, seg: segState, y: scrollY })); } catch(e){} };
 export function restoreNav(){
   let n = null; try { n = JSON.parse(sessionStorage.getItem(NAV_KEY) || "null"); } catch(e){}
   if (!n || !TABS.includes(n.tab)) return showTab("home");
@@ -159,14 +179,16 @@ function renderStreakCard(){
   if (!streakOn()) return;
   $("#streakCard").innerHTML = streakCardHTML(streakNow());
 }
-export function refreshAll(){ renderTab(curTab); renderLiveBar(); renderBackupBanner(); }
-export const segState = { stats: "week", train: "prog", profile: "settings" };
+export function refreshAll(){ refreshEquipmentViews(); renderTab(curTab); renderLiveBar(); renderBackupBanner(); }
+export const segState = { stats: "rest", train: "lib", profile: "settings", bm: "now" };
 // "Sadece yoga"da ağırlığa özel bölümler gizlenir: rekorlar, kas toparlanması, güç skoru, hesap araçları
 const LIFT_ONLY = { stats: ["rec", "rest", "power"], profile: ["tools"] };
 export function renderSeg(name){
   const hide = liftOn() ? [] : LIFT_ONLY[name] || [];
-  if (hide.includes(segState[name])) segState[name] = document.querySelector(`.seg[data-seg="${name}"] button`).dataset.v;
-  const v = segState[name], seg = document.querySelector(`.seg[data-seg="${name}"]`);
+  const seg = document.querySelector(`.seg[data-seg="${name}"]`);
+  const available = [...seg.querySelectorAll("button")].map(b => b.dataset.v).filter(v => !hide.includes(v));
+  if (!available.includes(segState[name])) segState[name] = available[0];
+  const v = segState[name];
   seg.querySelectorAll("button").forEach(b => { b.classList.toggle("hidden", hide.includes(b.dataset.v)); const on = b.dataset.v === v; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); $(`#${name}-${b.dataset.v}`).classList.toggle("hidden", !on); });
   ({ week: renderWeek, hist: renderHistSelect, rec: renderRecords, rest: renderRecovery, power: renderPower, body: renderBody,
      prog: renderProg, log: () => { renderDay(); updateHint(); }, plan: renderPlan,

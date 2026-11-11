@@ -1,4 +1,5 @@
 import { WEIGHTS } from "./muscledata.ts";
+import { resolveExerciseName } from "./names.ts";
 import { repRange, type WorkSet } from "./training.ts";
 
 export interface RestContext {
@@ -10,7 +11,7 @@ export function autoRestSeconds({ ex, yoga = false, targetReps, lastSet, estimat
   const target = repRange(targetReps).hi, last = Number(lastSet?.r);
   if ((target !== "" && target > 0 && target <= 5) || (last > 0 && last <= 5) ||
     (estimated1RM > 0 && Number(lastSet?.w) >= .85 * estimated1RM)) return 180;
-  return Object.values(WEIGHTS[ex] || {}).filter(w => w >= .5).length >= 2 ? 120 : 75;
+  return Object.values(WEIGHTS[resolveExerciseName(ex)] || {}).filter(w => w >= .5).length >= 2 ? 120 : 75;
 }
 
 export function exerciseRestSeconds(context: RestContext, general: number, auto: boolean, pref?: number): number {

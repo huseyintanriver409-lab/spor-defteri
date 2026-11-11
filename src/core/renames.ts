@@ -8,6 +8,10 @@
 import type { State } from "./schema.ts";
 
 export const EX_RENAMES: Record<string, string> = {
+  "Barfiks": "Pull-up", "Şınav": "Push-up", "Tam mekik": "Sit-up",
+  "Çekiç curl": "Hammer Curl", "Yan raise": "Lateral Raise (Dumbbell)",
+  "Kalça köprüsü": "Glute Bridge", "Ters mekik": "Reverse Crunch",
+  "Farmer yürüyüşü": "Farmer's Walk",
   "Chest Press Makinesi": "Machine Chest Press",
   "Incline Chest Press Makinesi": "Machine Incline Chest Press",
   "Dips (Göğüs)": "Chest Dip",
@@ -145,6 +149,19 @@ export function migrateExNames(s: State): State {
     for (const [k, v] of Object.entries(s.exPrefs)) if (!touched(k)) m[k] = v;
     for (const [k, v] of Object.entries(s.exPrefs)) if (touched(k)) { const to = ren(k); if (!m[to]) m[to] = v; }
     out.exPrefs = m;
+  }
+  if ([...Object.keys(s.exMuscles || {}), ...Object.keys(s.exMusclesU || {})].some(touched)) {
+    const values: Record<string, any> = {}, clocks: Record<string, number> = {};
+    const names = [...new Set([...Object.keys(s.exMuscles || {}), ...Object.keys(s.exMusclesU || {})])];
+    // Canonical entry wins ties; newer reset/assignment wins otherwise.
+    names.sort((a, b) => Number(touched(a)) - Number(touched(b)));
+    for (const name of names) {
+      const to = ren(name), u = s.exMusclesU?.[name] ?? s.settingsU ?? 0;
+      if (Object.hasOwn(clocks, to) && clocks[to] >= u) continue;
+      clocks[to] = u; delete values[to];
+      if (Object.hasOwn(s.exMuscles || {}, name)) values[to] = s.exMuscles[name];
+    }
+    out.exMuscles = values; out.exMusclesU = clocks;
   }
   if (Array.isArray(s.favs) && s.favs.some(touched)) out.favs = [...new Set(s.favs.map(ren))];
   if (s.live?.items?.some((i: any) => touched(i?.ex))) out.live = { ...s.live, items: s.live.items.map((i: any) => touched(i?.ex) ? { ...i, ex: ren(i.ex) } : i) };

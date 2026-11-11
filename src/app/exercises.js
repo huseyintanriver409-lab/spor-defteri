@@ -1,3 +1,5 @@
+import { canDo } from "../core/equipment.ts";
+import { resolveExerciseName } from "../core/names.ts";
 import { CARDIO, LIB, YOGA, fmt, state } from "./store.js";
 import { WEIGHTS } from "../core/muscledata.ts";
 import { MAIN_SHARE } from "../core/musclemap.ts";
@@ -15,7 +17,7 @@ export function allEx(){
   state.custom.forEach(c => list.push({name:c.name, group:c.group, custom:true}));
   return list;
 }
-export function groupOf(name){ const e = allEx().find(x => x.name === name); return e ? e.group : "Diğer"; }
+export function groupOf(name){ const resolved = resolveExerciseName(name); const e = allEx().find(x => x.name === resolved); return e ? e.group : "Diğer"; }
 export const isCardio = name => groupOf(name) === CARDIO;
 export const isYoga = name => groupOf(name) === YOGA;
 // Ayarlar → Antrenman ayarları → "ne için kullanıyorsun": both | lift (yoga gizli) | yoga (ağırlık gizli; kardiyo ve özel hareketler kalır)
@@ -23,7 +25,9 @@ export const focus = () => ["lift", "yoga"].includes(state.prefs.focus) ? state.
 export const yogaOn = () => focus() !== "lift";
 export const liftOn = () => focus() !== "yoga";
 export const groupShown = g => g === YOGA ? yogaOn() : liftOn() || g === CARDIO || g === "Diğer";
+export const equipmentAllowed = name => isCardio(name) || isYoga(name) || canDo(name, state.prefs.equip || [], state.custom);
 export const pickableEx = () => allEx().filter(e => groupShown(e.group));
+export const discoverableEx = () => pickableEx().filter(e => equipmentAllowed(e.name));
 
 // Kütüphanedeki hareketlerin kas payları araştırmadan gelir (src/core/muscledata.ts). Aşağıdaki kurallar yalnız
 // kütüphanede olmayan (kullanıcının eklediği) hareketler içindir: yedek olarak ana kas 1, yardımcı 0,5 sayılır.
@@ -71,21 +75,31 @@ export const _mCache = {};
 // p: ana kaslar (pay ≥ 0,75), s: yardımcı kaslar (gösterim için pay ≥ 0,2), w: tüm paylar (set sayımı bunu kullanır)
 const SHOW_MIN = .2;
 export function musclesOf(name){
-  if (_mCache[name]) return _mCache[name];
-  const w = WEIGHTS[name];
+  const resolved = resolveExerciseName(name);
+  // Read overrides before cache so synced changes and resets are immediately visible.
+  const w = Object.hasOwn(state.exMuscles || {}, name) ? state.exMuscles[name] : WEIGHTS[resolved];
+  // Explicit empty weights stay empty: Tibialis Raise targets a muscle absent from the drawing.
   if (w) { const ms = Object.keys(w);
-    return _mCache[name] = { p: ms.filter(m => w[m] >= MAIN_SHARE), s: ms.filter(m => w[m] < MAIN_SHARE && w[m] >= SHOW_MIN), w }; }
+    return { ex: name, p: ms.filter(m => w[m] >= MAIN_SHARE), s: ms.filter(m => w[m] < MAIN_SHARE && w[m] >= SHOW_MIN), w }; }
+  if (_mCache[name]) return _mCache[name];
   const g = groupOf(name), n = name.toLowerCase();
   const def = GROUP_MUSCLES[g] ? { p: GROUP_MUSCLES[g][0], s: GROUP_MUSCLES[g][1] } : { p: [], s: [] };
   // kardiyo ve yogada kurallar uygulanmaz; karında yalnız oblik kuralı. Listede olmayan ("Diğer") hareketler de
   // adından tanınır (ör. "Dumbbell Overhead Press" → ön omuz); tanınmazsa kas haritasına girmez.
   const r = g === "Karın & Core" ? CORE_RULES.find(([re]) => re.test(n)) : [CARDIO, YOGA].includes(g) ? null : MUSCLE_RULES.find(([re]) => re.test(n));
-  return _mCache[name] = r ? { p: r[1], s: r[2] } : def;
+  return _mCache[name] = { ex: name, ...(r ? { p: r[1], s: r[2] } : def) };
 }
+export const unmappedMuscles = name => name === "Tibialis Raise" && !Object.hasOwn(state.exMuscles || {}, name);
+export const unassignedMuscles = name => {
+  if (!isSport(name) || unmappedMuscles(name)) return false;
+  const m = musclesOf(name);
+  return m.w ? !Object.values(m.w).some(w => w > 0) : !m.p.length && !m.s.length;
+};
+export const unassignedExercises = items => [...new Set(items.map(i => i.ex).filter(Boolean))].filter(unassignedMuscles);
 export const EQUIPS = ["Barbell","Dumbbell","Kablo","Makine","Smith","Kettlebell","Vücut Ağırlığı","Diğer","Kardiyo"];
 export const HOME = ["Dumbbell","Kettlebell","Vücut Ağırlığı","Kardiyo"];
 export function equipOf(name){
-  const n = name.toLowerCase(), g = groupOf(name);
+  const n = resolveExerciseName(name).toLowerCase(), g = groupOf(name);
   if (g === CARDIO) return "Kardiyo";
   if (g === YOGA) return "Vücut Ağırlığı";
   if (/smith/.test(n)) return "Smith";
@@ -100,6 +114,9 @@ export function equipOf(name){
   if (g === "Diğer") return "Diğer";
   return "Barbell";
 }
+// kullanıcının eklediği, ekipmanı belirtilmemiş ve adından anlaşılamayan harekette varsayılan "Barbell" etiketi gösterilmez
+export const equipShown = name => { const c = state.custom.find(x => x.name === name); return !(c && !(c.need || []).length && equipOf(name) === "Barbell" && !/barbell|halter|bench|deadlift/i.test(name)); };
+export const equipTag = name => equipShown(name) ? `<span class="tag">${equipLabel(equipOf(name)).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))}</span>` : "";
 // set türleri: w = ısınma (istatistiklere girmez), d = drop set, f = tükenişe kadar
 export const SET_TYPES = { w: t("exercises.set_w"), d: t("exercises.set_d"), f: t("exercises.set_f") };
 export const TYPE_LETTER = { w: t("exercises.letter_w"), d: t("exercises.letter_d"), f: t("exercises.letter_f") };

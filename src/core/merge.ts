@@ -31,6 +31,19 @@ export function mergeExercise(s: State, from: string, to: string) {
   if (b[from]) { if (!b[to] || b[from].date > b[to].date) b[to] = b[from]; delete b[from]; }
   if (s.exNotes?.[from]) { s.exNotes[to] = s.exNotes[to] ? `${s.exNotes[to]}\n${s.exNotes[from]}` : s.exNotes[from]; delete s.exNotes[from]; }
   if (s.exPrefs?.[from]) { if (!s.exPrefs[to]) s.exPrefs[to] = s.exPrefs[from]; delete s.exPrefs[from]; }
+  if (Object.hasOwn(s.exMuscles || {}, from) || Object.hasOwn(s.exMusclesU || {}, from)) {
+    s.exMuscles ||= {}; s.exMusclesU ||= {};
+    const fu = s.exMusclesU[from] ?? s.settingsU ?? 0, tu = s.exMusclesU[to] ?? s.settingsU ?? 0;
+    if ((!Object.hasOwn(s.exMuscles, to) && !Object.hasOwn(s.exMusclesU, to)) || fu > tu) {
+      if (Object.hasOwn(s.exMuscles, from)) s.exMuscles[to] = s.exMuscles[from]; else delete s.exMuscles[to];
+      s.exMusclesU[to] = fu;
+    }
+    delete s.exMuscles[from];
+    const mergedAt = Date.now();
+    // Equal clocks let a canonical destination win if the old custom name becomes an alias.
+    s.exMusclesU[to] = mergedAt;
+    s.exMusclesU[from] = mergedAt; // Source-name tombstone prevents stale sync resurrection.
+  }
   if (Array.isArray(s.favs) && s.favs.includes(from)) s.favs = [...new Set(s.favs.map((f: string) => f === from ? to : f))];
   for (const i of s.live?.items || []) if (i.ex === from) i.ex = to;
   if (s.draft?.ex === from) s.draft.ex = to;

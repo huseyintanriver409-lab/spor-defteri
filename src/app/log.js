@@ -1,23 +1,26 @@
+import { groupLabel } from "../core/library.ts";
 import { practiceSeconds, recordAllowed } from "../core/yoga.ts";
 import { e1rm, volume, warmupSets, work } from "../core/training.ts";
 import { niceDate, ymd } from "../core/dates.ts";
 import { t } from "../core/i18n.ts";
 import { baseBest, baseSet } from "../core/baseline.ts";
 import { $, ask, esc, fmt, ic, save, state, toast, uid } from "./store.js";
-import { SET_TYPES, TYPE_LETTER, allEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, isYoga, pickableEx, setLabel } from "./exercises.js";
+import { SET_TYPES, TYPE_LETTER, allEx, discoverableEx, durText, equipOf, fmtSec, groupOf, isCardio, isTimed, isYoga, pickableEx, setLabel } from "./exercises.js";
 import { buzz, emptyHTML, openPicker, segState, showTab, undoable } from "./ui.js";
 import { autoLogged } from "./programs.js";
 
 /* ---------- Manual log (geçmişe dönük ya da canlı mod olmadan kayıt) ---------- */
 export let editingId = null;
 export function refreshDatalist(){
-  $("#exList").innerHTML = pickableEx().map(e => `<option value="${esc(e.name)}"></option>`).join("");
+  $("#exList").innerHTML = discoverableEx().map(e => `<option value="${esc(e.name)}"></option>`).join("");
 }
 export function setRow(s = {}){
   const cardio = isCardio($("#logEx").value);
   const rir = s.rir == null ? "" : String(s.rir);
   const div = document.createElement("div");
   div.className = "setrow";
+  div._setOriginal = { ...s };
+  div._setExisting = s._existing ?? false;
   div.innerHTML = `<button class="n" type="button" data-t="${s.t||""}"></button>
     <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="${cardio?t("log.u_min"):t("log.u_kg")}" value="${s.w ?? ""}" class="w" aria-label="${cardio?t("log.l_time_min"):t("log.l_weight_kg")}">
     <input type="number" inputmode="${cardio?"decimal":"numeric"}" step="${cardio?"0.1":"1"}" min="0" placeholder="${cardio?t("log.u_km"):t("log.u_reps")}" value="${s.sec ?? s.r ?? ""}" class="r" aria-label="${cardio?t("log.l_distance_km"):t("log.l_reps")}">
@@ -42,8 +45,11 @@ export function numberRows(){
   });
 }
 export function rowData(d){
-  const o = { w: parseFloat(d.querySelector(".w").value)||0, r: parseFloat(d.querySelector(".r").value)||0 };
+  const o = { ...d._setOriginal, w: parseFloat(d.querySelector(".w").value)||0, r: parseFloat(d.querySelector(".r").value)||0 };
+  delete o._existing;
+  if (!d._setExisting && state.live?.sessionId && state.live.date === $("#logDate").value) o.sid = state.live.sessionId;
   const ty = d.querySelector(".n").dataset.t, rir = d.querySelector(".rir").value;
+  delete o.t; delete o.rir; delete o.sec;
   const ex = $("#logEx").value;
   if (ty) o.t = ty;
   if (isTimed(ex)) { o.sec = o.r; o.r = 0; return o; }
@@ -56,7 +62,7 @@ export function saveDraft(){
   const ex = $("#logEx").value, timed = isTimed(ex);
   state.draft = { ex, date: $("#logDate").value, note: $("#logNote").value, editingId,
     rows: [...$("#setRows").children].map(d => {
-      const o = { ...rowData(d), w: d.querySelector(".w").value, r: d.querySelector(".r").value };
+      const o = { ...rowData(d), _existing: d._setExisting, w: d.querySelector(".w").value, r: d.querySelector(".r").value };
       if (timed) o.sec = o.r;
       return o;
     }) };
@@ -67,7 +73,7 @@ export function restoreDraft(){
   $("#logEx").value = d.ex || ""; if (d.date) $("#logDate").value = d.date; $("#logNote").value = d.note || "";
   editingId = d.editingId && state.entries.some(e => e.id===d.editingId) ? d.editingId : null;
   if (editingId) { $("#editTitle").textContent = t("log.edit_entry"); $("#cancelEdit").classList.remove("hidden"); }
-  $("#setRows").innerHTML = ""; (d.rows && d.rows.length ? d.rows : [{}]).forEach(r => setRow(r));
+  $("#setRows").innerHTML = ""; (d.rows && d.rows.length ? d.rows : [{}]).forEach(r => setRow({ ...r, _existing: r._existing ?? !!editingId }));
   relabel(); updateHint(); showExNote();
   return true;
 }
@@ -166,7 +172,7 @@ export function entryHTML(e, actions, prs){
     const lbl = warm ? TYPE_LETTER.w : (s.t ? TYPE_LETTER[s.t] : "") + (++k);
     return `<span class="chip${warm ? " warm" : ""}${pr ? " pr" : ""}" title="${s.t ? SET_TYPES[s.t] : t("log.normal_set")}">${pr ? ic("trophy") : ""}${lbl}) ${setLabel(s,c)}</span>`;
   }).join("");
-  return `<div class="entry"><div class="row"><div class="grow"><div class="t">${esc(e.ex)}</div><div class="g">${esc(groupOf(e.ex))} · ${extra}</div></div>
+  return `<div class="entry"><div class="row"><div class="grow"><div class="t">${esc(e.ex)}</div><div class="g">${esc(groupLabel(groupOf(e.ex)))} · ${extra}</div></div>
     ${actions ? `<button class="iconbtn" data-edit="${e.id}" title="${t("log.edit")}" aria-label="${t("log.edit")}" data-i18n-aria="log.edit">${ic("pencil")}</button><button class="iconbtn danger" data-del="${e.id}" title="${t("log.delete")}" aria-label="${t("log.delete")}" data-i18n-aria="log.delete">${ic("trash-2")}</button>` : ""}</div>
     <div class="chips">${chips}</div>${e.note ? `<div class="note">${ic("notebook-pen")}${esc(e.note)}</div>` : ""}</div>`;
 }
@@ -186,7 +192,7 @@ export function editEntry(id){
   const e = state.entries.find(x => x.id===id); if (!e) return;
   segState.train = "log"; showTab("train");
   editingId = e.id; $("#logEx").value = e.ex; $("#logDate").value = e.date; $("#logNote").value = e.note || "";
-  $("#setRows").innerHTML = ""; e.sets.forEach(s => setRow(s));
+  $("#setRows").innerHTML = ""; e.sets.forEach(s => setRow({ ...s, _existing: true }));
   $("#editTitle").textContent = t("log.edit_entry"); $("#cancelEdit").classList.remove("hidden"); $("#ovHint").classList.add("hidden");
   relabel(); updateHint(); showExNote(); saveDraft(); renderDay(); scrollTo(0,0);
 }
@@ -224,7 +230,7 @@ $("#addWarm").onclick = () => {
   if (!first) return toast(t("log.enter_weight_first"));
   const ws = warmupSets(first.w, barFor(ex));
   if (!ws.length) return toast(t("log.no_warm_needed"));
-  const keep = rows.map(d => ({ ...rowData(d), w: d.querySelector(".w").value, r: d.querySelector(".r").value }));
+  const keep = rows.map(d => ({ ...rowData(d), _existing: d._setExisting, w: d.querySelector(".w").value, r: d.querySelector(".r").value }));
   $("#setRows").innerHTML = "";
   ws.forEach(s => setRow({ ...s, t: "w" })); keep.forEach(s => setRow(s));
   saveDraft(); toast(t("log.warm_added", { n: ws.length }), "flame");

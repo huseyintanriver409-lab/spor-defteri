@@ -3,6 +3,7 @@ import { ymd } from "./core/dates.ts";
 import { preload as preloadGoogle } from "./sync/google.ts";
 import { $, load, save, state } from "./app/store.js";
 import { isTimed } from "./app/exercises.js";
+import { refreshEquipmentViews } from "./app/equipment.js";
 import { keepAwake, restoreNav } from "./app/ui.js";
 import { refreshDatalist, resetEditor, restoreDraft } from "./app/log.js";
 import { resetProgEditor } from "./app/programs.js";
@@ -29,7 +30,7 @@ import { setup as setup_baseline } from "./app/baseline.js";
 setup_ui(); setup_log(); setup_programs(); setup_live(); setup_history(); setup_stats(); setup_library(); setup_tools(); setup_backup(); setup_cloud(); setup_settings(); setup_presets(); setup_importer(); setup_baseline();
 
 /* ---------- Init ---------- */
-load(); setTDur(state.rest || 90); refreshDatalist();
+load(); refreshEquipmentViews(); setTDur(state.rest || 90); refreshDatalist();
 $("#logDate").value = ymd(new Date());
 if (!restoreDraft()) resetEditor();
 resetProgEditor();

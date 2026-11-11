@@ -1,4 +1,8 @@
-// OTOMATİK ÜRETİLDİ (arastirma/ klasöründeki kas araştırmaları + doğrulama düzeltmeleri). Elle düzenleme; kaynaklar o dosyalarda.
+import { NEW_EXERCISES } from "./new-exercises.ts";
+// Araştırma verisi + uygulama düzeltmeleri; kaynaklar arastirma/ klasöründe.
+// 2026-11 düzeltmeleri mekanik ÇIKARIMDIR, EMG ölçümü değildir (INFERENCE).
+// Pullover yönü: Marchetti & Uchida 2011, Journal of Applied Biomechanics 27:380-384
+// (pektoralis > latissimus); sayısal paylar ve Lats varyantı yine çıkarımdır.
 // WEIGHTS: hareket → kas → pay (1 = ana hedef). Bir set, kasa "pay" kadar etkili set sayılır.
 // EVIDENCE: kas → büyütmede kanıtı en iyi olandan başlayarak eşit gruplar (aynı gruptakiler arasında fark gösterilmedi).
 // INFERENCE: payı çalışmaya değil çıkarıma dayanan hareketler (kas başına).
@@ -10,14 +14,14 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Dumbbell Bench Press":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.4,"Rotator Manşet":0.15,"Biceps":0.1},
   "Squeeze Press (Dumbbell)":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.4,"Rotator Manşet":0.15,"Biceps":0.1},
   "Incline Bench Press":{"Göğüs":1,"Ön Omuz":0.75,"Triceps":0.5},
-  "Incline Dumbbell Press":{"Göğüs":1,"Ön Omuz":0.75,"Triceps":0.4,"Biceps":0.1},
+  "Incline Dumbbell Press":{"Göğüs":1,"Ön Omuz":0.75,"Triceps":0.4},
   "Decline Bench Press":{"Göğüs":1,"Triceps":0.5,"Ön Omuz":0.35},
   "Decline Dumbbell Press":{"Göğüs":1,"Triceps":0.4,"Ön Omuz":0.35},
   "Smith Machine Bench Press":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5},
   "Smith Machine Incline Press":{"Göğüs":1,"Ön Omuz":0.75,"Triceps":0.5},
   "Machine Chest Press":{"Göğüs":1,"Ön Omuz":0.55,"Triceps":0.5},
   "Machine Incline Chest Press":{"Göğüs":1,"Ön Omuz":0.7,"Triceps":0.5},
-  "Dumbbell Fly":{"Göğüs":1,"Ön Omuz":0.35,"Biceps":0.15,"Triceps":0.1},
+  "Dumbbell Fly":{"Göğüs":1,"Ön Omuz":0.35,"Triceps":0.1},
   "Incline Dumbbell Fly":{"Göğüs":1,"Ön Omuz":0.45,"Biceps":0.15,"Triceps":0.1},
   "Pec Deck (Butterfly)":{"Göğüs":1,"Ön Omuz":0.35,"Triceps":0.05},
   "Cable Crossover":{"Göğüs":1,"Ön Omuz":0.35,"Triceps":0.1},
@@ -29,7 +33,7 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Deficit Push-up":{"Göğüs":1,"Ön Omuz":0.6,"Triceps":0.5,"Karın":0.2,"Rotator Manşet":0.15},
   "Incline Push-up":{"Göğüs":1,"Ön Omuz":0.5,"Triceps":0.5,"Karın":0.2},
   "Decline Push-up":{"Göğüs":1,"Ön Omuz":0.7,"Triceps":0.5,"Karın":0.2},
-  "Dumbbell Pullover":{"Göğüs":0.7,"Lat":0.6,"Triceps":0.3,"Ön Omuz":0.25,"Karın":0.2},
+  "Dumbbell Pullover":{"Göğüs":0.75,"Lat":0.7,"Triceps":0.3,"Ön Omuz":0.25,"Karın":0.15},
   "Landmine Press":{"Göğüs":0.8,"Ön Omuz":0.75,"Triceps":0.4,"Karın":0.3},
   "Svend Press":{"Göğüs":0.6,"Ön Omuz":0.4,"Triceps":0.2},
   "Floor Press":{"Göğüs":1,"Triceps":0.6,"Ön Omuz":0.5},
@@ -57,11 +61,11 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Inverted Row":{"Lat":0.8,"Trapez":0.7,"Arka Omuz":0.5,"Biceps":0.5,"Bel":0.2,"Önkol":0.2,"Kalça":0.2,"Karın":0.2},
   "Straight-Arm Pulldown":{"Lat":1,"Arka Omuz":0.3,"Göğüs":0.2,"Triceps":0.2,"Karın":0.2,"Biceps":0.1},
   "Machine Pullover":{"Lat":1,"Arka Omuz":0.3,"Göğüs":0.2,"Triceps":0.2,"Karın":0.2,"Biceps":0.1},
-  "Dumbbell Pullover (Lats)":{"Göğüs":0.8,"Lat":0.6,"Ön Omuz":0.3,"Triceps":0.3,"Karın":0.2},
+  "Dumbbell Pullover (Lats)":{"Lat":0.8,"Göğüs":0.6,"Triceps":0.3,"Ön Omuz":0.2,"Karın":0.15},
   "Deadlift":{"Bel":0.8,"Kalça":0.7,"Hamstring":0.5,"İç Bacak":0.45,"Trapez":0.4,"Quadriceps":0.4,"Lat":0.3,"Önkol":0.3,"Karın":0.2},
   "Deficit Deadlift":{"Bel":0.8,"Kalça":0.7,"Hamstring":0.5,"İç Bacak":0.45,"Trapez":0.4,"Quadriceps":0.4,"Lat":0.3,"Önkol":0.3,"Karın":0.2},
   "Rack Pull":{"Bel":0.7,"Kalça":0.5,"Trapez":0.4,"Önkol":0.3,"Hamstring":0.3,"Quadriceps":0.1},
-  "Back Extension":{"Hamstring":1,"Bel":0.8,"Kalça":0.7},
+  "Back Extension":{"Bel":1,"Kalça":0.6,"Hamstring":0.6},
   "Good Morning":{"Hamstring":0.8,"Bel":0.7,"Kalça":0.6,"İç Bacak":0.3},
   "Barbell Shrug":{"Trapez":1,"Önkol":0.3},
   "Dumbbell Shrug":{"Trapez":1,"Önkol":0.3},
@@ -138,7 +142,7 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Suitcase Carry":{"Önkol":0.75,"Oblik":0.6,"Trapez":0.4,"Karın":0.25,"Bel":0.2},
   "Dead Hang":{"Önkol":0.75,"Lat":0.25,"Trapez":0.1},
   "Plate Pinch":{"Önkol":0.75,"Trapez":0.1},
-  "Wrist Roller":{"Önkol":1,"Ön Omuz":0.3,"Trapez":0.1},
+  "Wrist Roller":{"Önkol":1,"Ön Omuz":0.1},
   "Back Squat":{"Quadriceps":1,"Kalça":1,"İç Bacak":0.6,"Bel":0.4,"Karın":0.2,"Hamstring":0.1},
   "Safety Bar Squat":{"Quadriceps":1,"Kalça":1,"İç Bacak":0.6,"Bel":0.4,"Karın":0.2,"Hamstring":0.1},
   "Front Squat":{"Quadriceps":1,"Kalça":0.8,"İç Bacak":0.55,"Bel":0.4,"Karın":0.2},
@@ -198,7 +202,7 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Kettlebell Swing":{"Kalça":0.6,"Bel":0.5,"Hamstring":0.5,"Önkol":0.25,"Quadriceps":0.2,"İç Bacak":0.2,"Ön Omuz":0.1},
   "Dumbbell Snatch":{"Kalça":0.6,"Bel":0.5,"Hamstring":0.5,"Önkol":0.25,"Quadriceps":0.2,"İç Bacak":0.2,"Ön Omuz":0.1},
   "Kettlebell Snatch":{"Kalça":0.6,"Bel":0.5,"Hamstring":0.5,"Önkol":0.25,"Quadriceps":0.2,"İç Bacak":0.2,"Ön Omuz":0.1},
-  "Reverse Hyperextension":{"Bel":0.8,"Kalça":0.7,"Hamstring":0.6},
+  "Reverse Hyperextension":{"Kalça":0.9,"Hamstring":0.7,"Bel":0.6},
   "Frog Pump":{"Kalça":0.8,"İç Bacak":0.2,"Hamstring":0.1},
   "Standing Calf Raise":{"Baldır":1},
   "Seated Calf Raise":{"Baldır":0.5},
@@ -244,13 +248,13 @@ export const WEIGHTS: Record<string, Record<string, number>> = {"Bench Press (Ba
   "Power Snatch":{"Trapez":0.5,"Kalça":0.5,"Bel":0.4,"Quadriceps":0.4,"Ön Omuz":0.35,"Yan Omuz":0.3,"Hamstring":0.25},
   "Thruster":{"Quadriceps":0.8,"Ön Omuz":0.6,"Kalça":0.5,"Yan Omuz":0.3,"Triceps":0.3,"Trapez":0.2},
   "Clean & Press":{"Ön Omuz":0.6,"Trapez":0.5,"Triceps":0.4,"Quadriceps":0.4,"Kalça":0.4,"Yan Omuz":0.3,"Hamstring":0.2},
-  "Burpee":{"Ön Omuz":0.2,"Triceps":0.2},
-  "Turkish Get-up":{},
+  "Burpee":{"Quadriceps":0.4,"Göğüs":0.25,"Triceps":0.25,"Karın":0.25,"Ön Omuz":0.2,"Kalça":0.2,"Baldır":0.2,"Hamstring":0.15},
+  "Turkish Get-up":{"Karın":0.6,"Oblik":0.5,"Ön Omuz":0.5,"Rotator Manşet":0.4,"Yan Omuz":0.35,"Kalça":0.3,"Quadriceps":0.25,"Hamstring":0.2,"Önkol":0.2},
   "Kettlebell Goblet Clean":{"Kalça":0.4,"Trapez":0.3,"Quadriceps":0.3,"Hamstring":0.2,"Ön Omuz":0.15},
-  "Sled Push":{"Quadriceps":0.7,"Bel":0.2,"Baldır":0.2},
+  "Sled Push":{"Quadriceps":0.7,"Kalça":0.5,"Baldır":0.35,"Hamstring":0.25,"Karın":0.2,"Ön Omuz":0.15},
   "Sled Pull":{"Trapez":0.3,"Önkol":0.25,"Bel":0.2},
-  "Battle Rope":{},
-  "Medicine Ball Slam":{},
+  "Battle Rope":{"Ön Omuz":0.4,"Karın":0.35,"Yan Omuz":0.3,"Oblik":0.3,"Lat":0.25,"Quadriceps":0.2,"Kalça":0.2,"Önkol":0.2},
+  "Medicine Ball Slam":{"Lat":0.5,"Karın":0.5,"Oblik":0.3,"Triceps":0.25,"Ön Omuz":0.25,"Kalça":0.25,"Yan Omuz":0.2,"Göğüs":0.2,"Quadriceps":0.2},
   "Box Jump":{"Quadriceps":0.3,"Baldır":0.2},
   "Wall Ball":{"Quadriceps":0.6,"Kalça":0.4,"Ön Omuz":0.35,"Triceps":0.2},
   "Muscle-up":{"Lat":0.8,"Triceps":0.5,"Göğüs":0.45,"Biceps":0.4,"Arka Omuz":0.35,"Trapez":0.3,"Ön Omuz":0.3,"Önkol":0.25,"Karın":0.2},
@@ -1104,4 +1108,88 @@ export const SUMMARY: Record<string, string> = {
  "Oblik": t("muscles.summary_oblik"),
  "Rotator Manşet": t("muscles.summary_rotator")
 };
-export const INFERENCE: Record<string, string[]> = {"Göğüs":["Decline Dumbbell Press","Smith Machine Incline Press","Incline Dumbbell Press","Machine Incline Chest Press","Low-to-High Cable Fly","High-to-Low Cable Fly","Chest Dip","Incline Push-up","Decline Push-up","Dumbbell Pullover","Landmine Press","Svend Press","Floor Press","Cable Chest Press","Reverse-Grip Bench Press","Deficit Push-up","Weighted Push-up","Squeeze Press (Dumbbell)"],"Lat":["Weighted Pull-up","Assisted Pull-up Machine","Pendlay Row","T-Bar Row","Meadows Row","Seal Row","Machine Row","Muscle-up","Single-Arm Lat Pulldown","Barbell Row","Single-Arm Dumbbell Row","Seated Cable Row","Chest-Supported Row","Inverted Row","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover"],"Trapez":["Pendlay Row","T-Bar Row","Machine Row","Inverted Row","Meadows Row","Cable Lateral Raise","Machine Lateral Raise","Reverse Pec Deck","Cable Rear Delt Fly","Face Pull","Clean and Jerk","Clean & Press","Rack Pull","Trap Bar Deadlift","Farmer's Walk","Cuban Press","Kettlebell Goblet Clean","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Sled Pull","Thruster","Man Maker","Plate Pinch","Wrist Roller","Dead Hang","Landmine Row","Band Pull-Apart","Pike Push-up","Suitcase Carry"],"Bel":["Deadlift","Back Extension","Reverse Hyperextension","Rack Pull","Good Morning","Sumo Deadlift","Trap Bar Deadlift","Romanian Deadlift","Stiff-Leg Deadlift","Dumbbell Romanian Deadlift","Kettlebell Swing","Single-Leg RDL","Superman","Back Squat","High-Bar Squat","Low-Bar Squat","Box Squat","Front Squat","Zercher Squat","Power Clean","Hang Clean","Snatch","Power Snatch","Clean and Jerk","Hip Thrust (Barbell)","Cable Pull-through","Glute-Ham Raise","Barbell Row","Pendlay Row","T-Bar Row","Meadows Row","Bird Dog","Farmer's Walk","Sled Pull","Sled Push","Landmine Row","Reverse-Grip Barbell Row","Deficit Deadlift","Overhead Squat","Safety Bar Squat","Suitcase Carry","Kettlebell Snatch","Dumbbell Snatch"],"Ön Omuz":["Arnold Press","Push Press","Landmine Shoulder Press","Plate Front Raise","Cable Front Raise","Handstand Push-up","Smith Machine Incline Press","Machine Incline Chest Press","Incline Dumbbell Fly","Cable Crossover","Low-to-High Cable Fly","High-to-Low Cable Fly","Chest Dip","Push-up","Incline Push-up","Decline Push-up","Landmine Press","Svend Press","Floor Press","Close-Grip Bench Press","Triceps Dip","Bench Dips","JM Press","Diamond Push-up","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Cable Lateral Raise","Machine Lateral Raise","Y-Raise","Cuban Press","Man Maker","Burpee","Muscle-up","Deficit Push-up","Weighted Push-up","Pike Push-up","Assisted Dip Machine","Machine Seated Dip"],"Yan Omuz":["Upright Row","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Handstand Push-up","Y-Raise","Cuban Press","Landmine Shoulder Press","Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Front Raise (Dumbbell)","Plate Front Raise","Cable Front Raise","Clean & Press","Thruster","Man Maker","Clean and Jerk","Snatch","Power Snatch","Seated Cable Row","Single-Arm Cable Row","Band Pull-Apart","Pike Push-up","Chest-Supported Rear Delt Raise","Dumbbell Scaption"],"Arka Omuz":["Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Chest-Supported Row","Seal Row","Seated Cable Row","Machine Row","Barbell Row","Pendlay Row","T-Bar Row","Inverted Row","Meadows Row","Y-Raise","Single-Arm Dumbbell Row","Pull-up","Weighted Pull-up","Assisted Pull-up Machine","Wide-Grip Lat Pulldown","Close-Grip Lat Pulldown (V-Bar)","Chin-up","Single-Arm Lat Pulldown","Muscle-up","Straight-Arm Pulldown","Side-Lying Dumbbell External Rotation","Cuban Press","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Upright Row","Cable External Rotation","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover","Band Pull-Apart","Cable Internal Rotation","Chest-Supported Rear Delt Raise","Dumbbell Scaption"],"Biceps":["Machine Preacher Curl","Cable Curl","EZ-Bar Curl","Alternating Dumbbell Curl","Concentration Curl","Spider Curl","Drag Curl","21s","Zottman Curl","Hammer Curl","Cable Hammer Curl (Rope)","Reverse Curl","Chin-up","Weighted Pull-up","Assisted Pull-up Machine","Single-Arm Lat Pulldown","Seated Cable Row","Barbell Row","Pendlay Row","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Inverted Row","Muscle-up","Straight-Arm Pulldown","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover","High Cable Curl"],"Triceps":["Triceps Pushdown (Bar)","Overhead Dumbbell Extension","Dumbbell Skull Crusher","Machine Triceps Extension","Triceps Kickback","Cable Kickback (Triceps)","Close-Grip Bench Press","JM Press","Triceps Dip","Bench Dips","Diamond Push-up","Incline Bench Press","Incline Dumbbell Press","Decline Bench Press","Decline Dumbbell Press","Smith Machine Incline Press","Machine Chest Press","Machine Incline Chest Press","Incline Push-up","Decline Push-up","Landmine Press","Svend Press","Floor Press","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Thruster","Wall Ball","Clean & Press","Clean and Jerk","Man Maker","Muscle-up","Burpee","Dumbbell Pullover","Dumbbell Pullover (Lats)","Straight-Arm Pulldown","Machine Pullover","Pike Push-up","Reverse-Grip Triceps Pushdown","Lying Cable Triceps Extension","Assisted Dip Machine","Machine Seated Dip"],"Önkol":["Reverse Wrist Curl","Wrist Roller","Farmer's Walk","Dead Hang","Plate Pinch","Barbell Curl","EZ-Bar Curl","Dumbbell Curl","Alternating Dumbbell Curl","Machine Preacher Curl","Concentration Curl","Cable Curl","Bayesian Cable Curl","Spider Curl","Drag Curl","21s","Hammer Curl","Cable Hammer Curl (Rope)","Reverse Curl","Zottman Curl","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Barbell Shrug","Dumbbell Shrug","Pull-up","Chin-up","Weighted Pull-up","Barbell Row","Pendlay Row","Single-Arm Dumbbell Row","T-Bar Row","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Single-Leg RDL","Hanging Leg Raise","Hanging Knee Raise","Muscle-up","Power Clean","Hang Clean","Sled Pull","Kettlebell Swing","Inverted Row","Wide-Grip Lat Pulldown","Close-Grip Lat Pulldown (V-Bar)","Seated Cable Row","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Deficit Deadlift","High Cable Curl","Toes-to-Bar","Suitcase Carry","Kettlebell Snatch","Dumbbell Snatch"],"Quadriceps":["Low-Bar Squat","Box Squat","Goblet Squat","Zercher Squat","Pendulum Squat","Belt Squat","Reverse Lunge","Lateral Lunge","Sissy Squat","Pistol Squat","Step-up","Wall Sit","Bulgarian Split Squat","Hack Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Sled Push","Box Jump","Hip Thrust (Barbell)","Machine Hip Thrust","Kettlebell Swing","Deficit Deadlift","Split Squat","Curtsy Lunge","Dumbbell Sumo Squat","Reverse Nordic","Overhead Squat","Safety Bar Squat","Cossack Squat","Kettlebell Snatch","Dumbbell Snatch"],"Hamstring":["Standing Leg Curl","Dumbbell Romanian Deadlift","Single-Leg RDL","Glute-Ham Raise","Good Morning","Cable Pull-through","Reverse Hyperextension","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Machine Hip Thrust","Glute Bridge","Frog Pump","Cable Glute Kickback","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Lateral Lunge","Step-up","Pistol Squat","Superman","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Clean & Press","Kettlebell Goblet Clean","Romanian Deadlift","Stiff-Leg Deadlift","Machine Hip Abduction","Single-Leg Glute Bridge","Deficit Deadlift","Split Squat","Curtsy Lunge","Cossack Squat","Slider Leg Curl","Machine Glute Kickback"],"Kalça":["High-Bar Squat","Low-Bar Squat","Machine Hip Thrust","Single-Leg Glute Bridge","Glute Bridge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Single-Leg RDL","Front Squat","Goblet Squat","Belt Squat","Smith Machine Squat","Box Squat","Zercher Squat","Pistol Squat","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Frog Pump","Cable Pull-through","Single-Leg Leg Press","Hack Squat","Pendulum Squat","Air Squat","Lateral Lunge","Deadlift","Trap Bar Deadlift","Sumo Deadlift","Back Extension","Reverse Hyperextension","Good Morning","Kettlebell Swing","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Wall Sit","Superman","Glute-Ham Raise","Nordic Curl","Deficit Deadlift","Split Squat","Jump Squat","Curtsy Lunge","Dumbbell Sumo Squat","Overhead Squat","Safety Bar Squat","Cossack Squat","Machine Glute Kickback","Cable Hip Abduction","Banded Clamshell","Banded Lateral Walk","Kettlebell Snatch","Dumbbell Snatch"],"İç Bacak":["High-Bar Squat","Low-Bar Squat","Front Squat","Goblet Squat","Zercher Squat","Smith Machine Squat","Hack Squat","Pendulum Squat","Belt Squat","Box Squat","Air Squat","Wall Sit","Single-Leg Leg Press","Lateral Lunge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Pistol Squat","Sumo Deadlift","Deadlift","Trap Bar Deadlift","Romanian Deadlift","Dumbbell Romanian Deadlift","Single-Leg RDL","Stiff-Leg Deadlift","Good Morning","Hip Thrust (Barbell)","Machine Hip Thrust","Glute Bridge","Kettlebell Swing","Cable Pull-through","Machine Hip Adduction","Machine Hip Abduction","Deficit Deadlift","Split Squat","Jump Squat","Curtsy Lunge","Dumbbell Sumo Squat","Overhead Squat","Cossack Squat","Copenhagen Plank","Kettlebell Snatch","Dumbbell Snatch"],"Baldır":["Single-Leg Calf Raise","Donkey Calf Raise","Seated Calf Raise","Lying Leg Curl","Standing Leg Curl","Seated Leg Curl","Nordic Curl","Glute-Ham Raise","Box Jump","Sled Push","Slider Leg Curl"],"Karın":["Decline Sit-up","Captain's Chair Leg Raise","Dragon Flag","V-Up","Bicycle Crunch","Hollow Body Hold","L-Sit","Mountain Climber","Dead Bug","Russian Twist","Cable Woodchopper","Pallof Press","Side Bend (Dumbbell)","Back Squat","Front Squat","High-Bar Squat","Low-Bar Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Overhead Press (Barbell)","Standing Dumbbell Press","Cable Crunch","Machine Crunch","Sit-up","Deficit Deadlift","Pike Push-up","Overhead Squat","Safety Bar Squat","Toes-to-Bar","Cable Side Bend","Landmine Twist","Bear Crawl"],"Oblik":["Side Bend (Dumbbell)","Cable Woodchopper","Pallof Press","Russian Twist","Bicycle Crunch","Captain's Chair Leg Raise","Decline Sit-up","Farmer's Walk","Copenhagen Plank","Cable Side Bend","Landmine Twist","Suitcase Carry"],"Rotator Manşet":["Cuban Press","Face Pull","Y-Raise","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Rear Delt Fly (Dumbbell)","Reverse Pec Deck","Cable Rear Delt Fly","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Seated Cable Row","Barbell Row","Pendlay Row","Single-Arm Dumbbell Row","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Bench Press (Barbell)","Dumbbell Bench Press","Push-up","Pull-up","Chin-up","Cable Chest Press","Reverse-Grip Bench Press","Deficit Push-up","Weighted Push-up","Squeeze Press (Dumbbell)","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Band Pull-Apart","Pike Push-up","Cable Internal Rotation","Chest-Supported Rear Delt Raise","Dumbbell Scaption"]};
+export const INFERENCE: Record<string, string[]> = {"Göğüs":["Decline Dumbbell Press","Smith Machine Incline Press","Incline Dumbbell Press","Machine Incline Chest Press","Low-to-High Cable Fly","High-to-Low Cable Fly","Chest Dip","Incline Push-up","Decline Push-up","Dumbbell Pullover","Landmine Press","Svend Press","Floor Press","Cable Chest Press","Reverse-Grip Bench Press","Deficit Push-up","Weighted Push-up","Squeeze Press (Dumbbell)","Medicine Ball Slam","Burpee","Dumbbell Pullover (Lats)"],"Lat":["Weighted Pull-up","Assisted Pull-up Machine","Pendlay Row","T-Bar Row","Meadows Row","Seal Row","Machine Row","Muscle-up","Single-Arm Lat Pulldown","Barbell Row","Single-Arm Dumbbell Row","Seated Cable Row","Chest-Supported Row","Inverted Row","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover","Battle Rope","Medicine Ball Slam","Dumbbell Pullover","Dumbbell Pullover (Lats)"],"Trapez":["Pendlay Row","T-Bar Row","Machine Row","Inverted Row","Meadows Row","Cable Lateral Raise","Machine Lateral Raise","Reverse Pec Deck","Cable Rear Delt Fly","Face Pull","Clean and Jerk","Clean & Press","Rack Pull","Trap Bar Deadlift","Farmer's Walk","Cuban Press","Kettlebell Goblet Clean","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Sled Pull","Thruster","Man Maker","Plate Pinch","Dead Hang","Landmine Row","Band Pull-Apart","Pike Push-up","Suitcase Carry"],"Bel":["Deadlift","Back Extension","Reverse Hyperextension","Rack Pull","Good Morning","Sumo Deadlift","Trap Bar Deadlift","Romanian Deadlift","Stiff-Leg Deadlift","Dumbbell Romanian Deadlift","Kettlebell Swing","Single-Leg RDL","Superman","Back Squat","High-Bar Squat","Low-Bar Squat","Box Squat","Front Squat","Zercher Squat","Power Clean","Hang Clean","Snatch","Power Snatch","Clean and Jerk","Hip Thrust (Barbell)","Cable Pull-through","Glute-Ham Raise","Barbell Row","Pendlay Row","T-Bar Row","Meadows Row","Bird Dog","Farmer's Walk","Sled Pull","Landmine Row","Reverse-Grip Barbell Row","Deficit Deadlift","Overhead Squat","Safety Bar Squat","Suitcase Carry","Kettlebell Snatch","Dumbbell Snatch"],"Ön Omuz":["Arnold Press","Push Press","Landmine Shoulder Press","Plate Front Raise","Cable Front Raise","Handstand Push-up","Smith Machine Incline Press","Machine Incline Chest Press","Incline Dumbbell Fly","Cable Crossover","Low-to-High Cable Fly","High-to-Low Cable Fly","Chest Dip","Push-up","Incline Push-up","Decline Push-up","Landmine Press","Svend Press","Floor Press","Close-Grip Bench Press","Triceps Dip","Bench Dips","JM Press","Diamond Push-up","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Cable Lateral Raise","Machine Lateral Raise","Y-Raise","Cuban Press","Man Maker","Burpee","Muscle-up","Deficit Push-up","Weighted Push-up","Pike Push-up","Assisted Dip Machine","Machine Seated Dip","Turkish Get-up","Battle Rope","Medicine Ball Slam","Sled Push","Wrist Roller","Dumbbell Pullover","Dumbbell Pullover (Lats)"],"Yan Omuz":["Upright Row","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Handstand Push-up","Y-Raise","Cuban Press","Landmine Shoulder Press","Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Front Raise (Dumbbell)","Plate Front Raise","Cable Front Raise","Clean & Press","Thruster","Man Maker","Clean and Jerk","Snatch","Power Snatch","Seated Cable Row","Single-Arm Cable Row","Band Pull-Apart","Pike Push-up","Chest-Supported Rear Delt Raise","Dumbbell Scaption","Turkish Get-up","Battle Rope","Medicine Ball Slam"],"Arka Omuz":["Reverse Pec Deck","Rear Delt Fly (Dumbbell)","Cable Rear Delt Fly","Face Pull","Chest-Supported Row","Seal Row","Seated Cable Row","Machine Row","Barbell Row","Pendlay Row","T-Bar Row","Inverted Row","Meadows Row","Y-Raise","Single-Arm Dumbbell Row","Pull-up","Weighted Pull-up","Assisted Pull-up Machine","Wide-Grip Lat Pulldown","Close-Grip Lat Pulldown (V-Bar)","Chin-up","Single-Arm Lat Pulldown","Muscle-up","Straight-Arm Pulldown","Side-Lying Dumbbell External Rotation","Cuban Press","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Upright Row","Cable External Rotation","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover","Band Pull-Apart","Cable Internal Rotation","Chest-Supported Rear Delt Raise","Dumbbell Scaption"],"Biceps":["Machine Preacher Curl","Cable Curl","EZ-Bar Curl","Alternating Dumbbell Curl","Concentration Curl","Spider Curl","Drag Curl","21s","Zottman Curl","Hammer Curl","Cable Hammer Curl (Rope)","Reverse Curl","Chin-up","Weighted Pull-up","Assisted Pull-up Machine","Single-Arm Lat Pulldown","Seated Cable Row","Barbell Row","Pendlay Row","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Inverted Row","Muscle-up","Straight-Arm Pulldown","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Machine Pullover","High Cable Curl"],"Triceps":["Triceps Pushdown (Bar)","Overhead Dumbbell Extension","Dumbbell Skull Crusher","Machine Triceps Extension","Triceps Kickback","Cable Kickback (Triceps)","Close-Grip Bench Press","JM Press","Triceps Dip","Bench Dips","Diamond Push-up","Incline Bench Press","Incline Dumbbell Press","Decline Bench Press","Decline Dumbbell Press","Smith Machine Incline Press","Machine Chest Press","Machine Incline Chest Press","Incline Push-up","Decline Push-up","Landmine Press","Svend Press","Floor Press","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Handstand Push-up","Thruster","Wall Ball","Clean & Press","Clean and Jerk","Man Maker","Muscle-up","Burpee","Dumbbell Pullover","Dumbbell Pullover (Lats)","Straight-Arm Pulldown","Machine Pullover","Pike Push-up","Reverse-Grip Triceps Pushdown","Lying Cable Triceps Extension","Assisted Dip Machine","Machine Seated Dip","Medicine Ball Slam"],"Önkol":["Reverse Wrist Curl","Wrist Roller","Farmer's Walk","Dead Hang","Plate Pinch","Barbell Curl","EZ-Bar Curl","Dumbbell Curl","Alternating Dumbbell Curl","Machine Preacher Curl","Concentration Curl","Cable Curl","Bayesian Cable Curl","Spider Curl","Drag Curl","21s","Hammer Curl","Cable Hammer Curl (Rope)","Reverse Curl","Zottman Curl","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Barbell Shrug","Dumbbell Shrug","Pull-up","Chin-up","Weighted Pull-up","Barbell Row","Pendlay Row","Single-Arm Dumbbell Row","T-Bar Row","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Single-Leg RDL","Hanging Leg Raise","Hanging Knee Raise","Muscle-up","Power Clean","Hang Clean","Sled Pull","Kettlebell Swing","Inverted Row","Wide-Grip Lat Pulldown","Close-Grip Lat Pulldown (V-Bar)","Seated Cable Row","Reverse-Grip Lat Pulldown","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Deficit Deadlift","High Cable Curl","Toes-to-Bar","Suitcase Carry","Kettlebell Snatch","Dumbbell Snatch","Turkish Get-up","Battle Rope"],"Quadriceps":["Low-Bar Squat","Box Squat","Goblet Squat","Zercher Squat","Pendulum Squat","Belt Squat","Reverse Lunge","Lateral Lunge","Sissy Squat","Pistol Squat","Step-up","Wall Sit","Bulgarian Split Squat","Hack Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Sled Push","Box Jump","Hip Thrust (Barbell)","Machine Hip Thrust","Kettlebell Swing","Deficit Deadlift","Split Squat","Curtsy Lunge","Dumbbell Sumo Squat","Reverse Nordic","Overhead Squat","Safety Bar Squat","Cossack Squat","Kettlebell Snatch","Dumbbell Snatch","Turkish Get-up","Battle Rope","Medicine Ball Slam","Burpee"],"Hamstring":["Standing Leg Curl","Dumbbell Romanian Deadlift","Single-Leg RDL","Glute-Ham Raise","Good Morning","Cable Pull-through","Reverse Hyperextension","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Rack Pull","Machine Hip Thrust","Glute Bridge","Frog Pump","Cable Glute Kickback","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Lateral Lunge","Step-up","Pistol Squat","Superman","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Clean & Press","Kettlebell Goblet Clean","Romanian Deadlift","Stiff-Leg Deadlift","Machine Hip Abduction","Single-Leg Glute Bridge","Deficit Deadlift","Split Squat","Curtsy Lunge","Cossack Squat","Slider Leg Curl","Machine Glute Kickback","Turkish Get-up","Burpee","Sled Push","Back Extension"],"Kalça":["High-Bar Squat","Low-Bar Squat","Machine Hip Thrust","Single-Leg Glute Bridge","Glute Bridge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Single-Leg RDL","Front Squat","Goblet Squat","Belt Squat","Smith Machine Squat","Box Squat","Zercher Squat","Pistol Squat","Romanian Deadlift","Dumbbell Romanian Deadlift","Stiff-Leg Deadlift","Frog Pump","Cable Pull-through","Single-Leg Leg Press","Hack Squat","Pendulum Squat","Air Squat","Lateral Lunge","Deadlift","Trap Bar Deadlift","Sumo Deadlift","Back Extension","Reverse Hyperextension","Good Morning","Kettlebell Swing","Rack Pull","Power Clean","Hang Clean","Clean and Jerk","Snatch","Power Snatch","Thruster","Clean & Press","Kettlebell Goblet Clean","Wall Ball","Wall Sit","Superman","Glute-Ham Raise","Nordic Curl","Deficit Deadlift","Split Squat","Jump Squat","Curtsy Lunge","Dumbbell Sumo Squat","Overhead Squat","Safety Bar Squat","Cossack Squat","Machine Glute Kickback","Cable Hip Abduction","Banded Clamshell","Banded Lateral Walk","Kettlebell Snatch","Dumbbell Snatch","Turkish Get-up","Battle Rope","Medicine Ball Slam","Burpee","Sled Push"],"İç Bacak":["High-Bar Squat","Low-Bar Squat","Front Squat","Goblet Squat","Zercher Squat","Smith Machine Squat","Hack Squat","Pendulum Squat","Belt Squat","Box Squat","Air Squat","Wall Sit","Single-Leg Leg Press","Lateral Lunge","Bulgarian Split Squat","Walking Lunge","Reverse Lunge","Forward Lunge","Step-up","Pistol Squat","Sumo Deadlift","Deadlift","Trap Bar Deadlift","Romanian Deadlift","Dumbbell Romanian Deadlift","Single-Leg RDL","Stiff-Leg Deadlift","Good Morning","Hip Thrust (Barbell)","Machine Hip Thrust","Glute Bridge","Kettlebell Swing","Cable Pull-through","Machine Hip Adduction","Machine Hip Abduction","Deficit Deadlift","Split Squat","Jump Squat","Curtsy Lunge","Dumbbell Sumo Squat","Overhead Squat","Cossack Squat","Copenhagen Plank","Kettlebell Snatch","Dumbbell Snatch"],"Baldır":["Single-Leg Calf Raise","Donkey Calf Raise","Seated Calf Raise","Lying Leg Curl","Standing Leg Curl","Seated Leg Curl","Nordic Curl","Glute-Ham Raise","Box Jump","Sled Push","Slider Leg Curl","Burpee"],"Karın":["Decline Sit-up","Captain's Chair Leg Raise","Dragon Flag","V-Up","Bicycle Crunch","Hollow Body Hold","L-Sit","Mountain Climber","Dead Bug","Russian Twist","Cable Woodchopper","Pallof Press","Side Bend (Dumbbell)","Back Squat","Front Squat","High-Bar Squat","Low-Bar Squat","Deadlift","Sumo Deadlift","Trap Bar Deadlift","Overhead Press (Barbell)","Standing Dumbbell Press","Cable Crunch","Machine Crunch","Sit-up","Deficit Deadlift","Pike Push-up","Overhead Squat","Safety Bar Squat","Toes-to-Bar","Cable Side Bend","Landmine Twist","Bear Crawl","Turkish Get-up","Battle Rope","Medicine Ball Slam","Burpee","Sled Push","Dumbbell Pullover","Dumbbell Pullover (Lats)"],"Oblik":["Side Bend (Dumbbell)","Cable Woodchopper","Pallof Press","Russian Twist","Bicycle Crunch","Captain's Chair Leg Raise","Decline Sit-up","Farmer's Walk","Copenhagen Plank","Cable Side Bend","Landmine Twist","Suitcase Carry","Turkish Get-up","Battle Rope","Medicine Ball Slam"],"Rotator Manşet":["Cuban Press","Face Pull","Y-Raise","Lateral Raise (Dumbbell)","Cable Lateral Raise","Machine Lateral Raise","Rear Delt Fly (Dumbbell)","Reverse Pec Deck","Cable Rear Delt Fly","Overhead Press (Barbell)","Seated Dumbbell Shoulder Press","Standing Dumbbell Press","Arnold Press","Machine Shoulder Press","Smith Machine Shoulder Press","Push Press","Landmine Shoulder Press","Seated Cable Row","Barbell Row","Pendlay Row","Single-Arm Dumbbell Row","T-Bar Row","Chest-Supported Row","Seal Row","Machine Row","Meadows Row","Bench Press (Barbell)","Dumbbell Bench Press","Push-up","Pull-up","Chin-up","Cable Chest Press","Reverse-Grip Bench Press","Deficit Push-up","Weighted Push-up","Squeeze Press (Dumbbell)","Neutral-Grip Pull-up","Single-Arm Cable Row","Landmine Row","Reverse-Grip Barbell Row","Band Pull-Apart","Pike Push-up","Cable Internal Rotation","Chest-Supported Rear Delt Raise","Dumbbell Scaption","Turkish Get-up"]};
+
+// Dar, yüksek güvenli uzamış pozisyon / eksantrik vurgu tablosu.
+export const STRETCH: Record<string, string[]> = {
+  "Romanian Deadlift": [
+    "Hamstring",
+    "Kalça"
+  ],
+  "Dumbbell Romanian Deadlift": [
+    "Hamstring",
+    "Kalça"
+  ],
+  "Single-Leg RDL": [
+    "Hamstring",
+    "Kalça"
+  ],
+  "Stiff-Leg Deadlift": [
+    "Hamstring",
+    "Kalça"
+  ],
+  "Good Morning": [
+    "Hamstring",
+    "Kalça"
+  ],
+  "Nordic Curl": [
+    "Hamstring"
+  ],
+  "Glute-Ham Raise": [
+    "Hamstring"
+  ],
+  "Seated Leg Curl": [
+    "Hamstring"
+  ],
+  "Slider Leg Curl": [
+    "Hamstring"
+  ],
+  "Sissy Squat": [
+    "Quadriceps"
+  ],
+  "Reverse Nordic": [
+    "Quadriceps"
+  ],
+  "Incline Dumbbell Curl": [
+    "Biceps"
+  ],
+  "Bayesian Cable Curl": [
+    "Biceps"
+  ],
+  "Overhead Cable Extension": [
+    "Triceps"
+  ],
+  "Overhead Dumbbell Extension": [
+    "Triceps"
+  ],
+  "Dumbbell Fly": [
+    "Göğüs"
+  ],
+  "Incline Dumbbell Fly": [
+    "Göğüs"
+  ],
+  "Deficit Push-up": [
+    "Göğüs"
+  ],
+  "Chest Dip": [
+    "Göğüs"
+  ],
+  "Dumbbell Pullover": [
+    "Lat",
+    "Göğüs"
+  ],
+  "Dumbbell Pullover (Lats)": [
+    "Lat",
+    "Göğüs"
+  ],
+  "Cossack Squat": [
+    "İç Bacak"
+  ]
+};
+
+// Added variants are mechanical inference, never EVIDENCE.
+for (const ex of NEW_EXERCISES) {
+ WEIGHTS[ex.name] = ex.w;
+ for (const muscle of Object.keys(ex.w)) (INFERENCE[muscle] ??= []).push(ex.name);
+ if (ex.stretch.length) STRETCH[ex.name] = ex.stretch;
+}

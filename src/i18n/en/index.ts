@@ -1,3 +1,4 @@
+import equipment from "./equipment.ts";
 import settings from "./settings.ts";
 import html from "./html.ts";
 import cloud from "./cloud.ts";
@@ -26,4 +27,4 @@ import core from "./core.ts";
 import groups from "./groups.ts";
 
 // Her ad alanı için bir satır: import + aşağıdaki nesneye ekle
-export default { settings, html, cloud, backup, importer, baseline, live, log, tools, streak, history, home, programs, presets, library, ui, app, bodymap, stats, exercises, core_programs, ai, assistant, muscles, core, groups } as Record<string, Record<string, string>>;
+export default { equipment, settings, html, cloud, backup, importer, baseline, live, log, tools, streak, history, home, programs, presets, library, ui, app, bodymap, stats, exercises, core_programs, ai, assistant, muscles, core, groups } as Record<string, Record<string, string>>;

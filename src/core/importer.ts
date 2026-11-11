@@ -13,6 +13,7 @@
    sanıp bağlantıyı ilk hareketten sonra kesiyor, Android'in bağlantı tanıyıcısı da "|" işaretinde duruyor. */
 import { t } from "./i18n.ts";
 import { canonicalEx, EX_RENAMES } from "./renames.ts";
+import { resolveExerciseName } from "./names.ts";
 
 export const LINK_KEY = "ekle";
 
@@ -43,6 +44,7 @@ export function normalize(s: string): string {
 
 // Yaygın başka adlar (normalize edilmiş) → kütüphanedeki ad. Claude ve başka uygulamalar böyle yazabiliyor.
 const ALIASES: Record<string, string> = {
+  "overhead press": "Overhead Press (Barbell)",
   "conventional deadlift": "Deadlift", "barbell deadlift": "Deadlift",
   "dumbbell overhead press": "Standing Dumbbell Press", "standing dumbbell overhead press": "Standing Dumbbell Press",
   "dumbbell shoulder press": "Seated Dumbbell Shoulder Press", "seated dumbbell overhead press": "Seated Dumbbell Shoulder Press",
@@ -73,6 +75,9 @@ const OLD_NORM = new Map(Object.entries(EX_RENAMES).map(([o, n]) => [normalize(o
 // Hareket adını uygulamadaki listeyle eşleştirir: bilinen başka ad → birebir → biri diğerini içeriyor →
 // kelime örtüşmesi (hareket türü aynıysa). Bulunamazsa null (yeni hareket olarak eklenir).
 export function matchExercise(name: string, known: string[]): string | null {
+  if (known.includes(name) && Object.hasOwn(EX_RENAMES, name)) return name;
+  const resolved = resolveExerciseName(name);
+  if (resolved !== name && known.includes(resolved)) return resolved;
   // eski (Türkçe karışık) kütüphane adları yeni adlara çözülür; eski adla özel hareket varsa (known içinde) o korunur
   if (!known.includes(name)) {
     const c = canonicalEx(String(name || "").trim());
