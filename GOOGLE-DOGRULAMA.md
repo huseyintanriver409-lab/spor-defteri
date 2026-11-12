@@ -19,7 +19,7 @@ Bundan sonra herkes giriş yapabilir. Doğrulama bitene kadar ilk girişte "Goog
 2. Google Cloud → Google Auth Platform → **Clients** → "Spor Defteri web" → **Yetkili yönlendirme URI'leri**'ne `https://huseyintanriver409-lab.github.io/spor-defteri/baglayici.html` ekle → Kaydet. Eski `…workers.dev/callback` adresini şimdilik silme.
 3. Bağlayıcıyı yeniden yükle:
    ```
-   cd "C:\Users\Hüseyin\Desktop\spor-defteri\mcp"
+   cd "C:\Users\Hüseyin\Documents\GitHub\spor-defteri\mcp"
    npx wrangler deploy
    ```
 4. Claude'da bağlayıcıyı bir kez yeniden bağlayıp dene. Çalışıyorsa eski `…workers.dev/callback` adresini sil.
@@ -28,7 +28,7 @@ Bundan sonra herkes giriş yapabilir. Doğrulama bitene kadar ilk girişte "Goog
 
 1. https://search.google.com/search-console → **Mülk ekle** → **URL ön eki** → `https://huseyintanriver409-lab.github.io/`
 2. Yöntem: **HTML dosyası**. Dosyayı indir (adı `google….html` gibi).
-3. Dosyayı `Masaüstü\huseyintanriver409-lab.github.io` klasörüne koy, o depoyu GitHub Desktop'tan push'la (ya da dosyanın adını Claude'a söyle, o oluştursun).
+3. Dosyayı `Belgeler\GitHub\huseyintanriver409-lab.github.io` klasörüne koy, o depoyu GitHub Desktop'tan push'la (ya da dosyanın adını Claude'a söyle, o oluştursun).
 4. 1-2 dakika sonra Search Console'da **Doğrula**'ya bas.
 
 Google Cloud'u ve Search Console'u **aynı Google hesabıyla** kullan.
