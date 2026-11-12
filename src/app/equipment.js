@@ -3,6 +3,7 @@ import { t } from "../core/i18n.ts";
 import { esc, ic, save, state } from "./store.js";
 import { openSheet, sheetHead } from "./ui.js";
 
+const refreshListeners = new WeakMap();
 export const equipmentLabel = id => t("equipment." + id);
 export const ownedEquipment = () => sanitizeEquipment(state.prefs.equip);
 export function setOwnedEquipment(ids){
@@ -26,8 +27,11 @@ export function mountEquipment(root, { get = ownedEquipment, set = setOwnedEquip
     const clear = root.querySelector("[data-equipment-clear]"); if (clear) clear.onclick = () => { set([]); draw(); };
   };
   draw();
+  const previous = refreshListeners.get(root);
+  if (previous) document.removeEventListener?.("equipmentrefresh", previous);
   // Bileşenler modül yüklenirken (kayıtlı veri okunmadan) çizilir; veri yüklenince/eşitlenince yeniden çiz
   const onRefresh = () => { if (root.isConnected === false) document.removeEventListener?.("equipmentrefresh", onRefresh); else draw(); };
+  refreshListeners.set(root, onRefresh);
   document.addEventListener?.("equipmentrefresh", onRefresh);
   return draw;
 }

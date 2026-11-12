@@ -9,7 +9,7 @@ export default {
   "add_named": "Add: {name}",
   "part_lift": "Strength and conditioning",
   "part_cardio": "Cardio and custom exercises",
-  "part_yoga": "Yoga and stretching",
+  "part_yoga": "Yoga & stretching",
   "no_results": "No results",
   "clear_filters": "Clear filters",
   "merge_pick": "Which exercise should “{name}” merge with?",

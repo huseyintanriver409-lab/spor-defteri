@@ -15,7 +15,7 @@ export interface RemoteStore {
 // Buluta gönderilen alanlar: kayıt koleksiyonları, mezar taşları ve ayarlar.
 // Cihaza özel olanlar (canlı antrenman, taslak, aktif program, cihaz kimliği, yedek hatırlatması) gönderilmez.
 export function toPayload(s: State) {
-  const out: Record<string, unknown> = { v: s.v, settingsU: s.settingsU, deleted: s.deleted };
+  const out: Record<string, unknown> = { v: s.v, settingsU: s.settingsU, deleted: s.deleted, exMuscles: s.exMuscles, exMusclesU: s.exMusclesU };
   for (const c of Object.keys(COLLECTIONS)) out[c] = s[c];
   for (const k of SETTINGS) out[k] = s[k];
   return out;

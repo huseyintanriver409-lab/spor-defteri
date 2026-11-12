@@ -58,3 +58,5 @@ export function applyI18n(root: ParentNode = document): void {
   each("data-i18n-placeholder", (el, v) => { (el as HTMLInputElement).placeholder = v; });
   document.documentElement.lang = lang();
 }
+
+export const tCount = (key: string, n: number): string => t(n === 1 ? key + "_one" : key, { n });

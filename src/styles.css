@@ -445,6 +445,8 @@ body.focus-open{overflow:hidden}
 .f-title{display:flex;align-items:flex-start;gap:6px;margin:4px 0 6px}
 .f-title h2{flex:1;margin:0;font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1.12}
 .f-note{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:4px;cursor:pointer;min-height:24px}
+.f-note,#fManual{position:relative}
+.f-note::after,#fManual::after{content:"";position:absolute;min-width:44px;min-height:44px;width:100%;height:100%;top:50%;left:50%;transform:translate(-50%,-50%)}
 .f-note .ic{width:14px;height:14px}
 .f-hint{font-size:13px;color:var(--muted);line-height:1.5}
 .f-hint b{color:var(--text)}

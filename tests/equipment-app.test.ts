@@ -75,3 +75,13 @@ describe("equipment discovery integration", () => {
     expect(panel.buttons.some(b => b.dataset.equipment === "band")).toBe(true);
   });
 });
+
+it("keeps one refresh listener per root and uses the newest mount options", () => {
+ const listeners = new Set<() => void>();
+ vi.stubGlobal("document", { addEventListener: (_: string, f: () => void) => listeners.add(f), removeEventListener: (_: string, f: () => void) => listeners.delete(f) });
+ const root = new Buttons(); const oldGet = vi.fn(() => []); const newGet = vi.fn(() => ["bench"]);
+ mountEquipment(root, { get: oldGet }); mountEquipment(root, { get: newGet });
+ oldGet.mockClear(); newGet.mockClear(); listeners.forEach(f => f());
+ expect(listeners.size).toBe(1); expect(oldGet).not.toHaveBeenCalled(); expect(newGet).toHaveBeenCalledTimes(1);
+ expect(root.html).toContain('<span class="tag">1</span>');
+});

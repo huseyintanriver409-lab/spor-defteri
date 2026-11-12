@@ -9,7 +9,7 @@ export default {
   "add_named": "Ekle: {name}",
   "part_lift": "Ağırlık ve kondisyon",
   "part_cardio": "Kardiyo ve kendi hareketlerin",
-  "part_yoga": "Yoga ve esneme",
+  "part_yoga": "Yoga & Esneme",
   "no_results": "Sonuç yok",
   "clear_filters": "Filtreleri temizle",
   "merge_pick": "“{name}” hangi hareketle birleşsin?",

@@ -1,3 +1,4 @@
+import { tCount } from "../core/i18n.ts";
 import { yogaWeekGoal, calendarLoad, practiceSeconds } from "../core/yoga.ts";
 import { programName } from "../core/programs.ts";
 import { locale, t } from "../core/i18n.ts";
@@ -22,6 +23,8 @@ export function renderWeek(){
   const lifts = list.filter(e => isSport(e.ex));
   $("#sDays").textContent = goalDates().filter(d => d >= a && d <= b).length;
   $("#sSets").textContent = lifts.reduce((n,e) => n+work(e.sets).length, 0);
+  $("#sDays").parentElement.querySelector("[data-i18n]").textContent = tCount("html.stat_days", +$("#sDays").textContent);
+  $("#sSets").parentElement.querySelector("[data-i18n]").textContent = tCount("html.stat_sets", +$("#sSets").textContent);
   $("#sVol").textContent = fmt(lifts.reduce((n,e) => n+volume(e.sets), 0));
   const ms_ = state.sessions.filter(s => s.date >= a && s.date <= b).reduce((t,s) => t + s.end - s.start, 0);
   $("#sTime").textContent = ms_ ? durText(ms_) : "–";

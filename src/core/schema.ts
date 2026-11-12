@@ -165,6 +165,7 @@ export function mergeStates(local: State, remoteRaw: any): { state: State; stats
       out.restAutoMig = local.restAutoMig;
     }
     // eski sürümdeki bir cihaz başlangıç verisini bilmez; dosyada hiç yoksa yereldeki silinmesin
+    if (remoteRaw?.prefs?.body === undefined) out.prefs = { ...out.prefs, body: local.prefs.body };
     if (!hasEquipment(remoteRaw?.prefs)) out.prefs = { ...out.prefs, equip: local.prefs.equip };
     if (remoteRaw && !("baseline" in remoteRaw)) out.baseline = local.baseline;
     // Older clients may save a profile without the optional experience fields.

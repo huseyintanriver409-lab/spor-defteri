@@ -1,3 +1,4 @@
+import { tCount } from "../core/i18n.ts";
 import { programName } from "../core/programs.ts";
 import { mondayOf, niceDate, pad, ymd } from "../core/dates.ts";
 import { work } from "../core/training.ts";
@@ -24,8 +25,8 @@ export function renderHistory(){
   const plannedFor = k => k >= today && !load[k] ? plannedOn(state.plan, visiblePrograms(), k) : null;
   let planned = 0;
   for (let d = 1; d <= new Date(y, m + 1, 0).getDate(); d++) if (plannedFor(`${key}-${pad(d)}`)) planned++;
-  $("#calTitle").textContent = `${t("history.count_workouts", { n: days })}${planned ? ` · ${t("history.count_planned", { n: planned })}` : ""}`;
-  $("#calSub").textContent = t("history.sets_count", { n: sets });
+  $("#calTitle").textContent = `${tCount("history.count_workouts", days)}${planned ? ` · ${t("history.count_planned", { n: planned })}` : ""}`;
+  $("#calSub").textContent = tCount("history.sets_count", sets);
   const start = mondayOf(new Date(y, m, 1));
   let html = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return `<div class="wd">${fmtDate(d, { weekday: "short" })}</div>`; }).join("");
   for (let i = 0; i < 42; i++) {
@@ -33,7 +34,7 @@ export function renderHistory(){
     if (i % 7 === 0 && i >= 28 && d.getMonth() !== m) break;
     const k = ymd(d), v = load[k] || 0, lv = !v ? 0 : v < 10 ? 1 : v < 20 ? 2 : v < 30 ? 3 : 4;
     const pl = plannedFor(k);
-    html += `<button class="${d.getMonth() !== m ? "out " : ""}${v ? `has l${lv} ` : ""}${pl ? "plan " : ""}${k === today ? "today " : ""}${k === selDay ? "sel" : ""}" style="${v ? `--lv:${lv}` : ""}" data-d="${k}" aria-label="${niceDate(k)}${v ? `, ${t("history.sets_count", { n: v })}` : ""}${pl ? t("history.aria_planned", { name: esc(programName(pl)) }) : ""}" aria-pressed="${k === selDay}">${d.getDate()}</button>`;
+    html += `<button class="${d.getMonth() !== m ? "out " : ""}${v ? `has l${lv} ` : ""}${pl ? "plan " : ""}${k === today ? "today " : ""}${k === selDay ? "sel" : ""}" style="${v ? `--lv:${lv}` : ""}" data-d="${k}" aria-label="${niceDate(k)}${v ? `, ${tCount("history.sets_count", v)}` : ""}${pl ? t("history.aria_planned", { name: esc(programName(pl)) }) : ""}" aria-pressed="${k === selDay}">${d.getDate()}</button>`;
   }
   $("#calGrid").innerHTML = html;
   $("#calGrid").querySelectorAll("[data-d]").forEach(b => b.onclick = () => { selDay = b.dataset.d; renderHistory();

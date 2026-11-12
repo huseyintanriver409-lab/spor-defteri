@@ -1,3 +1,4 @@
+import { programItems } from "../core/program-data.ts";
 import { volumePlan } from "./beginner-volume.js";
 import { shortHelp } from "./short-help.js";
 import { buildQuickFlow } from "../core/yoga.ts";
@@ -29,8 +30,8 @@ export function pRow(it = {ex:"", sets:3, reps:"10"}){
   div.className = "prow";
   div.innerHTML = `<button class="pss${it.ss ? " on" : ""}" type="button" title="${t("programs.ss_title")}" aria-label="${t("programs.ss_title")}" data-i18n-aria="programs.ss_title" aria-pressed="${!!it.ss}">${ic("arrow-left-right")}</button>
     <div class="pickfield"><input class="pe" readonly placeholder="${t("programs.ex_placeholder")}" value="${esc(it.ex)}" aria-label="${t("programs.ex_aria")}"></div>
-    <input class="ps" type="number" inputmode="numeric" min="1" value="${esc(it.sets)}" aria-label="${t("programs.sets_aria")}">
-    <input class="pr" placeholder="8-12" value="${esc(it.reps)}" aria-label="${t("programs.reps_aria")}">
+    <input class="ps" type="number" inputmode="numeric" min="1" value="${esc(it.sets ?? 0)}" aria-label="${t("programs.sets_aria")}">
+    <input class="pr" placeholder="8-12" value="${esc(it.reps ?? "")}" aria-label="${t("programs.reps_aria")}">
     <button class="iconbtn danger" title="${t("programs.remove_ex")}" aria-label="${t("programs.remove_ex")}" data-i18n-aria="programs.remove_ex">${ic("x")}</button>`;
   const ss = div.querySelector(".pss");
   ss.onclick = () => { ss.classList.toggle("on"); ss.setAttribute("aria-pressed", ss.classList.contains("on")); };
@@ -96,11 +97,11 @@ export function renderProg(){
   const programs = visiblePrograms();
   primaryId = (plannedOn(state.plan, programs, ymd(new Date())) || programs[0] || {}).id ?? null;
   $("#pList").innerHTML = programs.length ? programs.map(p => {
-    const L = ssLabels(p.items), total = p.items.reduce((a,i) => a + i.sets, 0);
+    const L = ssLabels(programItems(p)), total = programItems(p).reduce((a,i) => a + i.sets, 0);
     return `<div class="card progcard">
-      <div class="eyebrow">${t("programs.eyebrow", { n: p.items.length, sets: total })}</div>
+      <div class="eyebrow">${t("programs.eyebrow", { n: programItems(p).length, sets: total })}</div>
       <div class="progtop"><h3>${esc(programName(p))}</h3><button class="iconbtn" data-pmap="${p.id}" aria-label="${t("programs.muscle_map")}" title="${t("programs.muscle_map")}">${ic("body")}</button></div>
-      <ol>${p.items.map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}${poseInfo(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " " + t("programs.sec") : ""}</span></li>`).join("")}</ol>
+      <ol>${programItems(p).map((i,k) => `<li>${ssTag(L[k])}${esc(i.ex)}${poseInfo(i.ex)}<span>${i.sets} × ${esc(i.reps||"–")}${i.reps && isTimed(i.ex) ? " " + t("programs.sec") : ""}</span></li>`).join("")}</ol>
       <div class="row"><button class="btn" data-start="${p.id}">${ic("play")}${t("programs.start")}</button><span class="grow"></span>
         ${state.gcal.plan ? "" : `<button class="iconbtn" data-pcal="${p.id}" title="${t("programs.cal_add")}" aria-label="${t("programs.cal_add")}" data-i18n-aria="programs.cal_add">${ic("calendar-plus")}</button>`}<button class="iconbtn" data-pedit="${p.id}" title="${t("programs.edit")}" aria-label="${t("programs.edit")}" data-i18n-aria="programs.edit">${ic("pencil")}</button><button class="iconbtn" data-pshare="${p.id}" title="${t("programs.share")}" aria-label="${t("programs.share")}" data-i18n-aria="programs.share">${ic("share-2")}</button><button class="iconbtn" data-pcopy="${p.id}" title="${t("programs.copy")}" aria-label="${t("programs.copy")}" data-i18n-aria="programs.copy">${ic("copy")}</button><button class="iconbtn danger" data-pdel="${p.id}" title="${t("programs.delete")}" aria-label="${t("programs.delete")}" data-i18n-aria="programs.delete">${ic("trash-2")}</button></div>
     </div>`; }).join("") + `<button class="btn quiet padd" data-padd>${ic("plus")}${t("programs.new_program")}</button>`
@@ -114,13 +115,13 @@ export function renderProg(){
   $("#pList").querySelectorAll("[data-pedit]").forEach(b => b.onclick = () => {
     const p = find(b.dataset.pedit); progEditId = p.id;
     $("#pTitle").textContent = t("programs.edit_program"); $("#pName").value = programName(p);
-    $("#pRows").innerHTML = ""; p.items.forEach(i => pRow(i)); showEditor(true);
+    $("#pRows").innerHTML = ""; programItems(p).forEach(i => pRow(i)); showEditor(true);
     $("#pEditor").scrollIntoView({ behavior: "smooth", block: "start" });
   });
   $("#pList").querySelectorAll("[data-pshare]").forEach(b => b.onclick = () => shareProgram(find(b.dataset.pshare)));
   $("#pList").querySelectorAll("[data-pcopy]").forEach(b => b.onclick = () => {
     const p = find(b.dataset.pcopy);
-    state.programs.push({ id: uid(), selectedDate: ymd(new Date()), name: t("programs.copy_name", { name: programName(p) }), items: p.items.map(i => ({...i})) }); save(); renderProg(); toast(t("programs.copied"), "copy");
+    state.programs.push({ id: uid(), selectedDate: ymd(new Date()), name: t("programs.copy_name", { name: programName(p) }), items: programItems(p).map(i => ({...i})) }); save(); renderProg(); toast(t("programs.copied"), "copy");
   });
   $("#pList").querySelectorAll("[data-pdel]").forEach(b => b.onclick = async () => {
     const target = state.programs.find(x => x.id===b.dataset.pdel); if (!target) return;
@@ -164,7 +165,7 @@ export const WEEKDAYS = [["MO",t("programs.wd_mo"),1],["TU",t("programs.wd_tu"),
 export const dt = d => d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"T"+pad(d.getHours())+pad(d.getMinutes())+"00";
 export const at = (dateStr, time) => { const d = parse(dateStr), [h,m] = (time||"19:00").split(":").map(Number); d.setHours(h, m, 0, 0); return d; };
 export function nextDateFor(jsDay){ const d = new Date(); d.setHours(0,0,0,0); while (d.getDay() !== jsDay) d.setDate(d.getDate()+1); return d; }
-export const progDetails = p => p.items.map(i => `• ${i.ex} — ${i.sets} × ${i.reps||"–"}`).join("\n") + "\n\nSpor Defteri";
+export const progDetails = p => programItems(p).map(i => `• ${i.ex} — ${i.sets} × ${i.reps||"–"}`).join("\n") + "\n\nSpor Defteri";
 export function openUrl(u){ const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
 export function gcal(title, details, dates){
   openUrl("https://calendar.google.com/calendar/render?" + new URLSearchParams({ action: "TEMPLATE", text: title, details, dates }).toString());
@@ -174,7 +175,7 @@ export function openCalModal(p){
   calProg = p;
   // planda bu program bir güne atanmışsa o günün tarih ve saatini öner
   const planned = plannedDates(state.plan, state.programs, new Date()).find(x => x.p.id === p.id);
-  $("#calName").textContent = programName(p) + " · " + t("programs.cal_moves", { n: p.items.length });
+  $("#calName").textContent = programName(p) + " · " + t("programs.cal_moves", { n: programItems(p).length });
   $("#calDate").value = planned ? planned.date : ymd(new Date());
   $("#calTime").value = planned ? planned.time : "19:00";
   $("#calModal").classList.remove("hidden");

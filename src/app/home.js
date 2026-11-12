@@ -1,3 +1,4 @@
+import { tCount } from "../core/i18n.ts";
 import { volumePlan } from "./beginner-volume.js";
 import { homeActivityDates } from "../core/yoga.ts";
 import { programName } from "../core/programs.ts";
@@ -92,8 +93,8 @@ export function renderHome(){
   if ($("#qAdd")) $("#qAdd").onclick = () => { segState.train = "prog"; showTab("train"); openAddProgram(); };
   // bu hafta: sayılar ve hedef çubuğu
   const w = weekProgress();
-  $("#homeWeek").innerHTML = `<div class="stat" role="group" aria-label="${t("home.week_aria", { d: w.days, g: state.goal })}"><b>${w.days}<span>/${state.goal}</span></b><span>${t("home.workouts_label")}</span></div>
-    ${on ? `<div class="stat"><b>${st.count}</b><span>${t("home.streak_label", { unit: st.unit })}</span></div>` : ""}<div class="stat"><b>${w.sets}</b><span>${t("home.set_label")}</span></div>`;
+  $("#homeWeek").innerHTML = `<div class="stat" role="group" aria-label="${t("home.week_aria", { d: w.days, g: state.goal })}"><b>${w.days}<span>/${state.goal}</span></b><span>${tCount("home.workouts_label", w.days)}</span></div>
+    ${on ? `<div class="stat"><b>${st.count}</b><span>${t("home.streak_label", { unit: st.unit })}</span></div>` : ""}<div class="stat"><b>${w.sets}</b><span>${tCount("home.set_label", w.sets)}</span></div>`;
   $("#homeGoal").innerHTML = `<div class="f-prog" style="margin:0" aria-label="${t("home.goal_aria", { d: w.days, g: state.goal })}">${Array.from({ length: state.goal }, (_, i) => `<i class="${i < w.days ? "on" : ""}"></i>`).join("")}</div>`;
   // toparlanma: harita ve dinlenmesi gereken kaslar
   const tired = Object.entries(R).filter(([, v]) => v.pct < .5).map(([m]) => m);

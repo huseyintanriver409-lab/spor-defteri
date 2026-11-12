@@ -1,3 +1,4 @@
+import { programItems } from "../core/program-data.ts";
 import { discoverableEx } from "./exercises.js";
 import { bindEquipmentEmpty, equipmentEmptyHTML, openEquipment } from "./equipment.js";
 import { bodyModel } from "../core/body-model.ts";
@@ -277,7 +278,7 @@ export function openMuscleSheet(m, alts = [m], { plain = false } = {}){
   const list = rankForMuscle(m, names, musclesOf, counts);
   const ago = r ? (r.hrs < 1 ? t("bodymap.just_now") : r.hrs < 24 ? t("bodymap.hours_ago", { n: Math.round(r.hrs) }) : t("bodymap.days_ago", { n: Math.floor(r.hrs / 24) })) : "";
   // kullanıcının programlarından bu kası çalıştıranlar: bir antrenmanda kaç set (pay araştırma verisinden; kütüphane dışı hareketlerde yedek yardımcı 0,5)
-  const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
+  const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(programItems(p).filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
   const body = openSheet(sheetHead(muscleLabel(m)) + `<div class="muted small" style="margin:-8px 0 10px">${esc(MUSCLE_COMMON[m] || "")}</div>`,
     (alts.length > 1 ? `<div class="fchips" style="margin-bottom:10px">${alts.map(x => `<button class="fchip${x === m ? " on" : ""}" data-alt="${esc(x)}">${esc(muscleLabel(x))}</button>`).join("")}</div>` : "") +
@@ -318,7 +319,7 @@ export function openMuscleReel(m, alts = [m]){
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
   const names = discoverableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts), sex = bodySex();
-  const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(p.items.filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
+  const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(programItems(p).filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
   const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${esc((side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets))}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
   const cards = list.map((x, i) => { const { name, kind, group } = x, mm = musclesOf(name), note = kind === "kanit" ? groupNote(m, group) : ""; return `<section class="reel-card" data-ex="${esc(name)}">

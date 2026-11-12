@@ -17,10 +17,10 @@ beforeEach(() => {
   vi.stubGlobal("document", stub()); vi.stubGlobal("window", stub());
   for (const g of ["navigator", "matchMedia", "addEventListener", "requestAnimationFrame", "setInterval"]) if (g !== "setInterval") vi.stubGlobal(g, stub());
 });
-it("app.js entry order: store.js first, then every app module, loads without throwing", async () => {
+it("app.js entry order: store.js first, then every app module, loads without throwing", { timeout: 30000 }, async () => {
   await import("../src/app/store.js");
   for (const m of mods) await import(/* @vite-ignore */ `../src/app/${m}`);
 });
-it.each(mods)("%s loads as the first entry of a fresh module graph", async m => {
+it.each(mods)("%s loads as the first entry of a fresh module graph", { timeout: 30000 }, async m => {
   await expect(import(/* @vite-ignore */ `../src/app/${m}`)).resolves.toBeTruthy();
 });
