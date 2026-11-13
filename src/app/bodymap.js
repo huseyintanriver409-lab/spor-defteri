@@ -1,4 +1,4 @@
-import { WEEKLY_TIERS, weeklyTier, roundHalf } from "../core/weekly-load.ts";
+import { WEEKLY_TIERS, weeklyTier } from "../core/weekly-load.ts";
 import { visibleSessionTiers, sessionTierRange } from "../core/session-legend.ts";
 import { programItems } from "../core/program-data.ts";
 import { discoverableEx } from "./exercises.js";
@@ -164,8 +164,7 @@ export function weeklyLoadHTML(result, { tap = false, small = true } = {}) {
   const paintedTiers = new Set(), { load, averaged } = result;
   const tiers = Object.fromEntries(Object.entries(load).map(([m, sets]) => [m, "g-w-" + weeklyTier(sets)]));
   return `<div class="pk-head">${mt(averaged ? "weekly_average" : "weekly")}</div>`
-    + bodyMap(tiers, { tap, small, paintedTiers }) + legend("weekly", paintedTiers)
-    + `<div class="weekly-values">${Object.entries(load).filter(([, n]) => roundHalf(n) > 0).map(([m, n]) => `<span>${fmtNum(roundHalf(n), { maximumFractionDigits: 1 })} ${esc(MUSCLE_COMMON[m] || muscleLabel(m))}</span>`).join("")}</div>`;
+    + bodyMap(tiers, { tap, small, paintedTiers }) + legend("weekly", paintedTiers);
 }
 // ilk cümle görünür, gerisi "Ayrıntı" arkasında ("vb.", "ör." gibi kısaltmalarda bölünmez)
 const ABBR = /(?:vb|vs|ör|bkz|yak|sn|dk)\.$/i;

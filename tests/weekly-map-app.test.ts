@@ -24,10 +24,9 @@ it("weekly legend contains only painted tiers and localized ranges", () => {
   expect(html).toContain("Orta"); expect(html).toContain("5–9,5"); expect(html).toContain("10–20");
   expect(html).not.toContain("g-w-az"); expect(html).not.toContain("g-w-yuksek");
 });
-it("weekly map formats half sets and has average heading", () => {
+it("weekly map has average heading and no per-muscle value list", () => {
   const html = map.weeklyLoadHTML({ load: { "Göğüs": 10.26, Lat: 4.7 }, averaged: true });
-  expect(html).toContain("Haftalık ortalama"); expect(html).toContain("10,5 göğüs");
-  expect(html).toContain("4,5 lat");
+  expect(html).toContain("Haftalık ortalama"); expect(html).not.toContain("weekly-values");
   expect(html).toContain('data-t="g-w-yeterli"'); expect(html).toContain('data-t="g-w-az"');
   expect(map.weeklyLoadHTML(null)).toBe("");
 });
@@ -37,7 +36,6 @@ it("English legend uses decimal points and neutral stretch text", () => {
     const html = map.legend("weekly", new Set(["g-w-orta", "g-w-yeterli"]));
     expect(html).toContain("Moderate"); expect(html).toContain("5–9.5"); expect(html).toContain("Adequate");
     expect(map.legend("session", new Set(["g-hasar"]))).toContain("Stretch 12.5+");
-    expect(map.weeklyLoadHTML({ load: { Lat: 5.5 }, averaged: false })).toContain("5.5 lat");
   } finally { preference = "tr"; }
 });
 it("a tier hidden by a merged shoulder region stays out of the legend", () => {
