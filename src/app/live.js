@@ -1,4 +1,5 @@
 import { bodyMap, sessionLoadHTML } from "./bodymap.js";
+import { programWeek, renderWeeklyMap } from "./weekly-map.js";
 import { assignmentButton, bindMuscleAssignments } from "./muscleassign.js";
 import { sessionEntries, entryBaseline, plannedSessionItems, targetSets } from "../core/session-load.ts";
 import { volumePlan } from "./beginner-volume.js";
@@ -423,7 +424,11 @@ export async function finishWorkout(){
   stopTimer(); keepAwake(false); buzz([40, 60, 40]);
   closeFocus(); showTab("home");
   const showSummary = () => {
-    const body = openSheet(sheetHead(t("muscles.session_summary")), sessionLoadHTML(summaryItems, { small: false }) + `<button class="btn primary block" id="sessionDone">${t("muscles.session_done")}</button>`, () => setTimeout(celebrateStreak, 300));
+    const body = openSheet(sheetHead(t("muscles.session_summary")), `<div id="summaryMap"></div><button class="btn primary block" id="sessionDone">${t("muscles.session_done")}</button>`, () => setTimeout(celebrateStreak, 300));
+    let selected = workout.prog ? -1 : 0;
+    const render = () => renderWeeklyMap(body.querySelector("#summaryMap"), programWeek(workout.prog), [{ name: t("muscles.this_workout"), items: summaryItems }], selected,
+      value => { selected = value; render(); }, { small: false });
+    render();
     body.querySelector("#sessionDone").onclick = closeSheet;
     bindMuscleAssignments(body, showSummary);
   };

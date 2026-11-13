@@ -30,8 +30,6 @@ export default {
   "add_own": "Kendin kur",
   "new_program": "Yeni program",
   "edit_program": "Programı düzenle",
-  "map_hint": "Kasa dokun: hareketler açılır.",
-  "map_empty": "Bu programdaki hareketler kas haritasına girmiyor (yoga, kardiyo ya da kendi hareketlerin).",
   "editor_load": "Bu antrenman kaslarını ne kadar çalıştırır",
   "eyebrow": "{n} hareket · {sets} set",
   "muscle_map": "Kas haritası",

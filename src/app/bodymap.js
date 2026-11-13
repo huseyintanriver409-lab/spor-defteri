@@ -1,3 +1,4 @@
+import { WEEKLY_TIERS, weeklyTier, roundHalf } from "../core/weekly-load.ts";
 import { visibleSessionTiers, sessionTierRange } from "../core/session-legend.ts";
 import { programItems } from "../core/program-data.ts";
 import { discoverableEx } from "./exercises.js";
@@ -37,6 +38,7 @@ const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-baslangic": 1, "y-verimli": 2, "y-orta": 3, "y-dusukverim": 4,
   "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-iyi": 4, "g-yuksek": 5, "g-maksimum": 6, "g-hasar": 7, sec: 1, "assign-main": 2, "assign-secondary": 1 };
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
+Object.assign(RANK, { "g-w-yok": 0, "g-w-az": 1, "g-w-orta": 2, "g-w-yeterli": 3, "g-w-yuksek": 4 });
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
 const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
 LABEL["assign-main"] = t("muscles.assign_primary");
@@ -143,16 +145,28 @@ export function miniMap(name){
 // (i) düğmesi arkasında açılan açıklama (sayfa içeriği .card olmadığı için <details>)
 const infoTip = inner => `<details class="ev-help i-help"><summary class="muted small" aria-label="${t("bodymap.help_aria")}">${ic("info")}</summary>${inner}</details>`;
 const mt = k => t("muscles." + k);
-const scaleLabel = (k, l) => k.startsWith("g-") ? mt("session_short_" + k.slice(2)) : l;
 export const legend = (kind, paintedTiers) => {
+  if (kind === "weekly") {
+    const tiers = WEEKLY_TIERS.filter(k => paintedTiers?.has("g-w-" + k));
+    const ranges = { az: "<5", orta: "5–" + fmtNum(9.5), yeterli: "10–20", yuksek: ">20" };
+    return tiers.length ? `<div class="bm-legend" data-legend-kind="weekly">${tiers.map(k => `<span><i data-t="g-w-${k}" aria-hidden="true"></i>${mt("weekly_" + k)}<small class="bm-range">${esc(ranges[k])}</small></span>`).join("")}</div>` : "";
+  }
   const visible = kind === "session" ? new Set(visibleSessionTiers(paintedTiers).map(k => "g-" + k)) : null;
   const tiers = KINDS[kind].filter(([k]) => !visible || visible.has(k));
   if (!tiers.length) return "";
+  if (kind === "session") return `<div class="bm-legend" data-legend-kind="session">${tiers.map(([k]) => `<span><i data-t="${k}" aria-hidden="true"></i>${esc(k === "g-hasar" ? mt("session_stretch") : sessionTierRange(k.slice(2)))}</span>`).join("")}</div>`;
   return `<div class="bm-legend">${tiers.map(([k, l]) => {
-    const range = kind === "session" ? sessionTierRange(k.slice(2)) : "";
-    return `<span aria-label="${esc(l + (range ? " " + range : ""))}"><i data-t="${k}" aria-hidden="true"></i>${k === "g-hasar" ? "⚠ " : ""}${scaleLabel(k, l)}${range ? `<small class="bm-range">${esc(range)}</small>` : ""}</span>`;
+    return `<span aria-label="${esc(l)}"><i data-t="${k}" aria-hidden="true"></i>${l}</span>`;
   }).join("")}</div>` + infoTip(tiers.map(([, l, d]) => `<div class="small"><b>${l}:</b> ${d}</div>`).join(""));
 };
+export function weeklyLoadHTML(result, { tap = false, small = true } = {}) {
+  if (!result) return "";
+  const paintedTiers = new Set(), { load, averaged } = result;
+  const tiers = Object.fromEntries(Object.entries(load).map(([m, sets]) => [m, "g-w-" + weeklyTier(sets)]));
+  return `<div class="pk-head">${mt(averaged ? "weekly_average" : "weekly")}</div>`
+    + bodyMap(tiers, { tap, small, paintedTiers }) + legend("weekly", paintedTiers)
+    + `<div class="weekly-values">${Object.entries(load).filter(([, n]) => roundHalf(n) > 0).map(([m, n]) => `<span>${fmtNum(roundHalf(n), { maximumFractionDigits: 1 })} ${esc(MUSCLE_COMMON[m] || muscleLabel(m))}</span>`).join("")}</div>`;
+}
 // ilk cümle görünür, gerisi "Ayrıntı" arkasında ("vb.", "ör." gibi kısaltmalarda bölünmez)
 const ABBR = /(?:vb|vs|ör|bkz|yak|sn|dk)\.$/i;
 function firstSentence(text){
@@ -197,8 +211,10 @@ export function redrawBodyMaps(){
   document.querySelectorAll(".minimap[data-exercise]").forEach(svg => { svg.outerHTML = miniMap(svg.dataset.exercise); });
   document.querySelectorAll(".bm-toggle").forEach(b => { b.outerHTML = modelToggle(); });
   document.querySelectorAll(".bodymap[data-tiers]").forEach(map => {
-    const box = document.createElement("div"), tiers = JSON.parse(map.dataset.tiers);
-    box.innerHTML = figure("front", tiers, t("bodymap.front")) + figure("back", tiers, t("bodymap.back"));
+    const box = document.createElement("div"), tiers = JSON.parse(map.dataset.tiers), painted = new Set();
+    box.innerHTML = figure("front", tiers, t("bodymap.front"), painted) + figure("back", tiers, t("bodymap.back"), painted);
+    const scale = map.nextElementSibling;
+    if (scale?.dataset.legendKind) scale.outerHTML = legend(scale.dataset.legendKind, painted);
     // Preserve SVG elements and their existing hit handlers.
     map.querySelectorAll("figure svg").forEach((svg, i) => {
       const next = box.querySelectorAll("svg")[i];

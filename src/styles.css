@@ -175,6 +175,7 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
 .fchips::-webkit-scrollbar{display:none}
 .fchip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:13px;min-height:44px}
 .fchip .ic{width:15px;height:15px}
+.fchip[data-week-view]{min-width:44px}
 
 /* ---------- Büyük sayılar ---------- */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
@@ -715,3 +716,10 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 .live-muscle-row{justify-content:center}
 
 .bm-legend small.bm-range{flex-basis:auto;margin:0;font-size:11px}
+
+:is(.bm-m path,.bm-legend i)[data-t=g-w-az]{fill:var(--g-dusuk);background:var(--g-dusuk)}
+:is(.bm-m path,.bm-legend i)[data-t=g-w-orta]{fill:var(--g-koruma);background:var(--g-koruma)}
+:is(.bm-m path,.bm-legend i)[data-t=g-w-yeterli]{fill:var(--g-iyi);background:var(--g-iyi)}
+:is(.bm-m path,.bm-legend i)[data-t=g-w-yuksek]{fill:var(--g-maksimum);background:var(--g-maksimum)}
+[data-t=g-w-yok]{fill:var(--mz)}
+.weekly-values{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}

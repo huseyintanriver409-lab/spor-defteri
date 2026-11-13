@@ -1,4 +1,6 @@
 import { programItems } from "../core/program-data.ts";
+import { programGroup } from "../core/weekly-load.ts";
+import { programWeek, renderWeeklyMap } from "./weekly-map.js";
 import { volumePlan } from "./beginner-volume.js";
 import { shortHelp } from "./short-help.js";
 import { buildQuickFlow } from "../core/yoga.ts";
@@ -78,10 +80,12 @@ export function ssLabels(items){
 export const ssTag = l => l ? `<span class="ssl">${l}</span>` : "";
 // Programın bir antrenmanda kaslara yükü: aynı kası çalıştıran hareketler üst üste binerse uyarır
 export function openProgramMap(p){
-  const html = sessionLoadHTML(volumePlan(p).items, { tap: true, small: false });
-  const body = openSheet(sheetHead(programName(p)), `<p class="muted" style="margin:0">${t("programs.map_hint")}</p>
-    ${html || `<p class="muted">${t("programs.map_empty")}</p>`}`);
-  bindBodyMap(body);
+  const ids = programGroup(state.programs, p.id), names = shortNames(ids);
+  const body = openSheet(sheetHead(programName(p)), "");
+  let selected = -1;
+  const render = () => renderWeeklyMap(body, programWeek(p.id), ids.map((id, i) => ({ name: names[i], items: volumePlan(state.programs.find(p => p.id === id)).items })), selected,
+    value => { selected = value; render(); }, { tap: true, small: false });
+  render();
 }
 // Program yazarken: o anki hareketlerin kas yükü
 export function renderEditorLoad(){

@@ -26,7 +26,6 @@ export default {
   "place": "Plana yerleştir",
   "place_replaces": "(yerini alır)",
   "start": "Başla",
-  "map_head": "Bir antrenman kaslarını ne kadar çalıştırır",
   "yoga_programs": "Yoga programları",
   "ready_programs": "Hazır programlar",
   "part_lift": "Ağırlık ve kondisyon",

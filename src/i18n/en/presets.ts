@@ -26,7 +26,6 @@ export default {
   "place": "Add to plan",
   "place_replaces": "(replaces)",
   "start": "Start",
-  "map_head": "How much a workout trains your muscles",
   "yoga_programs": "Yoga programs",
   "ready_programs": "Preset programs",
   "part_lift": "Strength and conditioning",

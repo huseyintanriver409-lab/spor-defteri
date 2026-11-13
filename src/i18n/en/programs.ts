@@ -30,8 +30,6 @@ export default {
   "add_own": "Build your own",
   "new_program": "New program",
   "edit_program": "Edit program",
-  "map_hint": "Tap a muscle: exercises expand.",
-  "map_empty": "Exercises in this program are not included in the muscle map (yoga, cardio, or your own exercises).",
   "editor_load": "How much this workout trains your muscles",
   "eyebrow": "{n} exercises · {sets} sets",
   "muscle_map": "Muscle map",

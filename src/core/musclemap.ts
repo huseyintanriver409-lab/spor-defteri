@@ -28,6 +28,7 @@ export const muscleSearchText = (id: string): string => `${id} ${MUSCLE_LABEL[id
 // 4 set en az etkili doz, 5–10 en verimli, 11–18 orta verim, 19+ düşük verim (zarar değil; ek setin getirisi azalır).
 export type LoadTier = "yok" | "baslangic" | "verimli" | "orta" | "dusukverim";
 export const LOAD_TIERS: [LoadTier, string, string][] = (["baslangic", "verimli", "orta", "dusukverim"] as LoadTier[]).map(id => [id, mt("load_" + id), mt("load_" + id + "_d")]);
+// YORUM: kaynaksız; 4/10/18 loadTier eşikleri ve Orta adı uygulama kalibrasyonudur.
 export const MIN_EFFECTIVE_WEEK = 4;
 export function loadTier(sets: number): LoadTier {
   if (!(sets > 0)) return "yok";
@@ -63,9 +64,11 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
 // "bu kasa tek seansta olağandışı çok yük bindi" uyarısıdır. Tükeniş ve deneyim çarpanı bilerek
 // eklenmedi (recovery.ts zaten ele alıyor).
 export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "iyi" | "yuksek" | "maksimum" | "hasar";
+// YORUM: kaynaksız; Maksimum ve diğer tek seans kademe adları uygulama kararıdır.
 export const SESSION_TIERS: [SessionTier, string, string][] = (["dusuk", "koruma", "minimum", "iyi", "yuksek", "maksimum", "hasar"] as SessionTier[]).map(id => [id, mt("session_" + id), mt("session_" + id + "_d")]);
 export const SESSION_TIER_LIMITS = [1, 3, 5, 7, 9] as const;
 export const STRETCH_FACTOR = 1.5;
+// YORUM: kaynaksız; 12,5 risk eşiği ve 1,5 esneme çarpanı uygulama kalibrasyonu, hasar iddiası yok.
 export const SESSION_RISK_LIMIT = 12.5;
 export const SESSION_TOO_MUCH = SESSION_RISK_LIMIT;
 const SESSION_EPSILON = 1e-9;

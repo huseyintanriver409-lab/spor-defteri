@@ -1,4 +1,7 @@
 import { ymd } from "../core/dates.ts";
+import { presetWeek } from "../core/weekly-load.ts";
+import { musclesOf } from "./exercises.js";
+import { renderWeeklyMap } from "./weekly-map.js";
 // Hazır programlar ve "Bana program öner". İçerik ve öneri kuralları core/programs.ts'te.
 import { PROGRAMS, presetSessionName, presetSessionIndex, programById, recommend, weeklyPlan } from "../core/programs.ts";
 import { $, esc, ic, save, state, toast, uid } from "./store.js";
@@ -9,7 +12,6 @@ import { openBaseline } from "./baseline.js";
 import { liftOn, yogaOn } from "./exercises.js";
 import { setGender } from "../core/body-model.ts";
 import { redrawBodyMaps } from "./bodymap.js";
-import { sessionLoadHTML } from "./bodymap.js";
 import { startRotation } from "../core/plan.ts";
 import { t } from "../core/i18n.ts";
 
@@ -76,16 +78,14 @@ export function openProgramDetail(p, days, onClose){
     $("#pdPlan").textContent = planSummary();
   };
   // her antrenman gününün kas yükü; birden çok antrenman varsa aralarında geçilir
-  let si = 0;
+  let si = -1;
   const renderMap = () => {
-    const html = sessionLoadHTML(p.sessions[si].items.map(([ex, sets]) => ({ ex, sets })));
-    $("#pdMap").innerHTML = html ? `<div class="pk-head">${t("presets.map_head")}</div>
-      ${p.sessions.length > 1 ? `<div class="fchips" style="margin:6px 0 4px">${p.sessions.map((x, i) => `<button class="fchip${i === si ? " on" : ""}" data-si="${i}">${t("presets.workout_named", { name: esc(x.name) })}</button>`).join("")}</div>` : ""}${html}` : "";
-    $("#pdMap").querySelectorAll("[data-si]").forEach(b => b.onclick = () => { si = +b.dataset.si; renderMap(); buzz(5); });
+    renderWeeklyMap($("#pdMap"), presetWeek(p, d, musclesOf), p.sessions.map(s => ({ name: s.name, items: s.items.map(([ex, sets]) => ({ ex, sets })) })), si,
+      value => { si = value; renderMap(); buzz(5); });
   };
   renderMap();
   $("#pdDays").querySelectorAll("button").forEach(b => b.onclick = () => {
-    d = +b.dataset.v; $("#pdDays").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); renderPlan(); buzz(5);
+    d = +b.dataset.v; $("#pdDays").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); renderPlan(); renderMap(); buzz(5);
   });
   $("#pdPlace").onchange = e => { place = e.target.checked; };
   $("#pdGo").onclick = () => { applyProgram(p, d, place); closeSheet(); };
