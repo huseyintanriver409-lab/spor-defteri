@@ -135,7 +135,8 @@ export function rankForMuscle(muscle: string, names: string[], musclesOf: Muscle
   const tiers = new Map(out.map(row => [row.name,
     sessionLoad([{ ex: row.name, sets: 9 }], musclesOf)[muscle]?.tier ?? "yok"]));
   out.forEach(row => { row.tier = tiers.get(row.name)!; });
-  const tierOrder: SessionTier[] = ["yok", ...SESSION_TIERS.map(([tier]) => tier)];
+  // Mor (gerilme) bordodan (maksimum) sonra, kırmızıdan (yüksek) önce gelir.
+  const tierOrder: SessionTier[] = ["yok", "dusuk", "koruma", "minimum", "iyi", "yuksek", "hasar", "maksimum"];
   return out.sort((a, b) => tierOrder.indexOf(tiers.get(b.name)!) - tierOrder.indexOf(tiers.get(a.name)!)
     || (a.group ?? Infinity) - (b.group ?? Infinity)
     || byCount(a.name, b.name));

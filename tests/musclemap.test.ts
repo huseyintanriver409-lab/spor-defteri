@@ -47,12 +47,12 @@ describe("vücut haritası", () => {
   it("sıralama: önce kanıt grupları (eşit seçenekler), sonra ana, sonra yardımcı (payı büyük önce)", () => {
     const r = rankForMuscle("Göğüs", Object.keys(M), musclesOf, { "Dumbbell Fly": 3 });
     expect(r.map(x => [x.name, x.kind])).toEqual([
-      ["Dumbbell Fly", "kanit"], ["Bench Press (Barbell)", "kanit"], ["Cable Crossover", "kanit"], ["Close-Grip Bench Press", "yardimci"],
+      ["Bench Press (Barbell)", "kanit"], ["Cable Crossover", "kanit"], ["Dumbbell Fly", "kanit"], ["Close-Grip Bench Press", "yardimci"],
     ]);
-    expect(r[1].level).toBe(EVIDENCE["Göğüs"][0].level);
+    expect(r[0].level).toBe(EVIDENCE["Göğüs"][0].level);
   });
   it("all muscles descend by actual card tier and preserve evidence order within tiers", () => {
-    const order = ["yok", "dusuk", "koruma", "minimum", "iyi", "yuksek", "maksimum", "hasar"];
+    const order = ["yok", "dusuk", "koruma", "minimum", "iyi", "yuksek", "hasar", "maksimum"];
     const source = (ex: string) => ({ p: [], s: [], w: WEIGHTS[ex] || {} });
     for (const muscle of MUSCLES) {
       const rows = rankForMuscle(muscle, [...allNames], source);
