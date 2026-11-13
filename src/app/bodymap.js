@@ -315,24 +315,25 @@ let reelSets = EX_SETS;
 const levelLegend = (mm, sets) => exerciseLevels(mm, sets).map(([k, l, ms]) =>
   `<span><i data-t="g-${k}" aria-hidden="true"></i><b>${k === "hasar" ? "⚠ " : ""}${l}</b><em>${esc(ms.map(muscleLabel).join(", "))}</em></span>`).join("");
 const youtube = name => `https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}`;
+const reelCardHTML = (name, tags, hint = "") => { const mm = musclesOf(name), sex = bodySex(); return `<section class="reel-card" data-ex="${esc(name)}">
+      <div class="reel-figs">${reelFigs(mm, sex)}</div>
+      <div>
+        <div class="row" style="gap:6px;margin-bottom:8px">${tags}</div>
+        <h3 class="reel-name">${esc(name)}</h3>
+        <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}" aria-label="${t("bodymap.set_less")}" data-i18n-aria="bodymap.set_less">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: reelSets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}" aria-label="${t("bodymap.set_more")}" data-i18n-aria="bodymap.set_more">${ic("plus")}</button></div>
+        <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
+        <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}${t("bodymap.how_to")}</a>
+          <button class="btn primary" data-use="${esc(name)}">${ic("circle-plus")}${state.live ? t("bodymap.add_to_workout") : t("bodymap.save")}</button></div>
+        ${hint}
+      </div></section>`; };
+const reelFigs = (mm, sex) => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${esc((side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets))}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
 export function openMuscleReel(m, alts = [m]){
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
   const names = discoverableEx().filter(e => e.group !== YOGA).map(e => e.name);
   const list = rankForMuscle(m, names, musclesOf, counts), sex = bodySex();
   const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(programItems(p).filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
-  const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${esc((side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets))}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
-  const cards = list.map((x, i) => { const { name } = x, mm = musclesOf(name); return `<section class="reel-card" data-ex="${esc(name)}">
-      <div class="reel-figs">${figs(mm)}</div>
-      <div>
-        <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x, true)}${equipTag(name)}<span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
-        <h3 class="reel-name">${esc(name)}</h3>
-        <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}" aria-label="${t("bodymap.set_less")}" data-i18n-aria="bodymap.set_less">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: reelSets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}" aria-label="${t("bodymap.set_more")}" data-i18n-aria="bodymap.set_more">${ic("plus")}</button></div>
-        <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
-        <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}${t("bodymap.how_to")}</a>
-          <button class="btn primary" data-use="${esc(name)}">${ic("circle-plus")}${state.live ? t("bodymap.add_to_workout") : t("bodymap.save")}</button></div>
-        ${i === 0 && list.length > 1 ? `<div class="reel-hint">${ic("chevron-down")}${t("bodymap.scroll")}</div>` : ""}
-      </div></section>`; }).join("")
+  const cards = list.map((x, i) => reelCardHTML(x.name, `${kindTag(x, true)}${equipTag(x.name)}<span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span>`, i === 0 && list.length > 1 ? `<div class="reel-hint">${ic("chevron-down")}${t("bodymap.scroll")}</div>` : "")).join("")
     + (progs.length ? `<section class="reel-card reel-progs"><h3 class="reel-name">${t("bodymap.in_programs")}</h3>
       ${progs.map(({ p, sets }) => `<div class="exitem"><div class="grow"><div>${esc(programName(p))}</div><div class="ms muted small">${t("bodymap.sets_this_muscle", { n: fmt(sets) })}</div></div>
         ${state.live ? "" : `<button class="btn sm" data-pstart="${p.id}">${ic("play")}${t("bodymap.start")}</button>`}</div>`).join("")}</section>` : "");
@@ -358,5 +359,27 @@ export function openMuscleReel(m, alts = [m]){
     card.querySelectorAll(".reel-fig").forEach(f => f.setAttribute("style", paint(sex, f.dataset.side, mm, reelSets)));
     card.querySelector(".reel-legend").innerHTML = levelLegend(mm, reelSets);
     card.querySelectorAll(".reel-fig").forEach(f => f.setAttribute("aria-label", (f.dataset.side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets)));
+  });
+}
+
+// Hareketler listesinde bir harekete dokununca: o hareketin tam ekran sayfası (resim, kademe renkleri, set sayısı, Kaydet)
+export function openExercisePage(name){
+  let el = $("#reel");
+  if (!el) { document.body.insertAdjacentHTML("beforeend", `<div class="reel hidden" id="reel" role="dialog" aria-modal="true"></div>`); el = $("#reel"); }
+  el.innerHTML = `<header class="reel-head"><button class="iconbtn" data-rclose title="${t("bodymap.close")}" aria-label="${t("bodymap.close")}" data-i18n-aria="bodymap.close">${ic("chevron-left")}</button><h2 class="grow">${esc(name)}</h2></header>
+    <div class="reel-scroll">${reelCardHTML(name, equipTag(name))}</div>`;
+  el.classList.remove("hidden"); document.documentElement.classList.add("reel-open");
+  const close = () => { el.classList.add("hidden"); document.documentElement.classList.remove("reel-open"); removeEventListener("keydown", esc_); };
+  const esc_ = e => { if (e.key === "Escape") close(); };
+  addEventListener("keydown", esc_);
+  el.querySelector("[data-rclose]").onclick = close;
+  el.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { close(); useExercise(b.dataset.use); });
+  const sex = bodySex();
+  el.querySelectorAll("[data-sets]").forEach(b => b.onclick = () => {
+    reelSets = Math.min(15, Math.max(1, reelSets + +b.dataset.sets));
+    const card = b.closest(".reel-card"), mm = musclesOf(card.dataset.ex);
+    card.querySelector("[data-n]").textContent = t("bodymap.sets_n", { n: reelSets });
+    card.querySelectorAll(".reel-fig").forEach(f => { f.setAttribute("style", paint(sex, f.dataset.side, mm, reelSets)); f.setAttribute("aria-label", (f.dataset.side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets)); });
+    card.querySelector(".reel-legend").innerHTML = levelLegend(mm, reelSets);
   });
 }

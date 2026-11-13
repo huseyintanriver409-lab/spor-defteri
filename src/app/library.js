@@ -14,8 +14,8 @@ import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
 import { liveItems, openFocus } from "./live.js";
 import { chart } from "./stats.js";
-import { EX_SETS, bindBodyMap, bodyMap, exerciseLevels, legend, miniMap } from "./bodymap.js";
-import { MUSCLES, muscleLabel, muscleSearchText } from "../core/musclemap.ts";
+import { bindBodyMap, bodyMap, legend, miniMap, openExercisePage } from "./bodymap.js";
+import { MUSCLES, muscleSearchText } from "../core/musclemap.ts";
 import { assignmentButton, bindMuscleAssignments, openMuscleAssignment } from "./muscleassign.js";
 
 /* ---------- Library ---------- */
@@ -41,7 +41,7 @@ export function renderLib(){
     const items = ex.filter(e => e.group===g && (g !== YOGA || phase === "all" || phaseNames.has(e.name))); if (!items.length) return "";
     return `<details ${open ? "open" : ""}${g === YOGA ? ' id="libYoga"' : ""}><summary>${esc(groupLabel(g))} <span>(${items.length})</span></summary>` + items.map(e =>
       `<div class="exitem">${miniMap(e.name)}<div class="grow" data-more><div>${esc(e.name)}${poseInfo(e.name)}${counts[e.name] ? ` <span class="muted small">· ${t("library.records", { n: counts[e.name] })}</span>` : ""}</div>
-        <div class="ms">${equipTag(e.name)}${unmappedMuscles(e.name) ? `<span class="small">${t("muscles.unmapped")}</span>` : ""}<span class="more">${t("library.in_sets", { n: EX_SETS })} ${exerciseLevels(e.m).map(([k, l, ms]) => `<span class="lv"><i class="bm-dot" data-t="g-${k}"></i><b>${l}</b> ${esc(ms.map(muscleLabel).join(", "))}</span>`).join("")}</span></div>
+        <div class="ms">${equipTag(e.name)}${unmappedMuscles(e.name) ? `<span class="small">${t("muscles.unmapped")}</span>` : ""}</div>
         ${e.custom && twin(e.name) ? `<button class="btn sm quiet" style="margin-top:6px" data-mg="${esc(e.name)}" data-to="${esc(twin(e.name))}">${t("library.merge_with", { name: esc(twin(e.name)) })}</button>` : ""}</div>
        ${assignmentButton(e.name)}${e.custom ? `<button class="iconbtn" data-mg="${esc(e.name)}" title="${t("library.merge_other")}" aria-label="${t("library.merge_other")}" data-i18n-aria="library.merge_other">${ic("arrow-left-right")}</button><button class="iconbtn danger" data-rm="${esc(e.name)}" title="${t("library.remove")}" aria-label="${t("library.remove")}" data-i18n-aria="library.remove">${ic("trash-2")}</button>` : ""}
        <a class="iconbtn" title="${t("library.how_to")}" aria-label="${t("library.how_to")}" data-i18n-aria="library.how_to" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(e.name + (e.group === YOGA ? " yoga" : " exercise form"))}">${ic("circle-play")}</a>
@@ -57,8 +57,9 @@ export function renderLib(){
   // filtreleri temizle: arama, ekipman ve "Evde" filtresini sıfırlar (yogaMoves ile aynı sıfırlama)
   const clearBtn = $("#libList").querySelector("[data-clear]");
   if (clearBtn) clearBtn.onclick = () => { phase = "all"; $("#libSearch").value = ""; renderLib(); };
-  // kas adları resmin yerine geçmez: harekete dokununca açılır
-  $("#libList").querySelectorAll("[data-more]").forEach(g => g.onclick = e => { if (!e.target.closest("button")) g.parentElement.classList.toggle("open"); });
+  // harekete (ad, küçük resim) dokununca hareketin tam ekran sayfası açılır
+  $("#libList").querySelectorAll(".exitem").forEach(row => { const n = row.querySelector("[data-use]")?.dataset.use; if (!n || row.closest("#libYoga")) return; const go = e => { if (!e.target.closest("button, a")) openExercisePage(n); };
+    row.querySelector("[data-more]").onclick = go; const mini = row.firstElementChild; if (mini && !mini.hasAttribute("data-more")) mini.onclick = go; });
   $("#libList").querySelectorAll("[data-use]").forEach(b => b.onclick = () => {
     const n = b.dataset.use;
     if (state.live) { const items = liveItems(); let i = items.findIndex(x => x.ex === n); if (i < 0) { items.push({ ex: n, sets: 3, reps: "" }); i = items.length - 1; } state.live.idx = i; save(); openFocus(); return; }
