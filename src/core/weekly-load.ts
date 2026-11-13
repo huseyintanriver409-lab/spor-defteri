@@ -7,19 +7,7 @@ import { programItems } from "./program-data.ts";
 
 type MusclesOf = (ex: string) => Muscles;
 type Program = Parameters<typeof plannedOn>[1][number];
-export type WeeklyTier = "yok" | "az" | "orta" | "yeterli" | "yuksek";
-export const WEEKLY_TIERS = ["az", "orta", "yeterli", "yuksek"] as const;
-export const WEEKLY_TIER_LIMITS = [5, 10, 20] as const;
-// KAYNAK: Schoenfeld, Ogborn, Krieger 2017, J Sports Sci 35(11):1073-82 — haftalık set <5 / 5-9 / 10+ kategorileri (kategori eğilimi p=0.074, sürekli değişken anlamlı). => 5 ve 10 sınırları.
-// KAYNAK: Baz-Valle ve ark. 2022, J Hum Kinet (PMC8884877) — haftalık kas başına 12-20 set olası optimum öneri (az çalışma). => 20 üst sınırı.
 // KAYNAK: Pelland ve ark. 2025, Sports Med, DOI 10.1007/s40279-025-02344-w — hacim-etki eğrisi sürekli ve azalan getirili; dolaylı set 0,5 (ana 1 / yardımcı 0,5).
-// YORUM: kademe adları (Az/Orta/Yeterli/Yüksek), 10-12 aralığının Yeterli ye katılması ve 20 üstünün ayrı kademe olması uygulama kararıdır; 20 üstü için zarar iddiası yok, yalnızca önerilen bandın üstü.
-export const roundHalf = (x: number): number => Math.round(x * 2) / 2;
-export function weeklyTier(sets: number): WeeklyTier {
-  sets = roundHalf(sets);
-  const [low, adequate, high] = WEEKLY_TIER_LIMITS;
-  return !(sets > 0) ? "yok" : sets < low ? "az" : sets < adequate ? "orta" : sets <= high ? "yeterli" : "yuksek";
-}
 export function weeklyLoad(days: SessionItem[][], musclesOf: MusclesOf, weeks = 1): Record<string, number> {
   if (!Number.isFinite(weeks) || weeks <= 0) throw new RangeError("weeks must be positive");
   const load: Record<string, number> = {};
@@ -58,5 +46,8 @@ export function programGroup(programs: { id: string; name: string }[], id: strin
   return programs.filter(p => p.name.includes(" · ") && p.name.split(" · ")[0] === prefix).map(p => p.id);
 }
 export function groupWeek(programs: Program[], ids: string[], musclesOf: MusclesOf) {
-  return { load: weeklyLoad(programs.filter(p => ids.includes(p.id)).map(programItems), musclesOf), weeks: 1, averaged: false };
+  const group = programs.filter(p => ids.includes(p.id)), n = group.length;
+  const k = Math.max(3, n), weeks = n ? n / gcd(n, k) : 1;
+  const sessions = n ? Array.from({ length: weeks * k }, (_, i) => programItems(group[i % n])) : [];
+  return { load: weeklyLoad(sessions, musclesOf, weeks), weeks, averaged: weeks > 1, perWeek: k };
 }

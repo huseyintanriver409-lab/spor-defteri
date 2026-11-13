@@ -717,8 +717,3 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 
 .bm-legend small.bm-range{flex-basis:auto;margin:0;font-size:11px}
 
-:is(.bm-m path,.bm-legend i)[data-t=g-w-az]{fill:var(--g-dusuk);background:var(--g-dusuk)}
-:is(.bm-m path,.bm-legend i)[data-t=g-w-orta]{fill:var(--g-koruma);background:var(--g-koruma)}
-:is(.bm-m path,.bm-legend i)[data-t=g-w-yeterli]{fill:var(--g-iyi);background:var(--g-iyi)}
-:is(.bm-m path,.bm-legend i)[data-t=g-w-yuksek]{fill:var(--g-maksimum);background:var(--g-maksimum)}
-[data-t=g-w-yok]{fill:var(--mz)}

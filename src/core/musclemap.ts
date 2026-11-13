@@ -66,6 +66,7 @@ export function fatigueTier(r?: MuscleRecovery): FatigueTier {
 export type SessionTier = "yok" | "dusuk" | "koruma" | "minimum" | "iyi" | "yuksek" | "maksimum" | "hasar";
 // YORUM: kaynaksız; Maksimum ve diğer tek seans kademe adları uygulama kararıdır.
 export const SESSION_TIERS: [SessionTier, string, string][] = (["dusuk", "koruma", "minimum", "iyi", "yuksek", "maksimum", "hasar"] as SessionTier[]).map(id => [id, mt("session_" + id), mt("session_" + id + "_d")]);
+// YORUM: uygulama kalibrasyonu, kaynaksız; 1/3/5/7/9 eşikleri.
 export const SESSION_TIER_LIMITS = [1, 3, 5, 7, 9] as const;
 export const STRETCH_FACTOR = 1.5;
 // YORUM: kaynaksız; 12,5 risk eşiği ve 1,5 esneme çarpanı uygulama kalibrasyonu, hasar iddiası yok.

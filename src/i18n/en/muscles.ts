@@ -1,8 +1,5 @@
 export default {
- "weekly_az": "Low",
- "weekly_orta": "Moderate",
- "weekly_yeterli": "Adequate",
- "weekly_yuksek": "High",
+ "per_week": "Per week: {n}",
  "weekly": "Weekly",
  "weekly_average": "Weekly average",
  "week": "Week",

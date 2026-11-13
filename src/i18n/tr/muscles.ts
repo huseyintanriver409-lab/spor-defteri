@@ -1,8 +1,5 @@
 export default {
- "weekly_az": "Az",
- "weekly_orta": "Orta",
- "weekly_yeterli": "Yeterli",
- "weekly_yuksek": "Yüksek",
+ "per_week": "Haftada {n}",
  "weekly": "Haftalık",
  "weekly_average": "Haftalık ortalama",
  "week": "Hafta",

@@ -1,4 +1,3 @@
-import { WEEKLY_TIERS, weeklyTier } from "../core/weekly-load.ts";
 import { visibleSessionTiers, sessionTierRange } from "../core/session-legend.ts";
 import { programItems } from "../core/program-data.ts";
 import { discoverableEx } from "./exercises.js";
@@ -38,7 +37,6 @@ const ON_TOP = ["adductors"];
 const RANK = { yok: 0, hazir: 1, toparlaniyor: 2, yorgun: 3, asiri: 4, "y-yok": 0, "y-baslangic": 1, "y-verimli": 2, "y-orta": 3, "y-dusukverim": 4,
   "g-yok": 0, "g-dusuk": 1, "g-koruma": 2, "g-minimum": 3, "g-iyi": 4, "g-yuksek": 5, "g-maksimum": 6, "g-hasar": 7, sec: 1, "assign-main": 2, "assign-secondary": 1 };
 // haftalık yük "y-", tek antrenman yükü "g-" önekiyle
-Object.assign(RANK, { "g-w-yok": 0, "g-w-az": 1, "g-w-orta": 2, "g-w-yeterli": 3, "g-w-yuksek": 4 });
 const KINDS = { fatigue: FATIGUE_TIERS, load: LOAD_TIERS.map(([k, l, d]) => ["y-" + k, l, d]), session: SESSION_TIERS.map(([k, l, d]) => ["g-" + k, l, d]) };
 const LABEL = Object.fromEntries(Object.values(KINDS).flat().map(([k, l]) => [k, l]));
 LABEL["assign-main"] = t("muscles.assign_primary");
@@ -146,11 +144,7 @@ export function miniMap(name){
 const infoTip = inner => `<details class="ev-help i-help"><summary class="muted small" aria-label="${t("bodymap.help_aria")}">${ic("info")}</summary>${inner}</details>`;
 const mt = k => t("muscles." + k);
 export const legend = (kind, paintedTiers) => {
-  if (kind === "weekly") {
-    const tiers = WEEKLY_TIERS.filter(k => paintedTiers?.has("g-w-" + k));
-    const ranges = { az: "<5", orta: "5–" + fmtNum(9.5), yeterli: "10–20", yuksek: ">20" };
-    return tiers.length ? `<div class="bm-legend" data-legend-kind="weekly">${tiers.map(k => `<span><i data-t="g-w-${k}" aria-hidden="true"></i>${mt("weekly_" + k)}<small class="bm-range">${esc(ranges[k])}</small></span>`).join("")}</div>` : "";
-  }
+  if (kind === "weekly") return legend("session", new Set([...(paintedTiers || [])].filter(k => k !== "g-hasar")));
   const visible = kind === "session" ? new Set(visibleSessionTiers(paintedTiers).map(k => "g-" + k)) : null;
   const tiers = KINDS[kind].filter(([k]) => !visible || visible.has(k));
   if (!tiers.length) return "";
@@ -161,9 +155,9 @@ export const legend = (kind, paintedTiers) => {
 };
 export function weeklyLoadHTML(result, { tap = false, small = true } = {}) {
   if (!result) return "";
-  const paintedTiers = new Set(), { load, averaged } = result;
-  const tiers = Object.fromEntries(Object.entries(load).map(([m, sets]) => [m, "g-w-" + weeklyTier(sets)]));
-  return `<div class="pk-head">${mt(averaged ? "weekly_average" : "weekly")}</div>`
+  const paintedTiers = new Set(), { load, averaged, perWeek } = result;
+  const tiers = Object.fromEntries(Object.entries(load).map(([m, sets]) => [m, "g-" + (sessionTier(sets) === "hasar" ? "maksimum" : sessionTier(sets))]));
+  return `<div class="pk-head">${mt(averaged ? "weekly_average" : "weekly")}${perWeek ? " · " + t("muscles.per_week", { n: perWeek }) : ""}</div>`
     + bodyMap(tiers, { tap, small, paintedTiers }) + legend("weekly", paintedTiers);
 }
 // ilk cümle görünür, gerisi "Ayrıntı" arkasında ("vb.", "ör." gibi kısaltmalarda bölünmez)

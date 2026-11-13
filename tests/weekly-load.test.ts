@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupWeek, planWeek, presetWeek, programGroup, roundHalf, weeklyLoad, weeklyTier, WEEKLY_TIER_LIMITS } from "../src/core/weekly-load.ts";
+import { groupWeek, planWeek, presetWeek, programGroup, weeklyLoad } from "../src/core/weekly-load.ts";
 import { programById } from "../src/core/programs.ts";
 import { sessionLoad, WEIGHTS } from "../src/core/musclemap.ts";
 import type { Plan } from "../src/core/plan.ts";
@@ -13,15 +13,7 @@ const programs = [
 ];
 const fixed: Plan = { days: { MO: { prog: "a" }, TH: { prog: "b" } }, dur: 60, remind: 0 };
 
-describe("weekly tiers", () => {
-  it.each([[4.5, "az"], [5, "orta"], [9.5, "orta"], [10, "yeterli"], [20, "yeterli"], [20.5, "yuksek"], [0, "yok"], [NaN, "yok"], [-1, "yok"], [4.75, "orta"], [9.75, "yeterli"], [20.24, "yeterli"], [20.25, "yuksek"]])("%s → %s", (sets, tier) => {
-    expect(weeklyTier(sets as number)).toBe(tier);
-  });
-  it("rounds to nearest half", () => {
-    expect([0, .24, .25, .74, .75, 9.76].map(roundHalf)).toEqual([0, 0, .5, .5, 1, 10]);
-    expect(roundHalf(NaN)).toBeNaN();
-    expect(WEEKLY_TIER_LIMITS).toEqual([5, 10, 20]);
-  });
+describe("weekly totals", () => {
   it("preserves fractional shares and divides only after summation", () => {
     expect(weeklyLoad([[{ ex: "a", sets: 3 }], [{ ex: "b", sets: 2 }]], simple, 2)).toEqual({ main: 2.5, assist: 1.25 });
     expect(() => weeklyLoad([], simple, 0)).toThrow(RangeError);
@@ -72,8 +64,15 @@ describe("planned and grouped weeks", () => {
     expect(programGroup(programs, "missing")).toEqual([]);
     expect(programGroup([...programs, { ...programs[0], id: "d", name: "Full Body" }], "a")).toEqual(["a", "b"]);
   });
-  it("counts each group session once even with repeated ids", () => {
-    expect(groupWeek(programs, ["a", "b", "a"], simple)).toEqual({ load: { main: 6, assist: 3 }, weeks: 1, averaged: false });
+  it("single day repeats three times", () => {
+    expect(groupWeek(programs, ["a"], simple)).toEqual({ load: { main: 6, assist: 3 }, weeks: 1, averaged: false, perWeek: 3 });
+  });
+  it("four days each occur once", () => {
+    const four = [...programs, { ...programs[0], id: "d" }];
+    expect(groupWeek(four, four.map(p => p.id), simple)).toEqual({ load: { main: 18, assist: 9 }, weeks: 1, averaged: false, perWeek: 4 });
+  });
+  it("averages two group sessions with repeated ids", () => {
+    expect(groupWeek(programs, ["a", "b", "a"], simple)).toEqual({ load: { main: 9, assist: 4.5 }, weeks: 2, averaged: true, perWeek: 3 });
     expect(groupWeek(programs, [], simple).load).toEqual({});
   });
 });
