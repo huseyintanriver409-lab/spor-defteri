@@ -117,6 +117,12 @@ export function setsByMuscle(items: SessionItem[], musclesOf: MusclesOf): Record
 
 
 
+// Kartta ve listede varsayılan set sayısı: en çok 9; mor (gerilme) çıkan hareketlerde hiçbir kas mor olmayana kadar bir bir azaltılır.
+export function defaultExerciseSets(ex: string, musclesOf: MusclesOf, max = 9): number {
+  for (let n = max; n > 1; n--) if (!Object.values(sessionLoad([{ ex, sets: n }], musclesOf)).some(r => r.tier === "hasar")) return n;
+  return 1;
+}
+
 // Rank by default card tier, then evidence group, usage count and Turkish name.
 export const MAIN_SHARE = .75;
 export type RankKind = "kanit" | "ana" | "yardimci";
@@ -130,10 +136,10 @@ export function rankForMuscle(muscle: string, names: string[], musclesOf: Muscle
   const rest = names.filter(n => !seen.has(n) && wOf(n) > 0);
   rest.filter(n => wOf(n) >= MAIN_SHARE).sort(byCount).forEach(name => out.push({ name, kind: "ana", w: wOf(name) }));
   rest.filter(n => wOf(n) < MAIN_SHARE).sort((a, b) => wOf(b) - wOf(a) || byCount(a, b)).forEach(name => out.push({ name, kind: "yardimci", w: wOf(name) }));
-  // Same default sets, muscle shares and stretch risk as bodymap.js cards (EX_SETS = 9).
-  // Interactive reelSets changes do not affect this initial ordering.
+  // Same default sets, muscle shares and stretch risk as bodymap.js cards (defaultExerciseSets).
+  // Interactive set changes on a card do not affect this initial ordering.
   const tiers = new Map(out.map(row => [row.name,
-    sessionLoad([{ ex: row.name, sets: 9 }], musclesOf)[muscle]?.tier ?? "yok"]));
+    sessionLoad([{ ex: row.name, sets: defaultExerciseSets(row.name, musclesOf) }], musclesOf)[muscle]?.tier ?? "yok"]));
   out.forEach(row => { row.tier = tiers.get(row.name)!; });
   // Mor (gerilme) bordodan (maksimum) sonra, kırmızıdan (yüksek) önce gelir.
   const tierOrder: SessionTier[] = ["yok", "dusuk", "koruma", "minimum", "iyi", "yuksek", "hasar", "maksimum"];

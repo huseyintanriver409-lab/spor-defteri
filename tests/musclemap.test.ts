@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { EVIDENCE, MUSCLES, WEIGHTS, SUMMARY, STRETCH, SESSION_TIER_LIMITS, SESSION_RISK_LIMIT, STRETCH_FACTOR, sessionLoad, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../src/core/musclemap.ts";
+import { EVIDENCE, MUSCLES, WEIGHTS, SUMMARY, STRETCH, SESSION_TIER_LIMITS, SESSION_RISK_LIMIT, STRETCH_FACTOR, sessionLoad, defaultExerciseSets, fatigueTier, loadTier, rankForMuscle, sessionBreakdown, sessionTier, setsByMuscle } from "../src/core/musclemap.ts";
 import { LIB } from "../src/core/library.ts";
 import { PROGRAMS } from "../src/core/programs.ts";
 import tr from "../src/i18n/tr/muscles.ts";
@@ -14,6 +14,7 @@ const M: Record<string, { p: string[]; s: string[] }> = {
   "Barbell Curl": { p: ["Biceps"], s: ["Önkol"] },
 };
 const musclesOf = (n: string) => M[n] || { p: [], s: [] };
+const realW = (ex: string) => ({ ex, p: [], s: [], w: WEIGHTS[ex] || {} });
 
 describe("vücut haritası", () => {
   it("araştırma verisi: hareketler kütüphanede, paylar 0–1, her kasın kanıt grupları ve özeti var", () => {
@@ -56,7 +57,7 @@ describe("vücut haritası", () => {
     const source = (ex: string) => ({ p: [], s: [], w: WEIGHTS[ex] || {} });
     for (const muscle of MUSCLES) {
       const rows = rankForMuscle(muscle, [...allNames], source);
-      const tier = (name: string) => order.indexOf(sessionLoad([{ ex: name, sets: 9 }], source)[muscle].tier);
+      const tier = (name: string) => order.indexOf(sessionLoad([{ ex: name, sets: defaultExerciseSets(name, source) }], source)[muscle].tier);
       for (let i = 1; i < rows.length; i++) {
         const a = rows[i - 1], b = rows[i];
         expect(tier(a.name), muscle).toBeGreaterThanOrEqual(tier(b.name));
@@ -71,6 +72,15 @@ describe("vücut haritası", () => {
     const rows = rankForMuscle("Göğüs", Object.keys(shares), source, { "Çok": 10 });
     expect(rows.map(r => r.name)).toEqual(["Özel", "Çok", "Alfa", "Az", "Beta", "Turuncu", "Bench Press (Barbell)", "Sarı", "Yeşil", "Mavi"]);
     expect(rows.find(r => r.name === "Bench Press (Barbell)")).toMatchObject({ kind: "kanit", group: 0, level: EVIDENCE["Göğüs"][0].level });
+  });
+  it("varsayılan set: en çok 9, mor çıkan harekette mor olmayana kadar azalır", () => {
+    const stretchy = Object.keys(M).concat(Object.keys(WEIGHTS)).find(ex => Object.values(sessionLoad([{ ex, sets: 9 }], realW)).some(r => r.tier === "hasar"));
+    expect(stretchy).toBeTruthy();
+    const n = defaultExerciseSets(stretchy!, realW);
+    expect(n).toBeLessThan(9); expect(n).toBeGreaterThanOrEqual(1);
+    expect(Object.values(sessionLoad([{ ex: stretchy!, sets: n }], realW)).some(r => r.tier === "hasar")).toBe(false);
+    expect(Object.values(sessionLoad([{ ex: stretchy!, sets: n + 1 }], realW)).some(r => r.tier === "hasar")).toBe(true);
+    for (const ex of Object.keys(WEIGHTS)) expect(Object.values(sessionLoad([{ ex, sets: defaultExerciseSets(ex, realW) }], realW)).some(r => r.tier === "hasar"), ex).toBe(false);
   });
   it("tek antrenman kademeleri ve kas başına dağılım", () => {
     expect([0, .99, 1, 2.99, 3, 4.99, 5, 6.99, 7, 8.99, 9, 12.5, 12.51, -1, NaN].map(n => sessionTier(n))).toEqual(["yok", "dusuk", "koruma", "koruma", "minimum", "minimum", "iyi", "iyi", "yuksek", "yuksek", "maksimum", "maksimum", "hasar", "yok", "yok"]);

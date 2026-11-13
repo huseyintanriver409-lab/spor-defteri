@@ -10,7 +10,7 @@ import { programName } from "../core/programs.ts";
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { fmtNum, locale, t } from "../core/i18n.ts";
 import { work } from "../core/training.ts";
-import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, sessionLoad, fatigueTier, loadTier, rankForMuscle, startsRankSection, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MAIN_SHARE, MUSCLE_COMMON, muscleLabel } from "../core/musclemap.ts";
+import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, sessionLoad, defaultExerciseSets, fatigueTier, loadTier, rankForMuscle, startsRankSection, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MAIN_SHARE, MUSCLE_COMMON, muscleLabel } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
 import { equipLabel, equipOf, equipTag, isCardio, isSport, musclesOf, pickableEx, unassignedExercises } from "./exercises.js";
 import { assignmentButton, bindMuscleAssignments } from "./muscleassign.js";
@@ -111,23 +111,25 @@ function miniSymbol(sex, side){
 // Tek hareketin kaslara verdiği uyarı, programdaki ölçekle aynı: pay araştırma verisinden (muscledata.ts WEIGHTS); yalnız kütüphane dışı/kullanıcı hareketlerinde yedek ana 1, yardımcı 0,5.
 // Hareket listesinde ve kartlarda varsayılan 9 set (ana kas maksimum, yardımcılar payına göre) (kartta değiştirilebilir).
 export const EX_SETS = 9;
+// Varsayılan set: en çok 9, mor çıkıyorsa mor olmayana kadar azaltılmış (core/musclemap.ts defaultExerciseSets).
+export function defaultSets(m){ const isName = typeof m === "string"; return defaultExerciseSets(isName ? m : m.ex || "", isName ? musclesOf : () => m, EX_SETS); }
 const RANKED = SESSION_TIERS.map(([k]) => k).reverse();  // hasar → dusuk
-export function exerciseTiers(m, sets = EX_SETS){
+export function exerciseTiers(m, sets = defaultSets(m)){
   const ex = typeof m === "string" ? m : m.ex || "";
   const load = sessionLoad([{ ex, sets }], typeof m === "string" ? musclesOf : () => m);
   return Object.fromEntries(Object.entries(load).map(([muscle, value]) => [muscle, value.tier]));
 }
 // kademeye göre gruplu: [[kademe, ad, kaslar], …] en yüksek kademe önce
-export const exerciseLevels = (m, sets = EX_SETS) => { const t = exerciseTiers(m, sets);
+export const exerciseLevels = (m, sets = defaultSets(m)) => { const t = exerciseTiers(m, sets);
   return RANKED.map(k => [k, LABEL["g-" + k], Object.keys(t).filter(x => t[x] === k)]).filter(([, , ms]) => ms.length); };
 // bir yüzün bölgelerine kademe rengi (CSS değişkeniyle, çizim <defs>'te bir kez); birden çok kaslı bölge en yükseğini alır
-const paint = (sex, side, m, sets = EX_SETS) => { const t = exerciseTiers(m, sets);
+const paint = (sex, side, m, sets = defaultSets(m)) => { const t = exerciseTiers(m, sets);
   return regionParts(sex, side).filter(([, , ms]) => ms).map(([k, , ms]) => {
     const best = ms.map(x => t[x]).filter(Boolean).sort((a, b) => RANKED.indexOf(a) - RANKED.indexOf(b))[0];
     return best ? `--r-${k}:var(--g-${best})` : "";
   }).filter(Boolean).join(";"); };
 // ekran okuyucu için kısa özet: kademe adı + kaslar (görünür metin eklemez)
-const levelsLabel = (m, sets = EX_SETS) => exerciseLevels(m, sets).map(([, l, ms]) => `${l}: ${ms.map(muscleLabel).join(", ")}`).join("; ");
+const levelsLabel = (m, sets = defaultSets(m)) => exerciseLevels(m, sets).map(([, l, ms]) => `${l}: ${ms.map(muscleLabel).join(", ")}`).join("; ");
 export function miniMap(name){
   const source = musclesOf(name); if (!Object.values(weightsOf(source)).some(w => w > 0)) return "";
   const m = { ...source, p: source.p.length ? source.p : source.s };
@@ -331,17 +333,16 @@ function useExercise(n){
 // Hareketler'deki haritada kasa dokununca: o kasın hareketleri tam ekran, aşağı kaydırarak birer birer.
 // Her kartta hareketin önden ve arkadan çalıştırdığı kaslar, kaç set yapıldığına göre kademe rengiyle boyalı;
 // Renklerin anlamı yazılı (Minimum gelişim: Göğüs…). Set sayısı kartta değiştirilir, renkler hemen güncellenir.
-let reelSets = EX_SETS;
 const levelLegend = (mm, sets) => exerciseLevels(mm, sets).map(([k, l, ms]) =>
   `<span><i data-t="g-${k}" aria-hidden="true"></i><b>${k === "hasar" ? "⚠ " : ""}${l}</b><em>${esc(ms.map(muscleLabel).join(", "))}</em></span>`).join("");
 const youtube = name => `https://www.youtube.com/results?search_query=${encodeURIComponent(name + " exercise form")}`;
-const reelCardHTML = (name, tags, hint = "") => { const mm = musclesOf(name), sex = bodySex(); return `<section class="reel-card" data-ex="${esc(name)}">
-      <div class="reel-figs">${reelFigs(mm, sex)}</div>
+const reelCardHTML = (name, tags, hint = "") => { const mm = musclesOf(name), sex = bodySex(), sets = defaultSets(mm); return `<section class="reel-card" data-ex="${esc(name)}" data-sets-n="${sets}">
+      <div class="reel-figs">${reelFigs(mm, sex, sets)}</div>
       <div>
         <div class="row" style="gap:6px;margin-bottom:8px">${tags}</div>
         <h3 class="reel-name">${esc(name)}</h3>
-        <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}" aria-label="${t("bodymap.set_less")}" data-i18n-aria="bodymap.set_less">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: reelSets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}" aria-label="${t("bodymap.set_more")}" data-i18n-aria="bodymap.set_more">${ic("plus")}</button></div>
-        <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
+        <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}" aria-label="${t("bodymap.set_less")}" data-i18n-aria="bodymap.set_less">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: sets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}" aria-label="${t("bodymap.set_more")}" data-i18n-aria="bodymap.set_more">${ic("plus")}</button></div>
+        <div class="reel-legend">${levelLegend(mm, sets)}</div>
         <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}${t("bodymap.how_to")}</a>
           <button class="btn primary" data-use="${esc(name)}">${ic("circle-plus")}${state.live ? t("bodymap.add_to_workout") : t("bodymap.save")}</button></div>
         ${hint}
@@ -361,7 +362,18 @@ function reelViewBox(sex, side){
   reelBounds.set(id, box);
   return box;
 }
-const reelFigs = (mm, sex) => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${reelViewBox(sex, side).join(" ")}" width="${reelViewBox(sex, side)[2]}" height="${reelViewBox(sex, side)[3]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${esc((side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets))}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
+const reelFigs = (mm, sex, sets) => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${reelViewBox(sex, side).join(" ")}" width="${reelViewBox(sex, side)[2]}" height="${reelViewBox(sex, side)[3]}" style="${paint(sex, side, mm, sets)}" role="img" aria-label="${esc((side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, sets))}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
+// Set sayısı değişince yalnız o kartın resmi, renk listesi ve etiketi yeniden boyanır (her kart kendi varsayılanından başlar).
+function bindReelSets(el, sex){
+  el.querySelectorAll("[data-sets]").forEach(b => b.onclick = () => {
+    const card = b.closest(".reel-card"), mm = musclesOf(card.dataset.ex);
+    const n = Math.min(15, Math.max(1, (+card.dataset.setsN || EX_SETS) + +b.dataset.sets));
+    card.dataset.setsN = n;
+    card.querySelector("[data-n]").textContent = t("bodymap.sets_n", { n });
+    card.querySelectorAll(".reel-fig").forEach(f => { f.setAttribute("style", paint(sex, f.dataset.side, mm, n)); f.setAttribute("aria-label", (f.dataset.side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, n)); });
+    card.querySelector(".reel-legend").innerHTML = levelLegend(mm, n);
+  });
+}
 export function openMuscleReel(m, alts = [m]){
   const counts = {}; state.entries.forEach(e => counts[e.ex] = (counts[e.ex] || 0) + 1);
   const names = discoverableEx().filter(e => e.group !== YOGA).map(e => e.name);
@@ -385,15 +397,7 @@ export function openMuscleReel(m, alts = [m]){
   el.querySelectorAll("[data-alt]").forEach(b => b.onclick = () => openMuscleReel(b.dataset.alt, alts));
   el.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { close(); useExercise(b.dataset.use); });
   el.querySelectorAll("[data-pstart]").forEach(b => b.onclick = () => { close(); startWorkout(b.dataset.pstart); });
-  // set sayısı değişince o kartın resmi ve açıklaması yeniden boyanır (sonraki kartlar da aynı sayıyla açılır)
-  el.querySelectorAll("[data-sets]").forEach(b => b.onclick = () => {
-    reelSets = Math.min(15, Math.max(1, reelSets + +b.dataset.sets));
-    const card = b.closest(".reel-card"), mm = musclesOf(card.dataset.ex);
-    card.querySelector("[data-n]").textContent = t("bodymap.sets_n", { n: reelSets });
-    card.querySelectorAll(".reel-fig").forEach(f => f.setAttribute("style", paint(sex, f.dataset.side, mm, reelSets)));
-    card.querySelector(".reel-legend").innerHTML = levelLegend(mm, reelSets);
-    card.querySelectorAll(".reel-fig").forEach(f => f.setAttribute("aria-label", (f.dataset.side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets)));
-  });
+  bindReelSets(el, sex);
 }
 
 // Hareketler listesinde bir harekete dokununca: o hareketin tam ekran sayfası (resim, kademe renkleri, set sayısı, Kaydet)
@@ -407,12 +411,5 @@ export function openExercisePage(name){
   openLayer("reel", () => { el.classList.add("hidden"); document.documentElement.classList.remove("reel-open"); });
   el.querySelector("[data-rclose]").onclick = close;
   el.querySelectorAll("[data-use]").forEach(b => b.onclick = () => { close(); useExercise(b.dataset.use); });
-  const sex = bodySex();
-  el.querySelectorAll("[data-sets]").forEach(b => b.onclick = () => {
-    reelSets = Math.min(15, Math.max(1, reelSets + +b.dataset.sets));
-    const card = b.closest(".reel-card"), mm = musclesOf(card.dataset.ex);
-    card.querySelector("[data-n]").textContent = t("bodymap.sets_n", { n: reelSets });
-    card.querySelectorAll(".reel-fig").forEach(f => { f.setAttribute("style", paint(sex, f.dataset.side, mm, reelSets)); f.setAttribute("aria-label", (f.dataset.side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets)); });
-    card.querySelector(".reel-legend").innerHTML = levelLegend(mm, reelSets);
-  });
+  bindReelSets(el, bodySex());
 }
