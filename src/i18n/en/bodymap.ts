@@ -50,8 +50,6 @@ export default {
   how_online: "How to do it? (internet required)",
   add: "Add",
   add_named: "Add: {name}",
-  assist_prefix: "Trains this muscle as an assist: ",
-  share_of: "1 set = {n} sets for {muscle}",
   from_move: "From this exercise",
   set_less: "One set less",
   set_more: "One set more",

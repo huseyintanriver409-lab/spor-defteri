@@ -10,9 +10,9 @@ import { programName } from "../core/programs.ts";
 import { mondayOf, shortDate, ymd } from "../core/dates.ts";
 import { fmtNum, locale, t } from "../core/i18n.ts";
 import { work } from "../core/training.ts";
-import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, sessionLoad, defaultExerciseSets, fatigueTier, loadTier, rankForMuscle, startsRankSection, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MAIN_SHARE, MUSCLE_COMMON, muscleLabel } from "../core/musclemap.ts";
+import { FATIGUE_TIERS, LOAD_TIERS, MUSCLES, SESSION_TIERS, sessionLoad, defaultExerciseSets, fatigueTier, loadTier, rankForMuscle, startsRankSection, sessionBreakdown, sessionTier, setsByMuscle, weightsOf, EVIDENCE, SUMMARY, MUSCLE_COMMON, muscleLabel } from "../core/musclemap.ts";
 import { $, YOGA, esc, fmt, ic, save, state } from "./store.js";
-import { equipLabel, equipOf, equipTag, isCardio, isSport, musclesOf, pickableEx, unassignedExercises } from "./exercises.js";
+import { equipTag, isSport, musclesOf, unassignedExercises } from "./exercises.js";
 import { assignmentButton, bindMuscleAssignments } from "./muscleassign.js";
 import { closeSheet, openSheet, segState, sheetHead, showTab } from "./ui.js";
 import { resetEditor } from "./log.js";
@@ -151,7 +151,7 @@ export const legend = (kind, paintedTiers) => {
   const visible = kind === "session" ? new Set(visibleSessionTiers(paintedTiers).map(k => "g-" + k)) : null;
   const tiers = KINDS[kind].filter(([k]) => !visible || visible.has(k));
   if (!tiers.length) return "";
-  if (kind === "session") return `<div class="bm-legend" data-legend-kind="session">${tiers.map(([k]) => `<span><i data-t="${k}" aria-hidden="true"></i>${esc(k === "g-hasar" ? mt("session_stretch") : sessionTierRange(k.slice(2)))}</span>`).join("")}</div>`;
+  if (kind === "session") return `<div class="bm-legend" data-legend-kind="session">${tiers.map(([k]) => `<span aria-label="${esc(mt("session_" + k.slice(2)))}"><i data-t="${k}" aria-hidden="true"></i>${esc(k === "g-hasar" ? mt("session_stretch") : sessionTierRange(k.slice(2)))}</span>`).join("")}</div>`;
   return `<div class="bm-legend">${tiers.map(([k, l]) => {
     return `<span aria-label="${esc(l)}"><i data-t="${k}" aria-hidden="true"></i>${l}</span>`;
   }).join("")}</div>` + infoTip(tiers.map(([, l, d]) => `<div class="small"><b>${l}:</b> ${d}</div>`).join(""));
@@ -176,7 +176,6 @@ const summaryHTML = (m, cls) => { if (!SUMMARY[m]) return ""; const [a, b] = fir
 
 export const fatigueTiers = (R = recoveryMap()) => Object.fromEntries(MUSCLES.map(m => [m, fatigueTier(R[m])]));
 export const loadTiers = ms => Object.fromEntries(MUSCLES.map(m => [m, "y-" + loadTier(ms[m] || 0)]));
-export const sessionTiers = ms => Object.fromEntries(MUSCLES.map(m => [m, "g-" + sessionTier(ms[m] || 0)]));
 // bu haftanın etkili setleri (Pazartesiden bugüne)
 export function weekSets(){
   const a = ymd(mondayOf(new Date()));

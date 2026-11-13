@@ -71,7 +71,6 @@ export const SESSION_TIER_LIMITS = [1, 3, 5, 7, 9] as const;
 export const STRETCH_FACTOR = 1.5;
 // YORUM: kaynaksız; 12,5 risk eşiği ve 1,5 esneme çarpanı uygulama kalibrasyonu, hasar iddiası yok.
 export const SESSION_RISK_LIMIT = 12.5;
-export const SESSION_TOO_MUCH = SESSION_RISK_LIMIT;
 const SESSION_EPSILON = 1e-9;
 export function sessionTier(sets: number, risk = sets): SessionTier {
   if (!(sets > 0)) return "yok";

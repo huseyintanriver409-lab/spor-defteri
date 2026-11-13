@@ -48,4 +48,4 @@ it("focus touch overlays have at least 44px without resizing visible controls", 
  expect(css).toContain('.f-note,#fManual{position:relative}');
  expect(css).toMatch(/.f-note::after,#fManual::after{[^}]*min-width:44px;min-height:44px/);
 });
-it("service worker uses v88", () => { expect(sw).toContain("v88"); expect(sw).not.toContain("v87"); });
+it("service worker uses v89", () => { expect(sw).toContain("v89"); expect(sw).not.toContain("v88"); });

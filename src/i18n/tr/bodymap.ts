@@ -50,8 +50,6 @@ export default {
   how_online: "Nasıl yapılır? (internet gerekir)",
   add: "Ekle",
   add_named: "Ekle: {name}",
-  assist_prefix: "Bu kası yardımcı olarak çalıştırır: ",
-  share_of: "1 set = {n} set {muscle}",
   from_move: "Bu hareketten",
   set_less: "Bir set az",
   set_more: "Bir set fazla",

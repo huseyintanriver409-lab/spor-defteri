@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { rankForMuscle } from "../src/core/musclemap.ts";
+import { EQUIPMENT_IDS } from "../src/core/equipment.ts";
 import { LIB } from "../src/core/library.ts";
 
 vi.mock("../src/app/store.js", async () => {
@@ -64,6 +65,14 @@ describe("equipment discovery integration", () => {
     expect(root.html).toContain('<span class="tag">3</span>');
     expect(root.buttons.filter(b => /aria-pressed="true"/.test(b.attrs))).toHaveLength(3);
     expect(root.buttons.find(b => b.dataset.equipment === "band").attrs).toContain('aria-pressed="true"');
+  });
+  it("labels all selected equipment as all only when the all option is enabled", () => {
+    state.prefs.equip = [...EQUIPMENT_IDS];
+    const root = new Buttons(); mountEquipment(root, { expanded: true });
+    expect(root.html).toContain('<span class="tag">Tümü</span>');
+    expect(root.querySelector("[data-equipment-all]").attrs).toContain('aria-pressed="true"');
+    mountEquipment(root, { all: false });
+    expect(root.html).toContain('<span class="tag">' + EQUIPMENT_IDS.length + '</span>');
   });
   it("offers one empty-state action that opens the shared chooser", () => {
     const root = new Buttons(); root.innerHTML = equipmentEmptyHTML();
