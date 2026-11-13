@@ -322,12 +322,11 @@ export function openMuscleReel(m, alts = [m]){
   const progs = state.programs.map(p => ({ p, sets: (sessionBreakdown(programItems(p).filter(i => i.ex), musclesOf).find(x => x.muscle === m) || { sets: 0 }).sets }))
     .filter(x => x.sets > 0).sort((a, b) => b.sets - a.sets);
   const figs = mm => ["front", "back"].map(side => `<svg class="reel-fig" data-side="${side}" viewBox="${ART[sex][side][0]}" style="${paint(sex, side, mm, reelSets)}" role="img" aria-label="${esc((side === "front" ? t("bodymap.front") : t("bodymap.back")) + ": " + levelsLabel(mm, reelSets))}"><use href="#${miniSymbol(sex, side)}"/></svg>`).join("");
-  const cards = list.map((x, i) => { const { name, kind } = x, mm = musclesOf(name); return `<section class="reel-card" data-ex="${esc(name)}">
+  const cards = list.map((x, i) => { const { name } = x, mm = musclesOf(name); return `<section class="reel-card" data-ex="${esc(name)}">
       <div class="reel-figs">${figs(mm)}</div>
       <div>
         <div class="row" style="gap:6px;margin-bottom:8px">${kindTag(x, true)}${equipTag(name)}<span class="grow"></span><span class="muted small">${i + 1} / ${list.length}</span></div>
         <h3 class="reel-name">${esc(name)}</h3>
-        ${x.w < .999 ? `<p class="reel-note muted">${kind === "yardimci" ? t("bodymap.assist_prefix") : ""}${t("bodymap.share_of", { n: share(x.w), muscle: esc(muscleLabel(m)) })}</p>` : ""}
         <div class="reel-sets"><span class="muted small">${t("bodymap.from_move")}</span><button class="iconbtn" data-sets="-1" title="${t("bodymap.set_less")}" aria-label="${t("bodymap.set_less")}" data-i18n-aria="bodymap.set_less">${ic("minus")}</button><b data-n>${t("bodymap.sets_n", { n: reelSets })}</b><button class="iconbtn" data-sets="1" title="${t("bodymap.set_more")}" aria-label="${t("bodymap.set_more")}" data-i18n-aria="bodymap.set_more">${ic("plus")}</button></div>
         <div class="reel-legend">${levelLegend(mm, reelSets)}</div>
         <div class="row reel-btns"><a class="btn" target="_blank" rel="noopener" href="${youtube(name)}">${ic("circle-play")}${t("bodymap.how_to")}</a>
