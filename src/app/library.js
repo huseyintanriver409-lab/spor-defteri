@@ -14,7 +14,7 @@ import { mergeExercise } from "../core/merge.ts";
 import { refreshDatalist, resetEditor } from "./log.js";
 import { liveItems, openFocus } from "./live.js";
 import { chart } from "./stats.js";
-import { bindBodyMap, bodyMap, legend, miniMap, openExercisePage } from "./bodymap.js";
+import { bindBodyMap, bodyMap, miniMap, openExercisePage } from "./bodymap.js";
 import { MUSCLES, muscleSearchText } from "../core/musclemap.ts";
 import { assignmentButton, bindMuscleAssignments, openMuscleAssignment } from "./muscleassign.js";
 
@@ -23,7 +23,7 @@ export function groups(){ return [...Object.keys(LIB), "Diğer"].filter(groupSho
 let phase = "all";
 export function renderLib(){
   $("#libMapCard").classList.toggle("hidden", !liftOn());
-  if (liftOn() && !$("#libMap").innerHTML) { $("#libMap").innerHTML = bodyMap(Object.fromEntries(MUSCLES.map(m => [m, "g-yok"])), { large: true, plain: true, toggle: true }) + legend("session"); bindBodyMap($("#libMap")); }
+  if (liftOn() && !$("#libMap").innerHTML) { $("#libMap").innerHTML = bodyMap(Object.fromEntries(MUSCLES.map(m => [m, "g-yok"])), { large: true, plain: true, toggle: true }); bindBodyMap($("#libMap")); }
   const q = searchFold($("#libSearch").value.trim());
   const ex = allEx().map(e => ({ ...e, m: musclesOf(e.name), eq: equipOf(e.name) })).filter(e => {
     if (!equipmentAllowed(e.name)) return false;

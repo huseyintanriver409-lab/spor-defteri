@@ -1,3 +1,4 @@
+import { visibleSessionTiers, sessionTierRange } from "../core/session-legend.ts";
 import { programItems } from "../core/program-data.ts";
 import { discoverableEx } from "./exercises.js";
 import { bindEquipmentEmpty, equipmentEmptyHTML, openEquipment } from "./equipment.js";
@@ -58,11 +59,12 @@ function regionParts(sex, side){
 // Kadın ve erkek çizimlerinin viewBox oranı farklı: aynı boyda görünsünler diye genişlik orana göre daralır (model değişince ölçek kaymaz).
 const vbRatio = vb => { const [, , w, h] = vb.split(/\s+/).map(Number); return w / h; };
 const MAX_RATIO = Math.max(...Object.values(ART).flatMap(a => Object.values(a).map(([vb]) => vbRatio(vb))));
-function figure(side, tiers, caption){
+function figure(side, tiers, caption, paintedTiers){
   const [vb] = ART[bodySex()][side], order = regionParts(bodySex(), side), wPct = (vbRatio(vb) / MAX_RATIO * 100).toFixed(2);
   const paths = order.map(([, ds, ms]) => {
     if (!ms) return ds.map(d => `<path class="bm-base" d="${d}"/>`).join("");
     const tier = ms.map(m => tiers[m] || "yok").reduce((x, y) => RANK[y] > RANK[x] ? y : x);
+    if (ds.length) paintedTiers?.add(tier);
     const title = ms.map(m => esc(muscleLabel(m)) + (LABEL[tiers[m]] ? " · " + LABEL[tiers[m]] : "")).join(", ");
     return ds.map(d => `<path d="${d}" aria-label="${title}" data-m="${esc(ms.join("|"))}" data-t="${tier}"><title>${title}</title></path>`).join("");
   }).join("");
@@ -89,8 +91,8 @@ function placeSorenessIcons(){
 // toggle: model düğmesi (sayfa/kart başına en çok bir; küçük/önizleme/plain haritalarda verilmez)
 export const modelToggle = () => { const f = bodySex() === "f", cur = t(f ? "html.gender_female" : "html.gender_male"), label = `${t("html.body_model_toggle")} (${t("html.body_model_now", { model: cur })})`;
   return `<button type="button" class="iconbtn bm-toggle" data-body-toggle aria-pressed="${f}" title="${esc(label)}" aria-label="${esc(label)}"><svg viewBox="0 0 24 24" class="bm-swap" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></svg></button>`; };
-export const bodyMap = (tiers, { tap = true, small = false, large = false, plain = false, toggle = false } = {}) =>
-  `<div data-tiers="${esc(JSON.stringify(tiers))}" class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}${large ? " large" : ""}"${plain ? " data-plain" : ""}>${toggle ? modelToggle() : ""}${figure("front", tiers, t("bodymap.front"))}${figure("back", tiers, t("bodymap.back"))}</div>`;
+export const bodyMap = (tiers, { tap = true, small = false, large = false, plain = false, toggle = false, paintedTiers } = {}) =>
+  `<div data-tiers="${esc(JSON.stringify(tiers))}" class="bodymap${tap ? " tap" : ""}${small ? " small" : ""}${large ? " large" : ""}"${plain ? " data-plain" : ""}>${toggle ? modelToggle() : ""}${figure("front", tiers, t("bodymap.front"), paintedTiers)}${figure("back", tiers, t("bodymap.back"), paintedTiers)}</div>`;
 // Hareket listesindeki küçük kas resmi: çizim bir kez <defs> içinde <g> olarak eklenir, her resim yalnız renkleri CSS
 // değişkeniyle verir; resmin viewBox'ı çizimin ilgili yarısını keser (--r-<bölge>). Ana kas koyu, yardımcı açık; ana kasların çoğu hangi yüzdeyse o yüz çizilir.
 const miniDone = new Set();
@@ -142,9 +144,15 @@ export function miniMap(name){
 const infoTip = inner => `<details class="ev-help i-help"><summary class="muted small" aria-label="${t("bodymap.help_aria")}">${ic("info")}</summary>${inner}</details>`;
 const mt = k => t("muscles." + k);
 const scaleLabel = (k, l) => k.startsWith("g-") ? mt("session_short_" + k.slice(2)) : l;
-export const legend = kind => `<div class="bm-legend">${KINDS[kind]
-  .map(([k, l]) => `<span aria-label="${esc(l)}"><i data-t="${k}" aria-hidden="true"></i>${k === "g-hasar" ? "⚠ " : ""}${scaleLabel(k, l)}</span>`).join("")}</div>`
-  + infoTip(KINDS[kind].map(([, l, d]) => `<div class="small"><b>${l}:</b> ${d}</div>`).join(""));
+export const legend = (kind, paintedTiers) => {
+  const visible = kind === "session" ? new Set(visibleSessionTiers(paintedTiers).map(k => "g-" + k)) : null;
+  const tiers = KINDS[kind].filter(([k]) => !visible || visible.has(k));
+  if (!tiers.length) return "";
+  return `<div class="bm-legend">${tiers.map(([k, l]) => {
+    const range = kind === "session" ? sessionTierRange(k.slice(2)) : "";
+    return `<span aria-label="${esc(l + (range ? " " + range : ""))}"><i data-t="${k}" aria-hidden="true"></i>${k === "g-hasar" ? "⚠ " : ""}${scaleLabel(k, l)}${range ? `<small class="bm-range">${esc(range)}</small>` : ""}</span>`;
+  }).join("")}</div>` + infoTip(tiers.map(([, l, d]) => `<div class="small"><b>${l}:</b> ${d}</div>`).join(""));
+};
 // ilk cümle görünür, gerisi "Ayrıntı" arkasında ("vb.", "ör." gibi kısaltmalarda bölünmez)
 const ABBR = /(?:vb|vs|ör|bkz|yak|sn|dk)\.$/i;
 function firstSentence(text){
@@ -247,10 +255,11 @@ export function openRecoveryAnalysis(focus){
 export function sessionLoadHTML(items, { tap = false, small = true } = {}){
   const list = items.filter(i => i.ex && isSport(i.ex)).map(i => ({ ex: i.ex, sets: i.sets ?? EX_SETS }));
   const load = sessionLoad(list, musclesOf), missing = unassignedExercises(list);
+  const paintedTiers = new Set();
   if (!Object.keys(load).length && !missing.length) return "";
   const heavy = Object.entries(load).filter(([, r]) => r.tier === "hasar").map(([m]) => muscleLabel(m));
   return `<div data-session-load="${esc(JSON.stringify(list))}" data-tap="${tap}" data-small="${small}">`
-    + (Object.keys(load).length ? bodyMap(Object.fromEntries(Object.entries(load).map(([m, r]) => [m, "g-" + r.tier])), { tap, small }) + legend("session") : "")
+    + (Object.keys(load).length ? bodyMap(Object.fromEntries(Object.entries(load).map(([m, r]) => [m, "g-" + r.tier])), { tap, small, paintedTiers }) + legend("session", paintedTiers) : "")
     + (heavy.length ? `<p class="muscle-risk" role="status">⚠ ${esc(t("muscles.session_risk", { muscles: heavy.join(", ") }))}</p>` : "")
     + (missing.length ? `<div class="muscle-unassigned row"><span class="grow">${esc(t(missing.length === 1 ? "muscles.unassigned_one" : "muscles.unassigned_count", { n: missing.length }))}</span>${assignmentButton(missing[0])}</div>` : "")
     + `</div>`;

@@ -258,7 +258,6 @@ button.chip{border:0;min-height:44px;color:var(--text);font:inherit;font-size:13
 :is(.bm-m path,.bm-legend i,.bm-dot,.reel-legend i,.reel-scale i)[data-t=g-hasar]{fill:var(--g-hasar);background:var(--g-hasar)}
 :is(.bm-m path,.bm-legend i,.bm-dot)[data-t=sec]{fill:var(--accent-line);background:var(--accent-line)}
 .bm-legend{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:12px;font-size:12.5px;font-weight:650}
-.bm-legend:has(span:nth-child(6):last-child){display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between}
 .bm-legend span{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .bm-legend small{flex-basis:100%;margin-left:17px;margin-top:-6px;color:var(--muted);font-weight:450;font-size:12px}
 .bm-legend i,.bm-dot{width:10px;height:10px;border-radius:0;flex:none;display:inline-block}
@@ -714,3 +713,5 @@ body.focus-open .fab,body.has-livebar .fab{display:none}
 .equipment-chip:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
 .live-muscle-row{justify-content:center}
+
+.bm-legend small.bm-range{flex-basis:auto;margin:0;font-size:11px}
