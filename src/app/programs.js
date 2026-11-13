@@ -1,3 +1,4 @@
+import { openLayer, closeLayer } from "./layers.js";
 import { programItems } from "../core/program-data.ts";
 import { programGroup } from "../core/weekly-load.ts";
 import { programWeek, renderWeeklyMap } from "./weekly-map.js";
@@ -84,7 +85,7 @@ export function openProgramMap(p){
   const body = openSheet(sheetHead(programName(p)), "");
   let selected = -1;
   const render = () => renderWeeklyMap(body, programWeek(p.id), ids.map((id, i) => ({ name: names[i], items: volumePlan(state.programs.find(p => p.id === id)).items })), selected,
-    value => { selected = value; render(); }, { tap: true, small: false });
+    value => { selected = value; render(); }, { small: false });
   render();
 }
 // Program yazarken: o anki hareketlerin kas yükü
@@ -183,6 +184,7 @@ export function openCalModal(p){
   $("#calDate").value = planned ? planned.date : ymd(new Date());
   $("#calTime").value = planned ? planned.time : "19:00";
   $("#calModal").classList.remove("hidden");
+  openLayer("calModal", () => { $("#calModal").classList.add("hidden"); calProg = null; });
 }
 // Takvim etkinliği başlığı ve açıklaması: hareketler, setler ve toplam hacim
 export function dayText(list){
@@ -320,13 +322,13 @@ $("#pSave").onclick = () => {
   else state.programs.push({ id: uid(), name, selectedDate: ymd(new Date()), items });
   save(); refreshDatalist(); resetProgEditor(); renderProg(); toast(t("programs.saved"), "check");
 };
-$("#calNo").onclick = () => $("#calModal").classList.add("hidden");
-$("#calModal").onclick = e => { if (e.target.id === "calModal") $("#calModal").classList.add("hidden"); };
+$("#calNo").onclick = () => closeLayer("calModal");
+$("#calModal").onclick = e => { if (e.target.id === "calModal") closeLayer("calModal"); };
 $("#calGo").onclick = () => {
   if (!$("#calDate").value) return toast(t("programs.date_req"));
   const s = at($("#calDate").value, $("#calTime").value), e = new Date(s.getTime() + (state.plan.dur||60)*60000);
   gcal(t("programs.workout_title", { name: programName(calProg) }), progDetails(calProg), dt(s) + "/" + dt(e));
-  $("#calModal").classList.add("hidden");
+  closeLayer("calModal");
 };
 $("#dayCal").onclick = () => calDay($("#logDate").value);
 $("#planDur").onchange = () => { state.plan.dur = Math.max(10, parseInt($("#planDur").value)||60); save(); renderPlan(); };

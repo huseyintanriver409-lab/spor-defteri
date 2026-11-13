@@ -2,6 +2,7 @@ export default {
   "title": "Ekipman",
   "requirement": "Gerekli ekipman",
   "change": "Ekipmanı değiştir",
+  "all": "Tümü",
   "clear": "Temizle",
   "remove_filter": "Filtreyi kaldır",
   "barbell": "Barbell",

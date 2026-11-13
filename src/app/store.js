@@ -1,3 +1,4 @@
+import { openLayer, closeLayer } from "./layers.js";
 import { DEFAULTS, stampChanges as stampState, takeSnapshot as snapshotOf, withDefaults } from "../core/schema.ts";
 import { calSoon } from "./cloud.js";
 import { fmtNum, t } from "../core/i18n.ts";
@@ -35,11 +36,14 @@ export function save(){
 // Tarayıcının confirm() penceresi bazı uygulama içi görüntüleyicilerde engellenir; bu yüzden kendi onay penceremiz
 // choices: [{ label, value, primary? }]; dışarı tıklamak null döndürür
 export function choose(msg, choices){
+  closeLayer("modal");
   return new Promise(res => {
     $("#modalMsg").textContent = msg;
     $("#modalBtns").innerHTML = `<span class="grow"></span>` + choices.map((c,i) => `<button class="btn${c.primary ? " primary" : ""}" data-i="${i}">${esc(c.label)}</button>`).join("");
     $("#modal").classList.remove("hidden");
-    const done = v => { $("#modal").classList.add("hidden"); res(v); };
+    let result = null;
+    openLayer("modal", () => { $("#modal").classList.add("hidden"); res(result); });
+    const done = v => { result = v; closeLayer("modal"); };
     $("#modalBtns").querySelectorAll("button").forEach(b => b.onclick = () => done(choices[+b.dataset.i].value));
     $("#modal").onclick = e => { if (e.target.id === "modal") done(null); };
   });

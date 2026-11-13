@@ -47,9 +47,30 @@ describe("vücut haritası", () => {
   it("sıralama: önce kanıt grupları (eşit seçenekler), sonra ana, sonra yardımcı (payı büyük önce)", () => {
     const r = rankForMuscle("Göğüs", Object.keys(M), musclesOf, { "Dumbbell Fly": 3 });
     expect(r.map(x => [x.name, x.kind])).toEqual([
-      ["Bench Press (Barbell)", "kanit"], ["Dumbbell Fly", "kanit"], ["Cable Crossover", "kanit"], ["Close-Grip Bench Press", "yardimci"],
+      ["Dumbbell Fly", "kanit"], ["Bench Press (Barbell)", "kanit"], ["Cable Crossover", "kanit"], ["Close-Grip Bench Press", "yardimci"],
     ]);
-    expect(r[0].level).toBe(EVIDENCE["Göğüs"][0].level);
+    expect(r[1].level).toBe(EVIDENCE["Göğüs"][0].level);
+  });
+  it("all muscles descend by actual card tier and preserve evidence order within tiers", () => {
+    const order = ["yok", "dusuk", "koruma", "minimum", "iyi", "yuksek", "maksimum", "hasar"];
+    const source = (ex: string) => ({ p: [], s: [], w: WEIGHTS[ex] || {} });
+    for (const muscle of MUSCLES) {
+      const rows = rankForMuscle(muscle, [...allNames], source);
+      const tier = (name: string) => order.indexOf(sessionLoad([{ ex: name, sets: 9 }], source)[muscle].tier);
+      for (let i = 1; i < rows.length; i++) {
+        const a = rows[i - 1], b = rows[i];
+        expect(tier(a.name), muscle).toBeGreaterThanOrEqual(tier(b.name));
+        if (tier(a.name) === tier(b.name))
+          expect(a.group ?? Infinity, muscle).toBeLessThanOrEqual(b.group ?? Infinity);
+      }
+    }
+  });
+  it("tier precedes evidence; usage and Turkish name precede share within a tier", () => {
+    const shares: Record<string, number> = { "Bench Press (Barbell)": .5, "Özel": 1, "Az": .8, "Çok": .79, "Beta": .79, "Alfa": .78, "Mavi": .1, "Yeşil": .2, "Sarı": .4, "Turuncu": .6 };
+    const source = (ex: string) => ({ p: [], s: [], w: { "Göğüs": shares[ex] } });
+    const rows = rankForMuscle("Göğüs", Object.keys(shares), source, { "Çok": 10 });
+    expect(rows.map(r => r.name)).toEqual(["Özel", "Çok", "Alfa", "Az", "Beta", "Turuncu", "Bench Press (Barbell)", "Sarı", "Yeşil", "Mavi"]);
+    expect(rows.find(r => r.name === "Bench Press (Barbell)")).toMatchObject({ kind: "kanit", group: 0, level: EVIDENCE["Göğüs"][0].level });
   });
   it("tek antrenman kademeleri ve kas başına dağılım", () => {
     expect([0, .99, 1, 2.99, 3, 4.99, 5, 6.99, 7, 8.99, 9, 12.5, 12.51, -1, NaN].map(n => sessionTier(n))).toEqual(["yok", "dusuk", "koruma", "koruma", "minimum", "minimum", "iyi", "iyi", "yuksek", "yuksek", "maksimum", "maksimum", "hasar", "yok", "yok"]);

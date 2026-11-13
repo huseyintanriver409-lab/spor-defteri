@@ -2,6 +2,7 @@ export default {
   "title": "Equipment",
   "requirement": "Required equipment",
   "change": "Change equipment",
+  "all": "All",
   "clear": "Clear",
   "remove_filter": "Remove filter",
   "barbell": "Barbell",

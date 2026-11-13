@@ -1,3 +1,4 @@
+import { openLayer, closeLayer } from "./layers.js";
 import { bodyMap, sessionLoadHTML } from "./bodymap.js";
 import { programWeek, renderWeeklyMap } from "./weekly-map.js";
 import { assignmentButton, bindMuscleAssignments } from "./muscleassign.js";
@@ -53,9 +54,11 @@ export const workDone = it => state.live?.sessionId
 export function openFocus(){
   if (!state.live) return;
   document.body.classList.add("focus-open"); $("#focus").classList.remove("hidden");
+  openLayer("focus", dismissFocus);
   renderFocus(); keepAwake(true); renderLiveBar();
 }
-export function closeFocus(){ document.body.classList.remove("focus-open"); $("#focus").classList.add("hidden"); renderLiveBar(); refreshAll(); }
+export function closeFocus(){ closeLayer("focus"); }
+function dismissFocus(){ document.body.classList.remove("focus-open"); $("#focus").classList.add("hidden"); renderLiveBar(); refreshAll(); }
 export function suggestFor(it){
   // önceki seansa göre kilo/tekrar önerisi ve kademeli yüklenme
   const today = state.live ? state.live.date : ymd(new Date()), c = isCardio(it.ex);

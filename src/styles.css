@@ -372,18 +372,21 @@ summary span{color:var(--muted);font-weight:500}
 .exitem .more .lv b{font-weight:700;color:var(--text)}
 .reel{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
 html.reel-open,html.reel-open body{overflow:hidden}
-.reel-head{display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 12px 4px}
-.reel-head h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.reel-head{flex:none;box-sizing:border-box;height:calc(58px + env(safe-area-inset-top));display:flex;align-items:center;gap:6px;padding:calc(10px + env(safe-area-inset-top)) 12px 4px}
+.reel-head h2{min-width:0;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em}
 .reel-alts{padding:0 16px 4px;margin:0}
-.reel-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;scroll-snap-type:y mandatory;overscroll-behavior:contain}
-.reel-card{min-height:100%;box-sizing:border-box;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;gap:14px;padding:6px 20px calc(18px + env(safe-area-inset-bottom))}
-.reel-figs{flex:none;height:clamp(300px,56vh,560px);display:flex;justify-content:center;align-items:center;gap:2%}
-.reel-fig{height:100%;max-width:48%;stroke:var(--bg);stroke-width:1.25;stroke-linejoin:round}
-.reel-name{font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1.1;margin:0 0 10px}
-.reel-legend{display:flex;flex-direction:column;gap:6px;font-size:14px;margin-bottom:10px}
+.reel-scroll{flex:1;min-height:0;container-type:size;overflow-y:auto;scrollbar-width:none;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+.reel-card{height:100%;min-height:100%;box-sizing:border-box;scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;flex-direction:column;gap:8px;padding:6px 20px calc(22px + env(safe-area-inset-bottom))}
+/* Figür kutusu her harekette aynı sabit yükseklikte: ekran yüksekliğine göre (cqh = kaydırma alanı), içerik uzunluğuna göre değil; genişlik de sığacak kadar */
+.reel-figs{--reel-rest:290px;flex:none;display:flex;justify-content:center;align-items:center;gap:8px;
+  height:clamp(200px,calc(100vh - 400px),520px);height:clamp(200px,calc(100dvh - 400px),520px);
+  height:min(clamp(200px,calc(100cqh - var(--reel-rest)),520px),calc((100cqw - 48px) / 1.08))}
+.reel-fig{height:100%;width:auto;max-width:calc((100% - 8px)/2);min-width:0;stroke:var(--bg);stroke-width:1.25;stroke-linejoin:round}
+.reel-name{font-size:24px;font-weight:800;letter-spacing:-.01em;line-height:1.1;margin:0 0 6px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.reel-legend{display:flex;flex-direction:column;gap:3px;font-size:12px;line-height:1.25;margin-bottom:8px}
 .reel-legend span{display:flex;align-items:center;gap:8px}
 .reel-legend b{font-weight:750;white-space:nowrap}
-.reel-legend em{font-style:normal;color:var(--muted)}
+.reel-legend em{font-style:normal;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .reel-legend i{width:12px;height:12px;border-radius:3px;flex:none}
 .reel-sets{display:flex;align-items:center;gap:4px;margin-bottom:8px}
 .reel-sets b{min-width:48px;text-align:center;font-size:14px}
@@ -397,7 +400,7 @@ html.reel-open,html.reel-open body{overflow:hidden}
 .ev-help{margin:2px 0 6px}.ev-help summary{cursor:pointer}.ev-help div{margin:4px 0}
 .reel-best{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;letter-spacing:0;color:var(--text);background:var(--card3);border-radius:6px;padding:2px 7px}
 .reel-best .ic{width:12px;height:12px}
-.reel-hint{display:flex;justify-content:center;align-items:center;gap:4px;margin-top:12px;color:var(--muted);font-size:12px;animation:reelbob 1.6s ease-in-out infinite}
+.reel-hint{position:absolute;left:0;right:0;bottom:calc(4px + env(safe-area-inset-bottom));display:flex;justify-content:center;align-items:center;gap:4px;color:var(--muted);font-size:12px;animation:reelbob 1.6s ease-in-out infinite}
 .reel-hint .ic{width:14px;height:14px}
 @keyframes reelbob{50%{transform:translateY(4px)}}
 .reel-progs{justify-content:flex-start;padding-top:24px}

@@ -127,7 +127,7 @@ export function renderBody(){
 export function setup(){
 $("#cGroup").innerHTML = groups().map(g => `<option value="${esc(g)}">${esc(groupLabel(g))}</option>`).join("");
 let customNeed = [];
-const drawCustomEquipment = mountEquipment($("#customEquipment"), { get: () => customNeed, set: ids => { customNeed = ids; }, label: "equipment.requirement" });
+const drawCustomEquipment = mountEquipment($("#customEquipment"), { get: () => customNeed, set: ids => { customNeed = ids; }, label: "equipment.requirement", all: false });
 const drawLibraryEquipment = mountEquipment($("#libEquipment"));
 document.addEventListener("equipmentchange", () => { drawLibraryEquipment?.(); refreshDatalist(); renderLib(); });
 $("#libSearch").addEventListener("input", renderLib);

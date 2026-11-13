@@ -117,10 +117,10 @@ export function setsByMuscle(items: SessionItem[], musclesOf: MusclesOf): Record
 
 
 
-// Önce kanıt grupları, sonra ana (pay ≥ 0,75), sonra yardımcı; aynı grupta kullanım sayısı.
+// Rank by default card tier, then evidence group, usage count and Turkish name.
 export const MAIN_SHARE = .75;
 export type RankKind = "kanit" | "ana" | "yardimci";
-export type Ranked = { name: string; kind: RankKind; w: number; level?: Level; group?: number };
+export type Ranked = { name: string; kind: RankKind; w: number; tier?: SessionTier; level?: Level; group?: number };
 export function rankForMuscle(muscle: string, names: string[], musclesOf: MusclesOf, counts: Record<string, number> = {}): Ranked[] {
   const have = new Set(names), seen = new Set<string>(), out: Ranked[] = [];
   const wOf = (n: string) => weightsOf(musclesOf(n))[muscle] || 0;
@@ -130,5 +130,19 @@ export function rankForMuscle(muscle: string, names: string[], musclesOf: Muscle
   const rest = names.filter(n => !seen.has(n) && wOf(n) > 0);
   rest.filter(n => wOf(n) >= MAIN_SHARE).sort(byCount).forEach(name => out.push({ name, kind: "ana", w: wOf(name) }));
   rest.filter(n => wOf(n) < MAIN_SHARE).sort((a, b) => wOf(b) - wOf(a) || byCount(a, b)).forEach(name => out.push({ name, kind: "yardimci", w: wOf(name) }));
-  return out;
+  // Same default sets, muscle shares and stretch risk as bodymap.js cards (EX_SETS = 9).
+  // Interactive reelSets changes do not affect this initial ordering.
+  const tiers = new Map(out.map(row => [row.name,
+    sessionLoad([{ ex: row.name, sets: 9 }], musclesOf)[muscle]?.tier ?? "yok"]));
+  out.forEach(row => { row.tier = tiers.get(row.name)!; });
+  const tierOrder: SessionTier[] = ["yok", ...SESSION_TIERS.map(([tier]) => tier)];
+  return out.sort((a, b) => tierOrder.indexOf(tiers.get(b.name)!) - tierOrder.indexOf(tiers.get(a.name)!)
+    || (a.group ?? Infinity) - (b.group ?? Infinity)
+    || byCount(a.name, b.name));
+}
+
+// Contiguous sections preserve the ranked exercise order.
+export function startsRankSection(row: Ranked, previous?: Ranked): boolean {
+  return !previous || row.tier !== previous.tier || row.kind !== previous.kind
+    || (row.kind === "kanit" && row.group !== previous.group);
 }

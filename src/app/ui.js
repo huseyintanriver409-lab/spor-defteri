@@ -1,3 +1,4 @@
+import { openLayer, closeLayer, setupLayers } from "./layers.js";
 import { equipmentAllowed } from "./exercises.js";
 import { exerciseSearchText } from "../core/names.ts";
 import { bindEquipmentEmpty, equipmentEmptyHTML, mountEquipment, refreshEquipmentViews } from "./equipment.js";
@@ -55,9 +56,11 @@ export function openSheet(head, body, onClose){
   $("#bsHead").innerHTML = head; $("#bsBody").innerHTML = body;
   $("#bs").classList.remove("hidden"); sheetOnClose = onClose || null;
   const c = $("#bsHead [data-close]"); if (c) c.onclick = closeSheet;
+  openLayer("bs", dismissSheet);
   return $("#bsBody");
 }
-export function closeSheet(){
+export function closeSheet(){ closeLayer("bs"); }
+function dismissSheet(){
   $("#bs").classList.add("hidden"); $("#bsBody").innerHTML = "";
   const f = sheetOnClose; sheetOnClose = null; if (f) f();
 }
@@ -137,7 +140,7 @@ export function openPicker(title, onPick){
     if (nb) nb.onclick = () => {
       let need = [];
       const body = openSheet(sheetHead(raw), '<div data-custom-equipment></div><button class="btn primary" data-create-ex>' + ic("plus") + esc(t("library.add")) + '</button>');
-      mountEquipment(body.querySelector("[data-custom-equipment]"), { get: () => need, set: ids => { need = ids; }, label: "equipment.requirement" });
+      mountEquipment(body.querySelector("[data-custom-equipment]"), { get: () => need, set: ids => { need = ids; }, label: "equipment.requirement", all: false });
       body.querySelector("[data-create-ex]").onclick = () => { state.custom.push({ name: raw, group: "Diğer", ...(need.length ? { need } : {}) }); save(); refreshDatalist(); closeSheet(); toast(t("ui.ex_added", { raw }), "check"); onPick(raw); openMuscleAssignment(raw); };
     };
   };
@@ -198,16 +201,13 @@ export function renderSeg(name){
 
 // Düğme bağlamaları ve ilk hazırlıklar: main.js'teki açılış sırasında çağrılır
 export function setup(){
+setupLayers();
 initHelp();
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && wakeWanted) keepAwake(true); });
 // kaydırma yeri yenilemeden hemen önce yazılır
 addEventListener("pagehide", saveNav);
 $("#bs").addEventListener("click", e => { if (e.target.id === "bs") closeSheet(); });
-document.addEventListener("keydown", e => {
-  if (e.key !== "Escape") return;
-  if (!$("#modal").classList.contains("hidden")) $("#modal").click();
-  else if (!$("#bs").classList.contains("hidden")) closeSheet();
-});
+
 document.querySelectorAll("nav.tabs button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
 document.querySelectorAll(".seg").forEach(seg => seg.querySelectorAll("button").forEach(b => b.onclick = () => { segState[seg.dataset.seg] = b.dataset.v; renderSeg(seg.dataset.seg); }));
 }

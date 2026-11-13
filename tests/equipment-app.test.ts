@@ -50,14 +50,15 @@ describe("equipment discovery integration", () => {
     root.buttons.find(b => b.dataset.equipment === "bench").onclick();
     expect(state.prefs.equip).toEqual(expect.arrayContaining(["dumbbell", "bench"]));
     expect(root.buttons.find(b => b.dataset.equipment === "bench").attrs).toContain('aria-pressed="true"');
-    root.querySelector("[data-equipment-clear]").onclick();
+    root.querySelector("[data-equipment-all]").onclick();
     expect(state.prefs.equip).toEqual([]); expect(save).toHaveBeenCalledTimes(3);
   });
   it("redraws badge and chips from saved selection when data loads after mount", () => {
     const listeners: Record<string, () => void> = {};
     vi.stubGlobal("document", { dispatchEvent: vi.fn(), addEventListener: (n: string, f: () => void) => { listeners[n] = f; } });
     const root = new Buttons(); mountEquipment(root, { expanded: true });
-    expect(root.html).toContain('<span class="tag">0</span>');
+    expect(root.html).toContain('<span class="tag">Tümü</span>');
+    expect(root.buttons.find(b => /data-equipment-all/.test(b.attrs)).attrs).toContain('aria-pressed="true"');
     state.prefs.equip = ["dumbbell", "bench", "band"];   // load()/sync replaces state after the first draw
     listeners.equipmentrefresh();
     expect(root.html).toContain('<span class="tag">3</span>');
